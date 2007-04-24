@@ -1,0 +1,21 @@
+-Project meetings: Tuesday after class around 4pm.
+	 	   Friday after CENS seminar around 2pm.
+
+Three major divisions in the project:
+Each project member will be responsible for one portion.
+
+-RFID
+    -Try to get M1-A1 working
+    -Start interfacing with the motes
+    -Decide if human carries the reader or the tags
+-Power measurement
+    -Ensure can interface the unit with the motes, mainly check the UART compatibility
+    -Purchase the unit
+-Preemption
+    -Start looking at the code that Simon has sent
+    -After the two devices are working with the motes, decide if want to do device level preemption and how to do it
+
+
+After a couple of weeks of work in this area, we will work on the algorithms of interfacing everything together.
+
+
