@@ -19,3 +19,4 @@ Each project member will be responsible for one portion.
 After a couple of weeks of work in this area, we will work on the algorithms of interfacing everything together.
 
 
+-Decide how to the database structure will be used and stored on sensorbase
