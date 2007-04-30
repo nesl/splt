@@ -1,0 +1,6 @@
+Power Measurement:
+
+Two units for measuring power consumption have been studied.
+  1. Veris H8036
+  2. Watts Up Pro
+The Veris device is a CT based power meter with an RS-485 interface
