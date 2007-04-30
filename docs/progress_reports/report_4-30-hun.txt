@@ -1,0 +1,19 @@
+RFID:
+
+
+
+Last week's work
+: We have two kinds of RFID readers : 4 of SkyeTek M1s and 9 of SkyeTek M1-minis
+  - Both of them support TTL level UART interface
+  - VCC for M1 is 5V fixed
+  - VCC for M1-mini is 1.8V-5V variable(this may use same VCC of MicaZ Mote)
+: Made Physical Interface(TTL-level UART) between SkyeTek RFID reader and MicaZ Mote
+: Checked barebone(not SOS code) UART code for MicaZ Mote and TX working
+: Read SkyeTek RFID protocol and did preliminary study for making device driver
+: Read RFID Antenna Design guide
+  - RFID readers have internal antennas whose range is about 2~3 inches, we could also use external antenna for longer scan range. We have one external antenna(EA1), which might be used for sharable appliances. 
+
+This week's plan
+: Complete a simple device driver for RFID reader
+  - Send a command(scan, continuous scan, scan one, and etc) and make RFID reader can scan Tag ID
+  - Once the RFID reader scan it, the Mote sends Tag ID to a computer
