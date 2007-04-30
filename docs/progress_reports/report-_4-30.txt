@@ -3,4 +3,50 @@ Power Measurement:
 Two units for measuring power consumption have been studied.
   1. Veris H8036
   2. Watts Up Pro
-The Veris device is a CT based power meter with an RS-485 interface
+The Veris device is a CT based power meter with an RS-485 interface. It has
+the ability to sense upto 100 Amps of current and the meter can be sensed at
+the maximum rate of the RS-485 interface. It costs about $900.
+The Watts Up Pro is a consumer friendly power meter that has USB interface
+and Windows based software to read the meter. It can be sensed once per
+second. It costs about $150.
+
+The device being chosen for the project is the Watts Up Pro for the
+following reasons:
+
+  1. The Veris device needs to strip off the cable cladding to get the
+clamps on the wires. The Watts Up is plug and play.
+  2. The Veris device does not have any display to see whether anything is
+happening. The Watts Up has an LCD display.
+  3. The Veris device has an RS485 interface for which we have to build an
+interface circuit before we can start any testing. The interface for Watts
+Up is USB.
+  4. The Veris device is over 6 times more expensive.
+  5. The protocol and code for the Watts Up Pro are both available from the
+manufacturer.
+
+The only concern in choosing the Watts Up Pro was a confusion in whether the
+interface was an RS232 or a USB interface. After discussions with the
+distributor and the manufacturer over the last week, we were able to confirm
+the USB interface.
+
+The USB interface poses a problem for the project since the mote being used,
+the MicaZ, does not have a USB interface. To circumvent this, a mote with a
+USB host interface, the iMote2, was considered as an alternative. A quick
+search revealed that the pins exposed for the USB host are present on the
+advanced 40-pin connector but to use it would require to build a small
+custom board. To avoid the delay associated with the custom board design, we
+propose to use a higher-powered Stargate2 microserver as a USB to RS232
+interface.
+
+The Stargate 2 would connect its USB Host port to the Watts Up Pro and use
+the UART on the mote connector send out power measurement readings to the
+attached mote.
+
+Things to do this week:
+
+1. We require to figure out the precise hardware and software interfacing
+requirements between the power meter, SG2 and the mote.
+2. Order the Watts Up Pro through their distributor.
+3. Start working on the SG2 and get a feel for the 'programming model'.
+4. Use the code for the power meter on Linux and get it to work.
+
