@@ -1,0 +1,52 @@
+
+Things to do:
+
+1. Gumstix and SensorBase
+  1.1 PC based
+  1.2 Gumstix based
+
+2. RFID
+  2.1 UART driver
+  2.2 Protocol
+  2.3 SOS Module
+
+3. Power Measurement
+  3.1 Hardware Interface
+  3.2 UART/Radio driver
+  3.3 Protocol
+  3.4 SOS Module
+
+4. Mote App
+  4.1 Scan RFID
+  4.2 Read PM
+  4.3 Send data
+
+5. PC based client
+  5.1 Read data from Sensorbase
+  5.2 Figure out who is using what appliances when
+  5.3 Correlate power measurement readings to the usage
+  5.4 Draw graphs
+
+Week 5:
+  2.1 Younghun
+  3.1 Zainul
+
+Week 6:
+  1.1 Younghun
+  2.2 Younghun
+  3.2 Zainul
+  5   Akhi
+
+Week 7: 1st Deployment
+  1.2 Younghun
+  2.3 Younghun
+  3.3 Zainul
+
+Week 8: 2nd Deployment
+  3.4 Zainul
+  4   Akhi, Younghun
+
+Week 9: Deployment and Report
+
+Week 10: Presentation
+
