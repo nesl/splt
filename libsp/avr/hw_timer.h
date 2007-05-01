@@ -12,8 +12,11 @@
 
 #define  hw_timer_interrupt()        SIGNAL(SIG_OUTPUT_COMPARE0)
 
-#define  hw_timer_set_interval(val)   \
-	do{ while ((ASSR & (_BV(OCR0UB) | _BV(TCN0UB))) != 0); TCNT0 = 0; OCR0 = (val) - 1; } while(0)
+#define  hw_timer_set_interval(val)                    \
+  do{                                                  \
+    while ((ASSR & (_BV(OCR0UB) | _BV(TCN0UB))) != 0); \
+    TCNT0 = 0; OCR0 = (val) - 1;                       \
+  } while(0)
 
 #define  hw_timer_get_interval()      (OCR0 + 1)
 

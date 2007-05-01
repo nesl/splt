@@ -44,31 +44,31 @@ hw_timer_interrupt( )
 
 void sp_timer_start( sp_timer_t *cb, sp_timeval_t ival, sp_timeval_t rval )
 {
-	HAS_CRITICAL_SECTION;
-
-	ENTER_CRITICAL_SECTION();
-
-	//
-	// remove timer request from delta list if it already exists 
-	//
-	sp_timer_take_cb( cb );
-	
-	TASK_SEM_INIT((sp_sem_t*)(cb), 0);
-	cb->ival       = ival;
-	cb->rval       = rval;
-	cb->next       = NULL;
-	
-	cb->ival += hw_timer_get_counter();
-	
-
-	sp_timer_deltaq_insert( cb );
-
-	LEAVE_CRITICAL_SECTION();
-
-
-	ENTER_CRITICAL_SECTION();
-	sp_timer_set_interval();
-	LEAVE_CRITICAL_SECTION();
+  HAS_CRITICAL_SECTION;
+  
+  ENTER_CRITICAL_SECTION();
+  
+  //
+  // remove timer request from delta list if it already exists 
+  //
+  sp_timer_take_cb( cb );
+  
+  TASK_SEM_INIT((sp_sem_t*)(cb), 0);
+  cb->ival       = ival;
+  cb->rval       = rval;
+  cb->next       = NULL;
+  
+  cb->ival += hw_timer_get_counter();
+  
+  
+  sp_timer_deltaq_insert( cb );
+  
+  LEAVE_CRITICAL_SECTION();
+  
+  
+  ENTER_CRITICAL_SECTION();
+  sp_timer_set_interval();
+  LEAVE_CRITICAL_SECTION();
 }
 
 void sp_timer_close( sp_timer_t* cb )
@@ -219,11 +219,11 @@ static void sp_timer_decrement_delta( sp_timer_t* cb, sp_timeval_t cnt )
 
 void sp_timer_init( void )
 {
-	sp_timer_list = NULL;
-
-	hw_timer_init();
-	//
-	// Starting the hardware
-	//
-	hw_timer_set_interval( HW_TIMER_MAX_TIMEOUT );
+  sp_timer_list = NULL;
+  
+  hw_timer_init();
+  //
+  // Starting the hardware
+  //
+  hw_timer_set_interval( HW_TIMER_MAX_TIMEOUT );
 }

@@ -126,18 +126,18 @@ void spk_schedule_task( void )
 
 void spk_sched( void )
 {
-	spk_in_interrupt = 0;
-	ENABLE_INT();
-	while( 1 ) {
-		DISABLE_INT();
-		//if( spk_ready_list != NULL ) {
-		if( spk_num_tasks != 0 ) {
-			task_cb* task = spk_dequeue_task();
-			spk_dispatch(task);
-		} else {
-			SLEEP();
-		} 
-	}
+  spk_in_interrupt = 0;
+  ENABLE_INT();
+  while( 1 ) {
+    DISABLE_INT();
+    //if( spk_ready_list != NULL ) {
+    if( spk_num_tasks != 0 ) {
+      task_cb* task = spk_dequeue_task();
+      spk_dispatch(task);
+    } else {
+      SLEEP();
+    } 
+  }
 }
 
 //--------------------------------------------------------------------------------
@@ -146,49 +146,52 @@ void spk_sched( void )
 
 sp_pid_t sp_create( task_t task, uint8_t priority )
 {
-	sp_pid_t i;
-	HAS_CRITICAL_SECTION;
-	//
-	// Search empty slot
-	//
-	
-	ENTER_CRITICAL_SECTION();
-	for( i = 0; i < SPK_MAX_TASKS; i++ ) {
-		if( spk_tasks[i].task == NULL ) {
-			spk_tasks[i].status   = TASK_WAITING;
-			spk_tasks[i].task     = task;
-			spk_tasks[i].priority = priority;
-			spk_tasks[i].next     = NULL;
-			spk_tasks[i].lc       = 0;
-			spk_tasks[i].errno    = 0;
-			spk_tasks[i].wait_obj = NULL;
-			LEAVE_CRITICAL_SECTION();
-			sp_signal( i );
-			return i;
-		}
-	}
-	LEAVE_CRITICAL_SECTION();
-	SP_EXCEPTION();
-	return 0;
+  sp_pid_t i;
+  HAS_CRITICAL_SECTION;
+  
+  ENTER_CRITICAL_SECTION();
+  // Search for empty slot
+  for( i = 0; i < SPK_MAX_TASKS; i++ ) {
+    // Found an empty slot
+    if( spk_tasks[i].task == NULL ) {
+      spk_tasks[i].lc       = 0;
+      // The pid field is not being used
+      spk_tasks[i].status   = TASK_WAITING;
+      spk_tasks[i].priority = priority;
+      spk_tasks[i].errno    = 0;
+      spk_tasks[i].task     = task;
+      spk_tasks[i].wait_obj = NULL;
+      spk_tasks[i].next     = NULL;
+      LEAVE_CRITICAL_SECTION();
+      sp_signal( i );
+      return i;
+    }
+  }
+  // All slots taken
+  LEAVE_CRITICAL_SECTION();
+  SP_EXCEPTION();
+  return 0;
 }
 
 
 void sp_signal( sp_pid_t pid )
 {
-	HAS_CRITICAL_SECTION;
-	
-	if( pid == NULL_PID ) {
-		return;
-	} 
+  HAS_CRITICAL_SECTION;
 
-	ENTER_CRITICAL_SECTION();
-	if( (spk_in_interrupt == 0) && (spk_tasks[pid].priority > CURRENT_PRIORITY()) ) {
-		spk_dispatch(&(spk_tasks[pid]));
-		return;
-	} else {
-		spk_queue_task( pid );
-	} 
-	LEAVE_CRITICAL_SECTION();
+  // Check for null pid
+  if( pid == NULL_PID ) {
+    return;
+  } 
+  
+  ENTER_CRITICAL_SECTION();
+  if((spk_in_interrupt == 0) && 
+     (spk_tasks[pid].priority > CURRENT_PRIORITY()) ) {
+    spk_dispatch(&(spk_tasks[pid]));
+    return;
+  } else {
+    spk_queue_task( pid );
+  } 
+  LEAVE_CRITICAL_SECTION();
 }
 
 void sp_signal_error( sp_pid_t pid, uint8_t err )

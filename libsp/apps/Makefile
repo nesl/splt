@@ -1,4 +1,3 @@
-
 PROJ  = app
 SRCS  = fixed_fft.c sp_task.c sp_timer.c plat_avr.c hw_timer.c sp_rand.c
 SRCS += cc1k_cnt.c radio_spi.c adc.c cc1k.c cc1k_radio.c crc.c systime.c
