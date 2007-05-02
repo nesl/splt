@@ -29,7 +29,7 @@ int main () {
   UCSR1B = (1<<RXEN) | (1<<TXEN);
   
   //set frame format
-  UCSR1C = (1<<USBS) | (3<<UCSZ0);
+  UCSR1C = (1<<UCSZ1) | (1<<UCSZ0);
 
   while(1)
   {

@@ -105,4 +105,4 @@ all:	$(PROJ).elf $(PROJ).elf.lst $(PROJ).bin $(PROJ).srec.out.$(ADDRESS)
 	sleep 2
 	$(INSTALLER) --upload if=$(PROJ).srec.out.$(ADDRESS)
 clean:
-	rm -f *.elf *.elf.lst *.bin *.lst *.o *.map *~ *.ihex
+	rm -f *.elf *.elf.lst *.bin *.lst *.o *.map *~ *.ihex *.srec.out.$(ADDRESS) *.exe.out.$(ADDRESS)
