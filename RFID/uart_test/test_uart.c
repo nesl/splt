@@ -5,6 +5,8 @@
 
 uint8_t counter;
 uint8_t state = 0;
+
+//BAUD_9600
 uint8_t baud = 47;
 
 void Foo_trans(uint8_t data)
@@ -28,7 +30,7 @@ int main () {
   // enable receiver and transmitter
   UCSR1B = (1<<RXEN) | (1<<TXEN);
   
-  //set frame format
+  //set frame format 8N1
   UCSR1C = (1<<UCSZ1) | (1<<UCSZ0);
 
   while(1)
@@ -43,7 +45,7 @@ int main () {
 
 /*
 SIGNAL(SIG_UART_RECV) {
-  counter = UDR;
+  counter = UDR1;
   if(state != 1)
     state = 1;
 }
@@ -56,7 +58,7 @@ SIGNAL(SIG_UART_TRANS) {
 */
 /*
 SIGNAL(SIG_UART_RECV) {
-  PORTA = UDR;
+  PORTA = UDR1;
 }
 */
 
