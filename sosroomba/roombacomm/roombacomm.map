@@ -1,0 +1,122 @@
+Archive member included because of file (symbol)
+
+/usr/lib/gcc/avr/3.4.3/avr5/libgcc.a(_divmodhi4.o)
+                              roombacomm.o (__divmodhi4)
+/usr/lib/gcc/avr/3.4.3/avr5/libgcc.a(_copy_data.o)
+                              roombacomm.o (__do_copy_data)
+/usr/lib/gcc/avr/3.4.3/avr5/libgcc.a(_clear_bss.o)
+                              roombacomm.o (__do_clear_bss)
+/usr/lib/gcc/avr/3.4.3/avr5/libgcc.a(_udivmodhi4.o)
+                              /usr/lib/gcc/avr/3.4.3/avr5/libgcc.a(_divmodhi4.o) (__udivmodhi4)
+
+Memory Configuration
+
+Name             Origin             Length             Attributes
+text             0x00000000         0x00020000         xr
+data             0x00800060         0x0000ffa0         rw !x
+eeprom           0x00810000         0x00010000         rw !x
+
+Linker script and memory map
+
+Address of section .data set to 0x800100
+LOAD roombacomm.o
+
+.text           0x00000000      0x540
+ *(.progmem*)
+ .progmem.data  0x00000000       0x5e roombacomm.o
+                0x0000005e                . = ALIGN (0x2)
+ *(.text)
+ .text          0x0000005e      0x494 roombacomm.o
+                0x000004f2                . = ALIGN (0x2)
+ *(.text.*)
+ .text.libgcc   0x000004f2       0x26 /usr/lib/gcc/avr/3.4.3/avr5/libgcc.a(_divmodhi4.o)
+                0x000004f2                __divmodhi4
+                0x000004f2                _div
+ .text.libgcc   0x00000518       0x28 /usr/lib/gcc/avr/3.4.3/avr5/libgcc.a(_udivmodhi4.o)
+                0x00000518                __udivmodhi4
+                0x00000540                . = ALIGN (0x2)
+ *(.module)
+                0x00000540                . = ALIGN (0x2)
+                0x00000540                _etext = .
+
+.nouse          0x00000540       0x26 load address 0x00000540
+ *(.vectors)
+                0x00000540                __ctors_start = .
+ *(.ctors)
+                0x00000540                __ctors_end = .
+                0x00000540                __dtors_start = .
+ *(.dtors)
+                0x00000540                __dtors_end = .
+ *(.progmem.gcc*)
+ *(.init0)
+ *(.init1)
+ *(.init2)
+ *(.init3)
+ *(.init4)
+ .init4         0x00000540       0x16 /usr/lib/gcc/avr/3.4.3/avr5/libgcc.a(_copy_data.o)
+                0x00000540                __do_copy_data
+ .init4         0x00000556       0x10 /usr/lib/gcc/avr/3.4.3/avr5/libgcc.a(_clear_bss.o)
+                0x00000556                __do_clear_bss
+ *(.init5)
+ *(.init6)
+ *(.init7)
+ *(.init8)
+ *(.init9)
+ *(.fini9)
+ *(.fini8)
+ *(.fini7)
+ *(.fini6)
+ *(.fini5)
+ *(.fini4)
+ *(.fini3)
+ *(.fini2)
+ *(.fini1)
+ *(.fini0)
+
+.data           0x00800100        0x0 load address 0x00000566
+                0x00800100                PROVIDE (__data_start, .)
+ *(.data)
+ *(.gnu.linkonce.d*)
+                0x00800100                . = ALIGN (0x2)
+                0x00800100                _edata = .
+                0x00800100                PROVIDE (__data_end, .)
+
+.bss            0x00800100        0x0
+                0x00800100                PROVIDE (__bss_start, .)
+ *(.bss)
+ *(COMMON)
+                0x00800100                PROVIDE (__bss_end, .)
+                0x00000566                __data_load_start = LOADADDR (.data)
+                0x00000566                __data_load_end = (__data_load_start + SIZEOF (.data))
+
+.noinit         0x00800100        0x0
+                0x00800100                PROVIDE (__noinit_start, .)
+ *(.noinit*)
+                0x00800100                PROVIDE (__noinit_end, .)
+                0x00800100                _end = .
+                0x00800100                PROVIDE (__heap_start, .)
+
+.eeprom         0x00810000        0x0 load address 0x00000540
+ *(.eeprom*)
+                0x00810000                __eeprom_end = .
+LOAD /usr/lib/gcc/avr/3.4.3/avr5/libgcc.a
+LOAD /usr/lib/gcc/avr/3.4.3/../../../../avr/lib/avr5/libc.a
+OUTPUT(roombacomm.elf elf32-avr)
+
+Cross Reference Table
+
+Symbol                                            File
+__bss_end                                         /usr/lib/gcc/avr/3.4.3/avr5/libgcc.a(_clear_bss.o)
+__bss_start                                       /usr/lib/gcc/avr/3.4.3/avr5/libgcc.a(_clear_bss.o)
+__data_end                                        /usr/lib/gcc/avr/3.4.3/avr5/libgcc.a(_copy_data.o)
+__data_load_start                                 /usr/lib/gcc/avr/3.4.3/avr5/libgcc.a(_copy_data.o)
+__data_start                                      /usr/lib/gcc/avr/3.4.3/avr5/libgcc.a(_copy_data.o)
+__divmodhi4                                       /usr/lib/gcc/avr/3.4.3/avr5/libgcc.a(_divmodhi4.o)
+                                                  roombacomm.o
+__do_clear_bss                                    /usr/lib/gcc/avr/3.4.3/avr5/libgcc.a(_clear_bss.o)
+                                                  roombacomm.o
+__do_copy_data                                    /usr/lib/gcc/avr/3.4.3/avr5/libgcc.a(_copy_data.o)
+                                                  roombacomm.o
+__udivmodhi4                                      /usr/lib/gcc/avr/3.4.3/avr5/libgcc.a(_udivmodhi4.o)
+                                                  /usr/lib/gcc/avr/3.4.3/avr5/libgcc.a(_divmodhi4.o)
+_div                                              /usr/lib/gcc/avr/3.4.3/avr5/libgcc.a(_divmodhi4.o)

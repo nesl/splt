@@ -1,0 +1,186 @@
+/* -*- Mode: C; tab-width:4 -*- */
+/* ex: set ts=4 shiftwidth=4 softtabstop=4 cindent: */
+/**
+ * @brief Example module for SOS
+ * This module shows some of concepts in SOS
+ */
+
+/**
+ * Module needs to include <module.h>
+ */
+#include <sys_module.h>
+#include <module.h>
+#define LED_DEBUG
+#include <led_dbg.h>
+#include <uart_system.h>
+
+#include "roombamote.h"
+#include "../roombacomm/roombacomm.h"
+
+#define PAUSE_TIMER_INTERVAL	128L
+#define PAUSE_TID               0
+#define MSG_ROOMBA_DATA_FROM_PC_MOTE     (MOD_MSG_START + 3)
+#define MSG_ROOMBA_DATA_FROM_ROOMBA_MOTE     (MOD_MSG_START + 4)
+#define DRIVE 0x89
+
+/**
+ * Module can define its own state
+ */
+typedef struct {
+    FUNC_HDR_BLOCK;
+
+    uint8_t pid;
+    uint8_t state;
+    uint8_t* buff_to_send;
+    uint8_t ackbyte;
+    uint32_t ptime;
+} app_state_t;
+
+uint8_t stop_cmd[5] = {DRIVE, 0x0, 0x0, 0x0, 0x0};
+
+/**
+ * Roomba Mote module
+ *
+ * @param msg Message being delivered to the module
+ * @return int8_t SOS status message
+ *
+ * Modules implement a module function that acts as a message handler.  The
+ * module function is typically implemented as a switch acting on the message
+ * type.
+ *
+ * All modules should included a handler for MSG_INIT to initialize module
+ * state, and a handler for MSG_FINAL to release module resources.
+ *
+ * Changes in the interpretation of the drive command:
+ * 1. The command is checked if it is the drive command - first byte = 0x89
+ * 2. The msg_len is checked if it is the new drive command - msg_len > 5
+ * 3. The next 2bytes give the amount of time to drive the command in millis
+ * (the command is big endian, the first byte is the higher order byte)
+ * 4. However, to not confuse the roomba that this is a command (just in case
+ * the same drive command if given to the serial directly), the 2 bytes have
+ * the MSB bit as zero (since all commands have MSB as 1)
+ * 5. Thus, the milliseconds value will be a 14 bit number extracted from
+ * these two bytes - range = 0 to 16384
+ */
+
+static int8_t roombamote_msg_handler(void *start, Message *e);
+
+/**
+ * This is the only global variable one can have.
+ */
+static mod_header_t mod_header SOS_MODULE_HEADER = {
+    .mod_id         = DFLT_APP_ID0,
+    .state_size     = sizeof(app_state_t),
+    .num_timers     = 1,
+    .num_sub_func   = 0,
+    .num_prov_func  = 0,
+    .platform_type  = HW_TYPE /* or PLATFORM_ANY */,
+    .processor_type = MCU_TYPE,
+    .code_id        = ehtons(DFLT_APP_ID0),
+    .module_handler = roombamote_msg_handler,
+    .funct = { FUNC_USE_BLOCK
+    }
+};
+
+
+static int8_t roombamote_msg_handler(void *state, Message *msg)
+{
+    app_state_t *s = (app_state_t*)state;
+
+    /**
+     * Switch to the correct message handler
+     */
+    switch (msg->type){
+
+        case MSG_INIT:
+            {
+                LED_DBG(LED_GREEN_TOGGLE);
+                s->pid = msg->did;
+                s->state = 0;
+                s->buff_to_send=NULL;
+                s->ackbyte = 0x7f;
+                s->ptime = 0;
+                break;
+            }
+
+        case MSG_FINAL:
+            {
+                sys_timer_stop(PAUSE_TID);
+                break;
+            }
+
+
+        case MSG_TIMER_TIMEOUT:
+            {
+                MsgParam* params = (MsgParam*)(msg->data);
+
+                if (params->byte == PAUSE_TID)
+                {
+                    ker_uart_reserve_bus(s->pid, UART_SYS_TX_FLAG);
+                    ker_uart_send_data(stop_cmd, sizeof(stop_cmd), s->pid);
+                    LED_DBG(LED_GREEN_OFF);
+                }
+                break;
+            }
+
+        case MSG_ROOMBA_DATA_FROM_PC_MOTE:
+            {
+                uint8_t msg_len;
+                LED_DBG(LED_YELLOW_ON);
+
+                msg_len = msg->len;
+                s->buff_to_send = (uint8_t*)sys_msg_take_data(msg);
+                if (s->buff_to_send != NULL){
+                    if (s->buff_to_send[0] == DRIVE && msg_len == 7) {
+                        s->ptime = ((uint16_t)(s->buff_to_send[5] & 0x007f) << 7) | (s->buff_to_send[6] & 0x7f);
+                        // convert from milliseconds to timer counts
+                        s->ptime <<=10;
+                        s->ptime /=1000;
+                        msg_len =-2;
+                    }
+                    ker_uart_reserve_bus(s->pid, UART_SYS_TX_FLAG);
+                    ker_uart_send_data(s->buff_to_send, msg_len, s->pid);
+                }
+
+
+                break;
+            }
+
+        case MSG_UART_SEND_DONE:
+            {
+                /* ker_uart_release_bus(s->pid); */
+                if (s->buff_to_send != NULL) 
+                    sys_free(s->buff_to_send);
+
+                post_net(s->pid, s->pid, MSG_ROOMBA_DATA_FROM_ROOMBA_MOTE, 1, &s->ackbyte, SOS_MSG_RELIABLE, BCAST_ADDRESS);
+                LED_DBG(LED_YELLOW_OFF);
+                if (s->ptime > 0) {
+                    sys_timer_start(PAUSE_TID, s->ptime, TIMER_ONE_SHOT);
+                    s->ptime = 0;
+                    LED_DBG(LED_GREEN_ON);
+                }
+
+                break;
+            }
+
+            /**
+             * The default handler is used to catch any messages that the module
+             * does no know how to handle.
+             */
+        default:
+            return -EINVAL;
+    }
+
+    /**
+     * Return SOS_OK for those handlers that have successfully been handled.
+     */
+    return SOS_OK;
+}
+
+#ifndef _MODULE_
+mod_header_ptr roombamote_get_header()
+{
+    return sos_get_header_address(mod_header);
+}
+#endif
+
