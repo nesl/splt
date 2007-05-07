@@ -1,0 +1,16 @@
+
+Power Measurement:
+
+- Studied the Stargate2 hardware to figure out the hardware interfacing to
+the WUPro's USB port. 
+- Tested three of the Stargate2 boards we have and they all stop at the login
+prompt and dont go any further.
+- Downloaded the image files of the SG2 but was unable to follow
+  instructions to reflash the boards
+- Considered using the Linksys NSLU2 network storage device (also being used
+in the NetCar project) for providing the USB host connectivity. The mote
+would be connected to the other USB port of the same device through a USB
+programmer
+- Received four WUPro devices. Discovered that the USB interface was using a
+  common RS232 to USB FTDI chip, the FT232RL. Th
+
