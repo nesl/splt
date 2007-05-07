@@ -1,3 +1,20 @@
+Preemption:
+Last Week:
+- A very basic and rudimentary form of preemption is now working.
+We are able to preempt properly when one module sends a message to another.
+If the receiver has higher priority, the current module is preempted and 
+the receiver runs.
+- We have implemented code where the messages from timer interrupts are also 
+appropriately delivered in the new code base.
+However there are certain bugs in this and we are working on fixing them.
+
+This Week:
+- We will try to have the preemption from the timer side working properly.
+After this, we will be going through a cycle of debugging and ensuring
+that the correct form of preemption is occuring at the right place.
+-When this is complete, we will start verfying the continual operation of
+the existing drivers.
+-We also plan on having preemption when a sos_call is used.
 
 Power Measurement:
 
