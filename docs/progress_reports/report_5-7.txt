@@ -14,3 +14,27 @@ programmer
 - Received four WUPro devices. Discovered that the USB interface was using a
   common RS232 to USB FTDI chip, the FT232RL. Th
 
+
+
+RFID:
+
+
+
+
+
+
+
+
+
+
+
+
+Preemption:
+
+
+
+
+
+
+
+
