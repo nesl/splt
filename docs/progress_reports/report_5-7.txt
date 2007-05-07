@@ -49,5 +49,14 @@ the WUPro have busted.
 
 
 RFID:
+Last week
+- Studied RFID application codes written in JAVA and ported its headers and libraries in C
+- RFID receiver supports two of tag-detection modes, we need to figure out which one if more suitable for ours
+  1. It continously sends RFID tag IDs as long as RFID tags are within a range
+  2. It sends RFID tag IDs once if RFID tags are in the range
+  3. In addition, it supports anti-collision to avoid multiple RFID tags in the range
+- It also supports ASCII mode communication mode as well as binary communication mode. Since it seems much efficient to use binary communication mode, we will use binary communication mode between MicaZ Mote and RFID receivers. Did some preliminary study.
 
-
+This week
+- Complete binary communication device driver on the mote side, and test it using the following scenario.
+  As soon as the mote turned on, it sends a command to RFID receivers. Then the RFID receiver sends RFID tag ID back to the Mote and the mote forward it to PC.
