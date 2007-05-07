@@ -29,29 +29,25 @@ in the NetCar project) for providing the USB host connectivity. The mote
 would be connected to the other USB port of the same device through a USB
 programmer
 - Received four WUPro devices. Discovered that the USB interface was using a
-  common RS232 to USB FTDI chip, the FT232RL. Th
+  common RS232 to USB FTDI chip, the FT232RL. 
+- It seems possible to bypass this whole USB host problem by picking up the
+  UART signal directly from the board.
+- The UART levels on the WUPro are 3.3V LVTTL levels and thus it is
+  straightforward to interface to a Mote later.
+- To test the UART interface with a PC, the UART interface was connected to
+  a BlueSmirf RS232 to Bluetooth radio module.
+- The power for the BlueSmirf module was initially derived from the WUPro
+  itself, but realized that the WUPro could not source enough current and
+was constantly resetting. Thus, we used an external adjustable power supply being fed AC mains power from the WUPro to power the BlueSmirf.
+- Using a host with a Bluetooth interface, we wanted to test the serial
+  interface to the WUPro and when we did not get anything on the terminal
+screen, we decided to use an oscope to debug the issue.
+- Connecting the oscope ground to the power supply ground caused a small
+  explosion and the victim was the WUPro. A number of small components on
+the WUPro have busted.
 
 
 
 RFID:
-
-
-
-
-
-
-
-
-
-
-
-
-Preemption:
-
-
-
-
-
-
 
 
