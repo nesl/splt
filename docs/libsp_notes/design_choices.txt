@@ -1,0 +1,19 @@
+How to deal with sos_calls? When one module wants to call a function in another module?
+
+- One module may want to call into a function in another module. If the callee has a lower priority, there is a chance that it may already be on the stack and has been preempted by other tasks. This can cause race conditions where some data in the callee is changed when it was called again. How do we fix this?
+
+1. Priority Inheritance
+	- The callee can inherit the priority of the caller.
+2. Middle Priority 
+	- The calle does not inherit the caller's priority. So if there is a task with priority smaller than caller and bigger than callee, it runs. We will consider this approach later on.
+
+Using (1).
+
+Two approaches here also:
+1. The callee can employee critical sections. This means that the programmer will have to be careful and identify where to allow preemption and where not to. No additional programming is required for this so we can already evaluate this approach. 
+
+2. Disallow the caller to preempt the callee. This means that the callee inherits the caller's priority. This can be done at two places, at load time or at run time.
+	i. Load time is simpler to do but has worse performance in general. At load time, it is indicated that the a higher priority module calls into a lower priority one, so the lower priority module's priority is increased. Now at every scenario where the caller is not running, the callee has higher priority which was not a desired outcome of the system.
+	ii. Run time. This is what we will do. Whenever one module tries to preempt others, we will check if it calls into any functions registered by the modules it is trying to preempt. If it does, we disallow it.
+	We do this by maintaining a list of module ids of every callee when a callee is loaded into the system. This list is maintained in the control block of the module. Some function locations are determined at run time by calling sys_func_subscribe, so those will be filled in at that point. 
+	When a module tries to preempt others, we run through this list and ensure that it will not do this. 
