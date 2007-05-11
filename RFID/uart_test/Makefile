@@ -1,7 +1,7 @@
 PROJ = test_uart
 SRCS += $(PROJ).c
 OBJS += $(SRCS:.c=.o)
-
+INCDIR += -I./include
 
 TRG = avr-
 
@@ -29,7 +29,7 @@ LDFLAGS += $(MCUFLAG) -Wl,-Map=$(PROJ).map,--cref
 ################################################
 
 ifndef PROG
-PROG=dapa
+PROG=mib510
 endif
 INSTALLER_PORG = -dprog=$(PROG)
 
@@ -94,7 +94,7 @@ endif
 
 
 
-all:	$(PROJ).elf $(PROJ).elf.lst $(PROJ).bin $(PROJ).srec.out.$(ADDRESS)
+all:    $(PROJ).o $(PROJ).elf $(PROJ).elf.lst $(PROJ).bin $(PROJ).srec $(PROJ).srec.out.$(ADDRESS)
 	$(INSTALLER) --wr_fuse_e=0xff
 	sleep 2
 	$(INSTALLER) --wr_fuse_h=0x9f
@@ -103,6 +103,7 @@ all:	$(PROJ).elf $(PROJ).elf.lst $(PROJ).bin $(PROJ).srec.out.$(ADDRESS)
 	sleep 2
 	$(INSTALLER) --erase
 	sleep 2
-	$(INSTALLER) --upload if=$(PROJ).srec.out.$(ADDRESS)
+	#$(INSTALLER) --upload if=$(PROJ).srec.out.$(ADDRESS)
+	$(INSTALLER) --upload if=$(PROJ).srec
 clean:
-	rm -f *.elf *.elf.lst *.bin *.lst *.o *.map *~ *.ihex *.srec.out.$(ADDRESS) *.exe.out.$(ADDRESS)
+	rm -f *.elf *.elf.lst *.bin *.lst *.o *.map *~ *.ihex *.srec *.srec.out.$(ADDRESS) *.exe.out.$(ADDRESS)
