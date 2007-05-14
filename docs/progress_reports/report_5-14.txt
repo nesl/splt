@@ -18,4 +18,20 @@ Last week
 - Wrote Python Slogging module that sends data to the "Power Measurement" table and the "RFID" table. 
 - Wrote Python Retrieve module that receives data from the tables in the sensorbase
 
+Energy Measurement
+Last week
+- Worked with the WuPro to interface through USB port and minicom on a linux
+  host
+- Worked out the protocol commands and parameters required for the external
+  logging application
+- Updated the linux based utility supplied by vendor to work with the new
+  WuPro (new protocol). The utility currently outputs power measurement
+readings once a second.
+
+Next Week
+- Interface the linux based utility to the python based slogging module to
+  create a test data set
+- Get basic protocol working with UART driver on MicaZ (without SOS)
+- Write a SOS UART receive side driver (without framing) to interface
+  generically to both the RFID and the UART
 
