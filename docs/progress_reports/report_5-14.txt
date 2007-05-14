@@ -35,3 +35,11 @@ Next Week
 - Write a SOS UART receive side driver (without framing) to interface
   generically to both the RFID and the UART
 
+Preemption:
+Last week:
+- Got the code written for handling the concurency issues for sos_calls.
+- Devised methods for doing a larger scope of preemption on sos.
+
+This week:
+- Need to debug the concurency handling.
+- Start evaluation on preemption of sos_call.
