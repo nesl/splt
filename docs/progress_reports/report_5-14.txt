@@ -1,0 +1,21 @@
+RFID
+Last week
+- Completed physical interface between M1-A1(button type RFID receiver)
+  Since M1-A1 accepts various input voltage from 1.8V to 5.0V, power from the MicaZ mote is sufficient for the RFID receiver meaning that we don't need external DC power supply for the RFID receiver. 
+- Tested barebone software for MicaZ Mote which sends "Start Reading Tag ID" command and forwards it to a PC over RS-232
+  
+
+This week
+- Merge current barebone RFID UART device driver to SOS
+- After meging it, write a slogging software which receives TAG ID from remote RFID motes and sends the data to the sensorbase
+
+SensorBase
+Last week
+- We tentatively defined a data structure on the sensor base for our deployment
+  1. For power measurement, there are five fields "UID, Appliance ID, Current(A), Watt(W), and TimeStamp"
+  2. For RFID, there are three fields "UID, Tag ID, and TimeStamp"
+
+- Wrote Python Slogging module that sends data to the "Power Measurement" table and the "RFID" table. 
+- Wrote Python Retrieve module that receives data from the tables in the sensorbase
+
+
