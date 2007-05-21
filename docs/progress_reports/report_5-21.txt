@@ -1,0 +1,15 @@
+RFID
+Last week
+- Started writing UART driver for RFID reader and still in progress
+
+This week
+- Complete writing UART driver for RFID reader
+
+Gumstix and SOS-server
+Last week
+- For slogging data to the sensorbase, we use the Python interpreter. But, the base sensor node forwards the RFID and PowerMeasurement data in the sos message form. Therefore, we need to write a plugin module that grab sos messages and interpret them for the slogging module. So we started writing the plugin module. 
+
+This week
+- Complete the preliminary plugin module and conduct the deployment
+
+
