@@ -13,3 +13,13 @@ This week
 - Complete the preliminary plugin module and conduct the deployment
 
 
+Preemption
+Last week:
+- Finished the core of preemption needed for the project.
+
+This week: 
+- Start doing some debugging on it. There are some corner cases that need to be handled.
+
+Base Station Backend:
+This week:
+- Will start writing a simple app for the base station to grab data from sensorbase and then to make sense of it.
