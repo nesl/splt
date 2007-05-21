@@ -23,3 +23,14 @@ This week:
 Base Station Backend:
 This week:
 - Will start writing a simple app for the base station to grab data from sensorbase and then to make sense of it.
+
+Power Measurement
+-----------------
+Last week:
+- Started slogging power consumption from lab printer into SensorBase
+- Completed protocol specifics required to transition to a mote based system
+- Constructed API and function details for SOS based receive side of UART
+
+This week:
+- Write receive side of SOS UART driver
+- Write WUPro driver as SOS module
