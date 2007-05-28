@@ -1,0 +1,35 @@
+
+During init, first detect the presence of the meter
+by testing for the version string
+
+Checking meter version
+Send:     #V,R,0;
+Response: #v,-,8,1,65178,5,2,4,41,200701080239,0;
+
+Once the meter is detected correctly, send the string that initializes what
+items are to be logged
+
+Setting up logging for Watts, Volts and Amps
+#C,W,18,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1;
+
+Once that is done, start the external logging
+#L,W,3,E,1,1;
+
+Soft reboot
+Send:     #V,W,0;
+
+Read current sampling interval
+Send:     #S,R,0;
+
+#D,R,0;
+
+#C,R,0;
+
+#O,R,0;
+
+Getting user parameters
+Send:     #U,R,0;
+Response: #u,-,3,80,100,0;
+
+
+
