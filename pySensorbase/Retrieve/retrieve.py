@@ -1,7 +1,6 @@
 from SOAPpy import WSDL
 WSDLFILE = 'http://sensorbase.org/soap/sensorbase2.wsdl'
 
-
 def retrieve(table,fields_value,condi,d_from,d_to):
 	"""
 		 retrieve's input values are, table name,
