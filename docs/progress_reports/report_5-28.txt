@@ -1,0 +1,23 @@
+RFID
+Last Week
+- Assembled two more sets of RFID receiver and MicaZ mote pairs. 
+
+This Week
+- Deploy them on the doors and the coffee machine
+
+Gumstix+Base Station
+Last Week
+- Assembled the gumstix+CFnet+breakout-gs+MicaZ so that the gumstix can receive power measurement and RFID tag data over ZigBee radio and then send them to the sensorbase(H/W)
+- On the MicaZ mote side, we wrote the base_app that receives SOS messages from the radio and forward them to the gumstix over UART(SOS base station S/W)
+- On the gumstix side, we wrote two python modules. The first one basically grabs SOS messages and makes some changes for the Slogging module. The second one is the Slogging module that grabs the data from the first module, makes them in the sensorbase XML format, and send them to the sensorbase. (Python S/W)
+
+
+This Week
+- By tomorrow(May 29), we will deploy this so that it can receive data and send back to the sensorbase.
+
+
+Backend
+Last Week
+- Wrote the retrieve module that gets the slogged data(Python S/W)
+
+
