@@ -16,7 +16,7 @@ This Week
 - By tomorrow(May 29), we will deploy this so that it can receive data and send back to the sensorbase.
 
 
-Backend
+Base Station Backend
 Last Week
 - Wrote the retrieve module that gets the slogged data(Python S/W)
 
