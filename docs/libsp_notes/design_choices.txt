@@ -10,7 +10,7 @@ How to deal with sos_calls? When one module wants to call a function in another 
 Using (1).
 
 Two approaches here also:
-1. The callee can employee critical sections. This means that the programmer will have to be careful and identify where to allow preemption and where not to. No additional programming is required for this so we can already evaluate this approach. 
+1. The callee can employee critical sections. This means that the programmer will have to be careful and identify where to allow preemption and where not to. No additional programming is required for this so we can already evaluate this approach. use revision number 364.
 
 2. Disallow the caller to preempt the callee. This means that the callee inherits the caller's priority. This can be done at two places, at load time or at run time.
 	i. Load time is simpler to do but has worse performance in general. At load time, it is indicated that the a higher priority module calls into a lower priority one, so the lower priority module's priority is increased. Now at every scenario where the caller is not running, the callee has higher priority which was not a desired outcome of the system.

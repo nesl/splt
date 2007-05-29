@@ -179,9 +179,7 @@ void sp_signal( sp_pid_t pid )
   HAS_CRITICAL_SECTION;
 
   // Check for null pid
-  if( pid == NULL_PID ) {
-    return;
-  } 
+  if( pid == NULL_PID ) return;
   
   ENTER_CRITICAL_SECTION();
   if((spk_in_interrupt == 0) && 
