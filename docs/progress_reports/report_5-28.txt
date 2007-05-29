@@ -18,6 +18,6 @@ This Week
 
 Base Station Backend
 Last Week
-- Wrote the retrieve module that gets the slogged data(Python S/W)
+- Wrote the retrieve module that gets the slogged data(Python S/W) and makes them in appropriate file format for analysis
 
 
