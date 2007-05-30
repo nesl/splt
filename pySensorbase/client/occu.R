@@ -5,49 +5,49 @@ occu = function(rfidFile, userID) {
   # Timestamp, Appliance ID, Tag ID
   # PM file format
   # Timestamp, Appliance ID, Watt
+
+  # Max number of people allowed
+  MAX_NUM = 100
   
-  # Usage time
-  USAGE_TIME = 60
-  
+  # Number of people in the room right now
+  room = 0
+  # pointer for each person in the room
+  people = 0
+  # total time/room spent in the lab
   total_power = 0
   
+  # initialize all to not present
+  for(i in 1:MAX_NUM) {
+    people[i] = 0
+  }
+
   # Read the data from the file
   rfid_data = read.table(rfidFile, head = TRUE, sep = ',')
-  pm_data = read.table(pmFile, head = TRUE, sep = ',')
 
-  # Find all tag readings of this user
+  # Iterate through all rfid data
   for(i in 1:length(rfid_data$tag_id)) {
-    if(userID == rfid_data$tag_id[i]) {
-      print('user used appliance')
-      print(rfid_data$app_id[i])
-      print('at time')
-      print(rfid_data$timestamp[i])
-      print('the amount of power used is')
+    # if the appliance is the door
+    if(rfid_data$app_id[i] == door) {
+      
+      # if the person has entered the room
+      if(people[rfid_data$tag_id[i]] == 0) {
+        room = room + 1
+        people[rfid_data$tag_id[i]] = 1
+      }
+      # if the person has left the room
+      else {
+        room = room - 1
+        people[rfid_data$tag_id[i]] = 0        
+      }
 
-      # Find the power usage of the appliance
-      for(j in 1:length(pm_data$timestamp)) {
-        if((rfid_data$timestamp[i] == pm_data$timestamp[j])
-           && (rfid_data$app_id[i] == pm_data$app_id[j])){
-
-          # idle_power is the minimum power seen in the 10 seconds around usage
-          idle_power = min(pm_data$watt[(j - 5) : (j + 5)])
-
-          integ = 0
-          # the appliance will be in use for usage_time or end of data stream
-          for(k in j:min(j + USAGE_TIME, length(pm_data$timestamp) - j)) {
-            # add to integral if greater than idle power
-            if(pm_data$watt[k] > idle_power)
-              integ = integ + pm_data$watt[k]
-          }
-          
-          # Add to the total usage of the user
-          total_power = total_power + (integ / min(j + USAGE_TIME, length(pm_data$timestamp) - j))
-        }
+      # manage the time/room for userID
+      # if the userID is in the room and he did not just enter the room
+      if((people[userID] == 1) && (rfid_data$tag_id[i] != userID)) {
+        total_power = total_power + ((rfid_data$timestamp[i] - rfid_data$timestamp[i - 1]) / room)
       }
     }
   }
 
-  # return the total power usage
-  print('total power = ')
+  # return total power
   total_power
 }
