@@ -74,17 +74,13 @@ static int8_t uart_mod_msg_handler(void *state, Message *msg)
             {
               /* Timer fired, should sent out the message to the uart0 now
                * */
-              //uint8_t i;
               uint8_t *tmpbuf;
-              /*
-              for (i = 0; i < uart_mod_bufcnt; i++) {
-                USART0_send(*(uart_mod_buf+i));
-              }
-              */
+              uint8_t tmpbufcnt;
 
-              tmpbuf = (uint8_t *)sys_malloc(uart_mod_bufcnt);
-              memcpy(tmpbuf, uart_mod_buf, uart_mod_bufcnt);
-              sys_post(DFLT_APP_ID1, MSG_RFID_RESPONSE, uart_mod_bufcnt, tmpbuf, SOS_MSG_RELEASE);
+              tmpbufcnt = uart_mod_bufcnt;
+              tmpbuf = (uint8_t *)sys_malloc(tmpbufcnt);
+              memcpy(tmpbuf, uart_mod_buf, tmpbufcnt);
+              sys_post(DFLT_APP_ID1, MSG_RFID_RESPONSE, tmpbufcnt, tmpbuf, SOS_MSG_RELEASE);
               uart_mod_bufcnt = 0;
               sys_led(LED_YELLOW_TOGGLE);
               break;
@@ -168,7 +164,7 @@ SIGNAL(SIG_USART1_RECV) {
   if (uart_mod_bufcnt >= BUFSIZE) {
     /* The buffer is full, we should send the message immediately */
     ker_timer_start(KER_UART_PID, UART_TID, 0);
-    uart_mod_bufcnt = 0;
+    //uart_mod_bufcnt = 0;
     sys_led(LED_RED_TOGGLE);
   } else {
     /* Add the received byte to the buffer and reset the timer */
