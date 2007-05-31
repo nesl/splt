@@ -14,10 +14,9 @@
 
 static int8_t uart_mod_init();
 static void USART1_send(uint8_t data);
-//static void USART0_send(uint8_t data);
 
 /* GLOBAL VARIABLES - ooooo not goood*/
-uint8_t uart_mod_buf[BUFSIZE];
+uint8_t *uart_mod_buf;
 uint8_t uart_mod_bufcnt;
 
 /**
@@ -55,6 +54,7 @@ static int8_t uart_mod_msg_handler(void *state, Message *msg)
             {
                 s->pid = msg->did;
                 uart_mod_bufcnt = 0;
+                uart_mod_buf = (uint8_t *)sys_malloc(BUFSIZE);
                 DEBUG("Uart Start\n");
                 uart_mod_init();
                 ker_timer_init(KER_UART_PID, UART_TID, SLOW_TIMER_ONE_SHOT);
@@ -86,7 +86,7 @@ static int8_t uart_mod_msg_handler(void *state, Message *msg)
               memcpy(tmpbuf, uart_mod_buf, uart_mod_bufcnt);
               sys_post(DFLT_APP_ID1, MSG_RFID_RESPONSE, uart_mod_bufcnt, tmpbuf, SOS_MSG_RELEASE);
               uart_mod_bufcnt = 0;
-              sys_led(LED_RED_TOGGLE);
+              sys_led(LED_YELLOW_TOGGLE);
               break;
             }
         case MSG_RFID_COMMAND:
@@ -126,7 +126,6 @@ static int8_t uart_mod_msg_handler(void *state, Message *msg)
 #define BAUD_9600 47
 #define BAUD_115_2K 3
 
-#define USART0_BAUDRATE BAUD_9600
 #define USART1_BAUDRATE BAUD_9600
 
 
@@ -140,31 +139,10 @@ static void USART1_init(void)
   UBRR1H = (uint8_t) (USART1_BAUDRATE>>8);
   UBRR1L = (uint8_t) (USART1_BAUDRATE);
   UCSR1C = (1<<UCSZ1) | (1<<UCSZ0);
-  //	UCSR1A = (1 << U2X);
-  /**
-   ** Enable reciever and transmitter and their interrupts
-   ** transmit interrupt will be disabled until there is
-   ** packet to send.
-   **/
 
   UCSR1B = ((1 << RXCIE) | (1 << RXEN) | (1 << TXEN));
 
-  //UCSR0B = (1<<RXEN) | (1<<TXEN);
 }	
-
-/*
-static void USART0_init(void)
-{
-  UBRR0H = (uint8_t) (USART0_BAUDRATE>>8);
-  UBRR0L = (uint8_t) (USART0_BAUDRATE);
-  UCSR0C = (1<<UCSZ1) | (1<<UCSZ0);
-  //	UCSR0A = (1 << U2X);
-
-  UCSR0B = ((1 << RXCIE) | (1 << RXEN) | (1 << TXEN));
-
-  // UCSR0B = (1<<RXEN) | (1<<TXEN);
-}
-*/
 
 static bool uart_initialized = false;
 
@@ -172,7 +150,6 @@ static int8_t uart_mod_init() {
   HAS_CRITICAL_SECTION;
   if(uart_initialized == false) {
     ENTER_CRITICAL_SECTION();
-//    USART0_init();
     USART1_init();
     LEAVE_CRITICAL_SECTION();
     uart_initialized = true;
@@ -186,24 +163,13 @@ static void USART1_send(uint8_t data)
   UDR1 = data;
 }
 
-/*
-static void USART0_send(uint8_t data)
-{
-  while(!( UCSR0A & (1<<UDRE0)) );
-  UDR0 = data;
-}
-
-SIGNAL(SIG_USART0_RECV) {
-  USART1_send(UDR0);
-}
-*/
 
 SIGNAL(SIG_USART1_RECV) {
-  //USART0_send(UDR1);
   if (uart_mod_bufcnt >= BUFSIZE) {
     /* The buffer is full, we should send the message immediately */
     ker_timer_start(KER_UART_PID, UART_TID, 0);
     uart_mod_bufcnt = 0;
+    sys_led(LED_RED_TOGGLE);
   } else {
     /* Add the received byte to the buffer and reset the timer */
     *(uart_mod_buf+uart_mod_bufcnt) = UDR1;
