@@ -82,7 +82,7 @@ static int8_t uart_mod_msg_handler(void *state, Message *msg)
               }
               */
 
-              tmpbuf = (uint8_t *)malloc(uart_mod_bufcnt);
+              tmpbuf = (uint8_t *)sys_malloc(uart_mod_bufcnt);
               memcpy(tmpbuf, uart_mod_buf, uart_mod_bufcnt);
               sys_post(DFLT_APP_ID1, MSG_RFID_RESPONSE, uart_mod_bufcnt, tmpbuf, SOS_MSG_RELEASE);
               uart_mod_bufcnt = 0;
