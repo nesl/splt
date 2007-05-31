@@ -14,7 +14,7 @@
 
 static int8_t uart_mod_init();
 static void USART1_send(uint8_t data);
-static void USART0_send(uint8_t data);
+//static void USART0_send(uint8_t data);
 
 /* GLOBAL VARIABLES - ooooo not goood*/
 uint8_t uart_mod_buf[BUFSIZE];
@@ -74,11 +74,13 @@ static int8_t uart_mod_msg_handler(void *state, Message *msg)
             {
               /* Timer fired, should sent out the message to the uart0 now
                * */
-              uint8_t i;
+              //uint8_t i;
               uint8_t *tmpbuf;
+              /*
               for (i = 0; i < uart_mod_bufcnt; i++) {
                 USART0_send(*(uart_mod_buf+i));
               }
+              */
 
               tmpbuf = (uint8_t *)malloc(uart_mod_bufcnt);
               memcpy(tmpbuf, uart_mod_buf, uart_mod_bufcnt);
@@ -150,22 +152,19 @@ static void USART1_init(void)
   //UCSR0B = (1<<RXEN) | (1<<TXEN);
 }	
 
+/*
 static void USART0_init(void)
 {
   UBRR0H = (uint8_t) (USART0_BAUDRATE>>8);
   UBRR0L = (uint8_t) (USART0_BAUDRATE);
   UCSR0C = (1<<UCSZ1) | (1<<UCSZ0);
   //	UCSR0A = (1 << U2X);
-  /**
-   ** Enable reciever and transmitter and their interrupts
-   ** transmit interrupt will be disabled until there is
-   ** packet to send.
-   **/
 
   UCSR0B = ((1 << RXCIE) | (1 << RXEN) | (1 << TXEN));
 
   // UCSR0B = (1<<RXEN) | (1<<TXEN);
 }
+*/
 
 static bool uart_initialized = false;
 
@@ -179,7 +178,7 @@ static int8_t uart_mod_init() {
     uart_initialized = true;
   }
   return SOS_OK;
-}    
+} 
 
 static void USART1_send(uint8_t data)
 {
@@ -187,13 +186,13 @@ static void USART1_send(uint8_t data)
   UDR1 = data;
 }
 
+/*
 static void USART0_send(uint8_t data)
 {
   while(!( UCSR0A & (1<<UDRE0)) );
   UDR0 = data;
 }
 
-/*
 SIGNAL(SIG_USART0_RECV) {
   USART1_send(UDR0);
 }
@@ -211,7 +210,6 @@ SIGNAL(SIG_USART1_RECV) {
     uart_mod_bufcnt++;
     ker_timer_start(KER_UART_PID, UART_TID, UART_TIMER_INTERVAL);
   }
-  LED_DBG(LED_YELLOW_TOGGLE);
 }
 
 
