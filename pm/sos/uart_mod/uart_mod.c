@@ -74,14 +74,17 @@ static int8_t uart_mod_msg_handler(void *state, Message *msg)
             {
               /* Timer fired, should sent out the message to the uart0 now
                * */
+              HAS_CRITICAL_SECTION;
               uint8_t *tmpbuf;
               uint8_t tmpbufcnt;
 
+              ENTER_CRITICAL_SECTION();
               tmpbufcnt = uart_mod_bufcnt;
               tmpbuf = (uint8_t *)sys_malloc(tmpbufcnt);
               memcpy(tmpbuf, uart_mod_buf, tmpbufcnt);
               sys_post(DFLT_APP_ID1, MSG_RFID_RESPONSE, tmpbufcnt, tmpbuf, SOS_MSG_RELEASE);
               uart_mod_bufcnt = 0;
+              LEAVE_CRITICAL_SECTION();
               sys_led(LED_YELLOW_TOGGLE);
               break;
             }
