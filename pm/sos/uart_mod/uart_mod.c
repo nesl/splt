@@ -7,7 +7,7 @@
 
 #define UART_TIMER_INTERVAL	32L
 #define UART_TID               0
-#define BUFSIZE             25
+#define BUFSIZE             64
 
 #define MSG_RFID_COMMAND (MOD_MSG_START+2)
 #define MSG_RFID_RESPONSE (MOD_MSG_START+3)
@@ -18,6 +18,7 @@ static void USART1_send(uint8_t data);
 /* GLOBAL VARIABLES - ooooo not goood*/
 uint8_t *uart_mod_buf;
 uint8_t uart_mod_bufcnt;
+uint8_t uart_mod_bufoverflow;
 
 /**
  * Module can define its own state
@@ -54,6 +55,7 @@ static int8_t uart_mod_msg_handler(void *state, Message *msg)
             {
                 s->pid = msg->did;
                 uart_mod_bufcnt = 0;
+                uart_mod_bufoverflow = 0;
                 uart_mod_buf = (uint8_t *)sys_malloc(BUFSIZE);
                 DEBUG("Uart Start\n");
                 uart_mod_init();
@@ -84,6 +86,7 @@ static int8_t uart_mod_msg_handler(void *state, Message *msg)
               memcpy(tmpbuf, uart_mod_buf, tmpbufcnt);
               sys_post(DFLT_APP_ID1, MSG_RFID_RESPONSE, tmpbufcnt, tmpbuf, SOS_MSG_RELEASE);
               uart_mod_bufcnt = 0;
+              uart_mod_bufoverflow = 0;
               LEAVE_CRITICAL_SECTION();
               sys_led(LED_YELLOW_TOGGLE);
               break;
@@ -125,7 +128,7 @@ static int8_t uart_mod_msg_handler(void *state, Message *msg)
 #define BAUD_9600 47
 #define BAUD_115_2K 3
 
-#define USART1_BAUDRATE BAUD_9600
+#define USART1_BAUDRATE BAUD_115_2K
 
 
 /**
@@ -166,9 +169,12 @@ static void USART1_send(uint8_t data)
 SIGNAL(SIG_USART1_RECV) {
   if (uart_mod_bufcnt >= BUFSIZE) {
     /* The buffer is full, we should send the message immediately */
-    ker_timer_start(KER_UART_PID, UART_TID, 0);
-    //uart_mod_bufcnt = 0;
-    sys_led(LED_RED_TOGGLE);
+    if (!uart_mod_bufoverflow) {
+      //sys_post(KER_UART_PID, MSG_TIMER_TIMEOUT, 0, 0, 0);
+      uart_mod_bufoverflow = 1;
+      sys_led(LED_RED_TOGGLE);
+    }
+      ker_timer_start(KER_UART_PID, UART_TID, UART_TIMER_INTERVAL);
   } else {
     /* Add the received byte to the buffer and reset the timer */
     *(uart_mod_buf+uart_mod_bufcnt) = UDR1;
