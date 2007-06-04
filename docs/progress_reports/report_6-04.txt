@@ -28,4 +28,11 @@ Next Week
 hours.
 - Complete a deployment with two motes first
 - Then change the code to use both UART0 and UART1 for the deployment
-- 
+
+SOS App
+Last week
+- Started writing the sos app to put together everything
+
+This week
+- Finish debugging the sos app and then do the actual deployment
+
