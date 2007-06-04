@@ -1,0 +1,15 @@
+Gumstix+Backend
+Last Week
+- Almost completed the implementation of back-end application
+- First deployment that receives RFID TAG IDs and sends them to the sensorbase has been conducted under single-hop scenario.  
+This week
+- Do the last deployment and debug it
+
+RFID
+Last Week
+- RFID motes has been completed so we can conduct the RFID mote deployment
+
+This Week
+- Deploy multiple RFID receivers and conduct the last deployment
+- See the effects on the long-term deployment and debug the SOS module
+
