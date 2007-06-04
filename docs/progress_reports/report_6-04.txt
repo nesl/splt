@@ -13,3 +13,19 @@ This Week
 - Deploy multiple RFID receivers and conduct the last deployment
 - See the effects on the long-term deployment and debug the SOS module
 
+PM/RFID
+Last Week
+- Implemented UART driver that reads raw bytes from RFID reader and PM
+- Driver is designed for asynchronous communication. When a packet is
+  received from the UART, the driver sends a packet to the application
+module
+- Interfaced mote with RFID reader and PM on UART1 successfully and received
+  RFID scan messages and PM measurements across the wireless link
+successfully.
+
+Next Week
+- Need hardware level debugging to find out why driver code crashes after a few
+hours.
+- Complete a deployment with two motes first
+- Then change the code to use both UART0 and UART1 for the deployment
+- 
