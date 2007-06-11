@@ -39,75 +39,86 @@ static int8_t splt_msg_handler(void *state, Message *msg)
   switch (msg->type){
   case MSG_INIT:
     {
-      sys_led(LED_RED_TOGGLE);
       s->counter = 0;
       s->hdr_size = SOS_CALL(s->get_hdr_size, get_hdr_size_proto);      
       sys_timer_start(SPLT_ONE_SHOT_TID, SPLT_TIMER_INTERVAL, TIMER_ONE_SHOT);
       break;
     }
+
   case MSG_TIMER_TIMEOUT:
     {
       MsgParam *param = (MsgParam*) (msg->data);
       switch (param->byte){
       case SPLT_ONE_SHOT_TID:
-	{
-	  // ask for data from power meter
-	  sys_post_value(SPLT_MOD_PID, MSG_PM_DATA_READY, s->counter++, 0);
-	  // ask for data from rfid reader
-	  sys_post_value(SPLT_MOD_PID, MSG_RF_DATA_READY, s->counter++, 0);
-
-	  // temporarily start another timer, not needed when drivers are working
-	  sys_timer_start(SPLT_REPEATING_TID, SPLT_TIMER_INTERVAL, TIMER_REPEAT);
-	  break;
-	}
+		{
+		  sys_led(LED_YELLOW_TOGGLE);
+		  // ask for data from power meter
+		  sys_post_value(SPLT_MOD_PID, MSG_PM_DATA_READY, s->counter++, 0);
+		  // ask for data from rfid reader
+		  sys_post_value(SPLT_MOD_PID, MSG_RF_DATA_READY, s->counter++, 0);
+		  
+		  // temporarily start another timer, not needed when drivers are working
+		  sys_timer_start(SPLT_REPEATING_TID, SPLT_TIMER_INTERVAL, TIMER_REPEAT);
+		  break;
+		}
       case SPLT_REPEATING_TID:
-	{
-	  sys_post_value(SPLT_MOD_PID, MSG_PM_DATA_READY, s->counter++, 0);
-	  sys_post_value(SPLT_MOD_PID, MSG_RF_DATA_READY, s->counter++, 0);
-	}
+		{
+		  if (sys_id() != SPLT_BASE_STATION_ADDRESS){
+			sys_led(LED_YELLOW_TOGGLE);
+			sys_post_value(SPLT_MOD_PID, MSG_PM_DATA_READY, s->counter++, 0);
+			//sys_post_value(SPLT_MOD_PID, MSG_RF_DATA_READY, s->counter++, 0);
+		  }
+		}
       default: 
-	{
-	  return -EINVAL;
-	}
+		{
+		  return -EINVAL;
+		}
       }
     }
+
   case MSG_PM_DATA_READY:
     {
+	  sys_led(LED_RED_TOGGLE);
       // send the received data
       send_msg(s, (MsgParam*)(msg->data), SPLT_TYPE_PMREADING);
       break;
     }
+
   case MSG_RF_DATA_READY:
     {
+	  sys_led(LED_RED_TOGGLE);
       // send the received data
       send_msg(s, (MsgParam*)(msg->data), SPLT_TYPE_RFREADING);
       // ask for more data from rfid reader
       
       break;
     }
+
   case MSG_TR_DATA_PKT:
     {
       SpltMsg *smsg;
       smsg = (SpltMsg*)(((uint8_t*)(msg->data)) + s->hdr_size);
       if (sys_id() == SPLT_BASE_STATION_ADDRESS){
-	uint8_t *payload;
-	uint8_t msg_len;
-	msg_len = msg->len;
-	payload = sys_msg_take_data(msg); 
-	sys_post_uart(SPLT_MOD_PID, msg->type, msg_len, 
-		      payload, SOS_MSG_RELEASE, BCAST_ADDRESS);
-	LED_DBG(LED_GREEN_TOGGLE);
-      }      
+		sys_led(LED_GREEN_TOGGLE);
+		uint8_t *payload;
+		uint8_t msg_len;
+		msg_len = msg->len;
+		payload = sys_msg_take_data(msg);
+		sys_post_uart(SPLT_MOD_PID, msg->type, msg_len,
+					  payload, SOS_MSG_RELEASE, BCAST_ADDRESS);
+      }
       break;
     }
+
   case MSG_FINAL:
     {
       break;
     }
+
   default:
     return -EINVAL;
   }
-
+  
   return SOS_OK;
 }
 

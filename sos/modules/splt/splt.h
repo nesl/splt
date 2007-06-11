@@ -4,7 +4,7 @@
 //! This can be made a compile time configuration
 #define SPLT_BASE_STATION_ADDRESS 1
 
-#define SPLT_MOD_PID DFLT_APP_ID0
+#define SPLT_MOD_PID            DFLT_APP_ID1
 #define SPLT_TIMER_INTERVAL	1024L
 #define SPLT_ONE_SHOT_TID       0
 #define SPLT_REPEATING_TID      1
