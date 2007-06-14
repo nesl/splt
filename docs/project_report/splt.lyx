@@ -1,0 +1,423 @@
+#LyX 1.4.4 created this file. For more info see http://www.lyx.org/
+\lyxformat 245
+\begin_document
+\begin_header
+\textclass IEEEtran
+\language english
+\inputencoding auto
+\fontscheme default
+\graphics default
+\paperfontsize default
+\spacing single
+\papersize default
+\use_geometry false
+\use_amsmath 1
+\cite_engine basic
+\use_bibtopic false
+\paperorientation portrait
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\defskip medskip
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Spotlight: Evaluating power consumption at an individual basis
+\end_layout
+
+\begin_layout Section
+Abstract
+\begin_inset LatexCommand \label{sec:Abstract}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We present an application that can monitor the electrical energy consumption
+ of an individual in an office setting with sharable and non-sharable appliances.
+ A sharable appliance is one that multiple personnel can use at the same
+ time like lights in a lab, television, etc.
+ A non-sharable appliance is one that only one person uses at a time like
+ microwave, coffee-maker, etc.
+ All non-sharable appliances are instrumented to consist of a power-meter
+ and a RFID reader.
+ The user carries a RFID tag which is read by the instrument when it is
+ in use by the user.
+ Each non-sharable appliance has a power meter and a defining border with
+ controlled entry and exit points.
+ Personnel entring and exiting the range are detected.
+ The power consumption is equally divided between the people sharing the
+ appliance.
+\end_layout
+
+\begin_layout Section
+Introduction
+\begin_inset LatexCommand \label{sec:Introduction}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Presently all consumption monitoring is at the granularity of when the energy
+ was used and where it was used.
+ This measurement profile is very coarse and there is no notion of who used
+ this energy.
+ As the energy cost increase, it is becoming important to monitor the consumptio
+n at a finer granularity like at the level of individuals.
+ This will allow organizations to optimize energy consumption in various
+ ways.
+ Employees can be assigned 
+\begin_inset Quotes eld
+\end_inset
+
+green
+\begin_inset Quotes erd
+\end_inset
+
+ points based on the amount of energy they consumption and can offer incentives
+ to decrease their consumption.
+ When this information is combined with the information of where and when,
+ organizations can better pinpoint areas of energy wastage and can optimize
+ the consumption in certain places.
+ 
+\end_layout
+
+\begin_layout Standard
+We will attempt a basic attempt at monitoring individual consumption profile
+ and try to offer some analysis at some of issues in solving this problem.
+ Our results show that it is possible to carry out such profiling at an
+ individual level with reasonable assumptions.
+ Using our results a more sophisticated and detailed application can be
+ constructed which would carry out such profiling for more appliances and
+ collected more data.
+ 
+\end_layout
+
+\begin_layout Standard
+This document is structured as follows.
+ Section 
+\begin_inset LatexCommand \ref{sec:App}
+
+\end_inset
+
+ describes our introductory application and some of its limitations.
+ ....
+ Section 
+\begin_inset LatexCommand \ref{sec:R-Algoriths}
+
+\end_inset
+
+ describes the R algorithms used to analyze the data to construct a consumption
+ profile of a user.
+ We offer some results in section 
+\begin_inset LatexCommand \ref{sec:Results}
+
+\end_inset
+
+.
+ Finally we detail some related work in section 
+\begin_inset LatexCommand \ref{sec:Related-Work}
+
+\end_inset
+
+ and conclude in section 
+\begin_inset LatexCommand \ref{sec:Conclusion}
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Section
+Application
+\begin_inset LatexCommand \label{sec:App}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We discuss our introductory application and some of the limitations of the
+ application.
+\end_layout
+
+\begin_layout Subsection
+Application Details
+\begin_inset LatexCommand \label{sub:Application-Details}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We had a number of constraints in developing our application.
+ We had only two power-meters are our disposal and we were short of the
+ number of appliances that we can use.
+ Therefore, we instrumented the coffee-maker and the soldering station in
+ our lab.
+ These two will serve as the non-sharable appliances as only one person
+ can use it at any time.
+ Both consist of a RFID reader and a power-meter.
+ The reader sits on top of the appliance and is connected to a mote.
+ The power-meter monitors the energy flowing into the appliance and is also
+ connected to another mote.
+ Both appliances have two motes each.
+ 
+\end_layout
+
+\begin_layout Standard
+We monitor the lights in our lab as the sharable appliance.
+ We are unable to hook a power-meter to the lights fixture so we will estimate
+ the energy consumption of them.
+ The range of the lights appliance is defined to be the entire lab.
+ So anyone present in the lab is sharing its consumption.
+ The entry and exit points of the lab are the doors.
+ We established one RFID reader at each door.
+ This collects the RFID reading on people whenever they enter or exit the
+ lab.
+ Then using a algorithm on the backend, we will determine when a person
+ is entering or leaving the lab.
+ Our lab has two doors so two RFID readers were required to instrument the
+ doors.
+ 
+\end_layout
+
+\begin_layout Standard
+The motes on the appliances collect the RFID or power-meter data and transmit
+ to the basestation.
+ Since the deployment for this lab spanned a vast area, we had to use an
+ additional mote to serve as a hop for all the motes to be able to send
+ data to the basestation.
+ We used an additional mote to serve as a basestation.
+ The basestation is connected to a gumstix which sends all the collected
+ data to sensorbase using an ethernet internet connection.
+\end_layout
+
+\begin_layout Standard
+We use sensorbase to aggregate all our data.
+ The data is sent to it through the basestation.
+ Then we can probe sensorbase for the collected data on the backend where
+ we run different algorithms written in R to compute the individual power
+ consumption.
+ The total amount of hardware used in the application is eight motes, two
+ power-meters, four RFID readers, one gumstix and numerous RFID tags.
+ 
+\end_layout
+
+\begin_layout Subsection
+Limitations
+\begin_inset LatexCommand \label{sub:Limitations}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+There are certain limitations with our application which will have to be
+ addressed for it to be used successfully in a real world deployment.
+ One fundamental limitation steams from our divisioin of appliances into
+ sharable and non-sharable.
+ There are certain appliances that do not necessarily fall in either category.
+ A good example of this is servers and computers.
+ Servers have a complicated consumption profile which to a certain extend
+ tends to be independent of the usage profile of it.
+ In order to properly evaluate the individual profile for a server, we need
+ to monitor a log of which user is actively running tasks on the system.
+ Presently, we are monitoring the printer by assuming that the user performing
+ the print job will pick up the work shortly afterwards.
+ If another person initiates another print job before the previous one is
+ picked up, the profile will be incorrect.
+ One way of improving this is to use print logs to determine the profile
+ instead of using RFID tags.
+ The printer in our lab does not maintain any such information but in a
+ general setting, it will be possible to maintain such profiling.
+ 
+\end_layout
+
+\begin_layout Standard
+Presently, there is no policing in the usage profiling.
+ Anyone can use the appliance and as long as they do not register their
+ RFID tags, it will not be counted against them.
+ Some ways of improving this is to instrument the appliances such that a
+ RFID registery is required in order to activate them.
+ This would require significant effort and is beyond the scope of this document
+ but easily implemented in a general setting.
+ Finally, we did not instrument the light fixtures in out lab to retrive
+ consumption data.
+ We simply profile the the details of the lab occupancy to model our sharable
+ appliances.
+ 
+\end_layout
+
+\begin_layout Section
+R Algoriths 
+\begin_inset LatexCommand \label{sec:R-Algoriths}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We constructed two usage profile in our application: one for the sharable
+ appliances and one for the non-sharable.
+ 
+\end_layout
+
+\begin_layout Subsection
+Sharable Appliances
+\end_layout
+
+\begin_layout Standard
+For the sharable appliances, we need to construct an occupancy profile of
+ the users.
+ We do this by collecting RFID tag information on when the users enter and
+ leave the lab.
+ We assume that the user deligently tag him/herself when entering and leaving
+ the lab.
+ Our data collection profile is robust enough to ensure no lost information.
+ We start by assuming that no user is present in the lab.
+ Then whenever a RFID tag is received, it is believed that the user has
+ entered the lab and on the next occurance of the tag, it is believed that
+ the user has left the lab.
+ Whenever anyone enters or leaves the lab, we calculate the additional power
+ consumed by each user present in the lab during that duration and add it
+ to his/her total power consumption.
+ 
+\end_layout
+
+\begin_layout Subsection
+Non-sharable Appliances
+\end_layout
+
+\begin_layout Standard
+For non-sharable appliances, we simply detect usage by RFID readings.
+ Whenever we get a RFID reading on a particular appliance, we determine
+ that the appliance is used between a given interval before and after the
+ reading.
+ We will detect any appliance usage in this interval and allocate that consumpti
+on to the particular RFID reading.
+ 
+\end_layout
+
+\begin_layout Standard
+Before we can determine an appliance use, we need to filter out the transients
+ in the usage profile.
+ From the data collected from the power-meter, we have power readings of
+ the appliance at regular intervals.
+ We smooth out these readings by applying a exponentially weighted moving
+ average filter to the stream.
+ The equation of the filter is the following:
+\end_layout
+
+\begin_layout Standard
+\align center
+\begin_inset Formula $y(n)=\alpha x(n)+(1-\alpha)y(n-1)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\alpha$
+\end_inset
+
+ has to be smaller than 1.
+ Picking a big value for 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ emphasis the actual stream over the history and a smaller value emphasis
+ the history over stream.
+ Therefore, a small value will filter out more transients from the streams.
+ We pick a modest value of 0.1 for removing the transients from our data
+ stream.
+ We will be using this filtered stream for all our data processing in this
+ section.
+\end_layout
+
+\begin_layout Standard
+We use a much smaller value of 0.001 for calculating the idle power of the
+ device.
+ This value will filter out most transients from the stream to the point
+ that even when the device is in use, it will still have only a slight change
+ in the filtered stream.
+ Averaging the stream computes roughly the idle power of the device.
+ 
+\end_layout
+
+\begin_layout Standard
+After we have computed the idle power and the filtered stream, we are ready
+ to locate the usages of the devices based on the RFID readings.
+ Whenever we detect a tag, we look for the usages on the filtered stream.
+ We define the device to be in use whenever the filtered stream is outputing
+ a value greater than some threshold determines from the idle power.
+ We look for the closest such edge in our filtered stream to find the usage.
+ We locate the low-to-high and the high-to-low edge of the usage, integrate
+ it and add it to the user's consumption profile.
+ 
+\end_layout
+
+\begin_layout Section
+Results 
+\begin_inset LatexCommand \label{sec:Results}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Related Work 
+\begin_inset LatexCommand \label{sec:Related-Work}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Conclusion 
+\begin_inset LatexCommand \label{sec:Conclusion}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In conclusion, we have shown that energy consumption monitoring at a finer
+ granularity of individuals is possible.
+ We have carried out such profiling by dividing the commonly found appliances
+ into two different classes and described our algorithms for profiling such
+ devices.
+ Most commonly found appliances fit in this classes of devices while some
+ don't.
+ An interesting area of future work will be identifying in further detail
+ other appliances that do not fall in either category and developing profiling
+ algorithms for them and also addressing some of the limitations of our
+ application discussed in section 
+\begin_inset LatexCommand \ref{sub:Limitations}
+
+\end_inset
+
+.
+\end_layout
+
+\end_body
+\end_document
