@@ -1,0 +1,295 @@
+#LyX 1.4.4 created this file. For more info see http://www.lyx.org/
+\lyxformat 245
+\begin_document
+\begin_header
+\textclass IEEEtran
+\language english
+\inputencoding auto
+\fontscheme times
+\graphics default
+\float_placement h
+\paperfontsize 10
+\spacing single
+\papersize letterpaper
+\use_geometry true
+\use_amsmath 1
+\cite_engine basic
+\use_bibtopic false
+\paperorientation portrait
+\leftmargin 0.75in
+\topmargin 1in
+\rightmargin 0.75in
+\bottommargin 1in
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\defskip medskip
+\quotes_language english
+\papercolumns 1
+\papersides 2
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\end_header
+
+\begin_body
+
+\begin_layout Section
+Power Measurement
+\end_layout
+
+\begin_layout Subsection
+Power Meter Selection
+\end_layout
+
+\begin_layout Standard
+Two units for measuring power consumption have been studied - Veris Hawkeye
+ 8035/8036 and Watts Up Pro.
+ 
+\end_layout
+
+\begin_layout Standard
+The Veris H8035/8036 device shown in Figure 
+\begin_inset LatexCommand \ref{fig:Veris-Hawkeye-8035}
+
+\end_inset
+
+ is a CT based power meter with an RS-485 interface featuring a MODBUS Networked
+ kW/kWH Transducer.
+ The H8035 and H8036, three-phase power transducers monitor energy parameters
+ from Aggregate kW (demand) and kWH (consumption) to power factor per phase.
+ The H8035/36 Series combines a microprocessor based power meter and split-core
+ instrument grade current transformers (CTs) in a single unit.
+ The meter has the ability to sense upto 100 Amps of current at the maximum
+ rate of the RS-485 interface.
+ 
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Standard
+\align center
+\begin_inset Graphics
+	filename veris8036.png
+	lyxscale 25
+	height 1.5in
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Caption
+\begin_inset LatexCommand \label{fig:Veris-Hawkeye-8035}
+
+\end_inset
+
+Veris Hawkeye 8035
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The Watts Up Pro device shown in Figure 
+\begin_inset LatexCommand \ref{fig:Watts-Up?-Pro}
+
+\end_inset
+
+ is a consumer friendly power meter that has a USB interface and Windows
+ based software to read the meter.
+ One simply requires to plug any device into Watts up?, and the meter instantane
+ously displays the wattage being used.
+ The meter can be used in internal logging mode where it records all the
+ data into non-volatile memory.
+ The sample rate is user selectable or can be automatically set (resolution
+ decreases over time as memory fills up).
+ In addition, the meter is capable of real time external logging to a host
+ interfaced with the meter.
+ The communication protocol is well documented, including a list of commands
+ required for real-time logging.
+ The maximum sampling rate of the Watts Up? Pro is once per second.
+ 
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Standard
+\align center
+\begin_inset Graphics
+	filename wupro.png
+	lyxscale 25
+	height 1.5in
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Caption
+\noindent
+\begin_inset LatexCommand \label{fig:Watts-Up?-Pro}
+
+\end_inset
+
+Watts Up? Pro
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The device chosen for current implementation of Spotlight is the Watts Up?
+ Pro.
+ There are a number of reasons for this.
+ Firstly, the Veris device needs to strip off the cable cladding to get
+ the clamps on the wires whereas the Watts Up? is plug and play.
+ Using the Veris device leads to installation hassles especially when one
+ would like to characterize energy consumption of consumer end appliances.
+ Second, the Veris device does not have any display, whereas the Watts Up
+ has a simple built-in LCD display.
+ Usage of the LCD reduced development time of the communication protocol
+ and drivers considerably.
+ Thirdly, the Veris device has an RS485 interface for which an independent
+ hardware interface circuit would hvae to be built and tested before any
+ other development could begin.
+ The interface for Watts Up? is USB, with PC software provided by the manufactur
+er.
+ This feature expedited the development of the project since it was possible
+ to parallelize various parts of the implementation.
+ Also, no extra hardware interface circuit would be required, further reducing
+ development time.
+ In addition, the protocol and code for the Watts Up Pro are both available
+ from the manufacturer.
+ Last but not the least, the Veris device is over 6 times more expensive
+ than the Watts Up? Pro.
+\end_layout
+
+\begin_layout Subsection
+Hardware Interfacing
+\end_layout
+
+\begin_layout Standard
+The only initial concern in using the Watts Up Pro for Spotlight was the
+ USB interface.
+ The USB interface poses a problem for the project since the mote being
+ used, the MicaZ, does not have a USB interface.
+ To circumvent this, one idea was to use a mote with a USB host interface,
+ the iMote2.
+ However, a quick review revealed that the pins exposed for the USB host
+ are present on the advanced 40-pin connector but to use it would require
+ to build a small custom board.
+ To avoid the delay associated with the custom board design, we propose
+ to use a higher-powered Stargate2 microserver as a USB to RS232 interface.
+\end_layout
+
+\begin_layout Standard
+The Stargate 2 would connect its USB Host port to the Watts Up Pro and use
+ the UART on the mote connector send out power measurement readings to the
+ attached mote.
+\end_layout
+
+\begin_layout Standard
+- Studied the Stargate2 hardware to figure out the hardware interfacing
+ to the WUPro's USB port.
+ - Tested three of the Stargate2 boards we have and they all stop at the
+ login prompt and dont go any further.
+ - Downloaded the image files of the SG2 but was unable to follow instructions
+ to reflash the boards - Considered using the Linksys NSLU2 network storage
+ device (also being used in the NetCar project) for providing the USB host
+ connectivity.
+ The mote would be connected to the other USB port of the same device through
+ a USB programmer - Received four WUPro devices.
+ Discovered that the USB interface was using a common RS232 to USB FTDI
+ chip, the FT232RL.
+ - It seems possible to bypass this whole USB host problem by picking up
+ the UART signal directly from the board.
+ - The UART levels on the WUPro are 3.3V LVTTL levels and thus it is straightforw
+ard to interface to a Mote later.
+ - To test the UART interface with a PC, the UART interface was connected
+ to a BlueSmirf RS232 to Bluetooth radio module.
+ - The power for the BlueSmirf module was initially derived from the WUPro
+ itself, but realized that the WUPro could not source enough current and
+ was constantly resetting.
+ Thus, we used an external adjustable power supply being fed AC mains power
+ from the WUPro to power the BlueSmirf.
+ - Using a host with a Bluetooth interface, we wanted to test the serial
+ interface to the WUPro and when we did not get anything on the terminal
+ screen, we decided to use an oscope to debug the issue.
+ - Connecting the oscope ground to the power supply ground caused a small
+ explosion and the victim was the WUPro.
+ A number of small components on the WUPro have busted.
+\end_layout
+
+\begin_layout Subsection
+Software Interfacing
+\end_layout
+
+\begin_layout Section
+Related Work
+\end_layout
+
+\begin_layout Subsection
+Demand Response Enabling Technology Development - UC Berkeley 
+\end_layout
+
+\begin_layout Standard
+Demand Response refers to the mechanism by which utility providers can reduce
+ the demand for electricity during shortages by setting variable rates based
+ on the load with a mechanism for customers to respond to those rates.
+ This means that if a customer can defer usage of an appliance to a time
+ at which the rate is lower, it would result in a lower cost to the customer
+ as well as the utility provider.
+ New DR-enabled thermostats are proposed that have metering, communications
+ and automatic response mechanisms.
+ The new thermostats require the homeowner to program the system once to
+ express her preferences for cost versus comfort.
+ In addition, appliances include price indicators as familiar red-orange-green
+ LEDs to indicate the current price scenario.
+ The Berkeley system is deemed fairly close to our measurement of electrical
+ energy, but is coarser grained.
+ Their system is ?active? in its use of a feedback mechanism, whereas our
+ system is designed to be a ?passive? profiling tool for an individual or
+ a household.
+ The Berkeley system requires communication with the utility provider and
+ the provider has access to the energy consumption profile at all times.
+ This may lead to privacy concerns.
+ 
+\end_layout
+
+\begin_layout Subsection
+Samsung Electronic Company's Smart Building 
+\end_layout
+
+\begin_layout Standard
+Energy measurement and control system based upon occupancy is not just being
+ explored in research but is also being adopted in real life.
+ The new building at Samsung Electronic Company Digital Media R&D center,
+ opened in Sep.
+ 2005, is equipped with an RFID based systems for air conditioning and light
+ level control.
+ Each employee and visitor is required to carry an RFID tag.
+ The RFID receivers and back-end systems identify the occupancy level in
+ a room based on which the building controls its air conditioning and lighting
+ systems.
+ This system also helps the authorities track visitors? movements and avoid
+ information theft.
+ 
+\end_layout
+
+\begin_layout Standard
+In this work, we see that they measure and control the energy consumption
+ of sharable electronic appliances.
+ The ideas that we would like to explore in this project are similar but
+ extend to all appliances that a person may come across.
+ 
+\end_layout
+
+\end_body
+\end_document
