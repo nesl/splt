@@ -1,0 +1,445 @@
+#LyX 1.4.4 created this file. For more info see http://www.lyx.org/
+\lyxformat 245
+\begin_document
+\begin_header
+\textclass IEEEtran
+\language english
+\inputencoding auto
+\fontscheme times
+\graphics default
+\float_placement h
+\paperfontsize 10
+\spacing single
+\papersize letterpaper
+\use_geometry true
+\use_amsmath 1
+\cite_engine basic
+\use_bibtopic false
+\paperorientation portrait
+\leftmargin 0.75in
+\topmargin 1in
+\rightmargin 0.75in
+\bottommargin 1in
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\defskip medskip
+\quotes_language english
+\papercolumns 1
+\papersides 2
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\end_header
+
+\begin_body
+
+\begin_layout Section
+Final deployment and Project requirement
+\end_layout
+
+\begin_layout Subsection
+Deployment Scenario
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement h
+wide false
+sideways false
+status open
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename finaldeployment.png
+	lyxscale 25
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Caption
+\begin_inset LatexCommand \label{fig:Final-deployment-topology}
+
+\end_inset
+
+Final deployment topology
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Figure 
+\begin_inset LatexCommand \ref{fig:Final-deployment-topology}
+
+\end_inset
+
+ describes our deployment of SpotLight system in NESL lab.
+ There are two PM motes on the printer and the coffee machine which send
+ power measurements to a tree routing relay node every one second.
+ Also we placed RFID motes at the backdoor, the printer, and the coffee
+ machine where they read TAG IDs as RFID TAGs are within the range.
+ As soon as a RFID TAG is detected, they forward it to the tree routing
+ relay so that it can reach the base node.
+ The base node just sends data packets back to the backend gumstix on which
+ SOS messages are translated and slogged as described in 
+\begin_inset LatexCommand \ref{section}
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+In sum, we used 8 MicaZ motes, 1 for the base node, 2 for the relay nodes,
+ 3 for the RFID motes, and 2 for the PM motes.
+ For the backend, we used the gumstix.
+ And the current deployment shows that the maximum hop count is two.
+ As described in 
+\begin_inset LatexCommand \ref{section}
+
+\end_inset
+
+, the backend sends data to the sensor base on the fly as well.
+ And of course, more than two sensing modalities RFID and PowerMeasurement(curre
+nt, watts, voltage) are involved.
+ 
+\end_layout
+
+\begin_layout Standard
+Some interesting observations are found during 3 weeks intermittent deployment.
+ First, the sensorbase returns 
+\begin_inset Quotes eld
+\end_inset
+
+Fatal Error
+\begin_inset Quotes erd
+\end_inset
+
+ when the number of rows of a table exceeds 100s of thousands which will
+ be reported.
+ ??
+\end_layout
+
+\begin_layout Section
+BackEnd
+\end_layout
+
+\begin_layout Subsection
+Hardware Architecture
+\end_layout
+
+\begin_layout Standard
+To meet the second project requirement, we decided to set up a backend side
+ with a gumstix.
+ The gumstix is a finger size, full-function Linux computer which can expand
+ its functionality by stacking various expansion boards.
+ Firstly, we stacked NetCFstix to support ethernet connectivity which enables
+ the backend to send sensor readings to the sensorbase on the fly.
+ For interfacing the backend and the infrastructure sensor nodes, we used
+ BreakoutGs which provides most of all pinouts of the gumstix.
+ The base sensor node is connected to the gumstix over the serial line through
+ the BreakoutGS board.
+ 
+\end_layout
+
+\begin_layout Standard
+By introducing a way small size of the backbone computer, we are envisioning
+ that the SpotLight system will be embedded to various environment such
+ as smart home, smart building, and smart office environments as illustrated
+ in 
+\begin_inset LatexCommand \ref{Section}
+
+\end_inset
+
+.
+ Advantages of the backbone system are obvious.
+ It doesn't require a big size server or a desktop computer, but provides
+ relatively high computing power (Intel PXA255 400Mhz) which allows us to
+ do more sophisticated data pre-processing than the mote class device can
+ do.
+ On one hand, it provides the SSH service and has the Internet connectivity,
+ remote maintenance is also possible through the Internet connection.
+ 
+\end_layout
+
+\begin_layout Subsection
+Software Architecture
+\end_layout
+
+\begin_layout Standard
+On the backend, we run two applications, which are the sos-server and the
+ backend application.
+ The sos-server basically opens a serial port to receive and send messages
+ from/to a base sensor node.
+ It also opens a network socket on the localhost so that other applications
+ can communicate with the base node.
+ 
+\end_layout
+
+\begin_layout Standard
+On the other hand, the backend application, which consists of several python
+ modules such as pySOSmodule, PowerMeasurementParser, RFIDParser, XMLmodule
+ and spltSlogmodule, translates data from the infrastructure nodes and sends
+ the results to the sensorbase.
+ The pySOS provides several APIs for the SOSmessage communication.
+ One can initialize pySOS module using 
+\begin_inset Quotes eld
+\end_inset
+
+pysos.sossrv()
+\begin_inset Quotes erd
+\end_inset
+
+ which makes a socket connection to the sos-server through the localhost.
+ Then 
+\begin_inset Quotes eld
+\end_inset
+
+pysos.post()
+\begin_inset Quotes erd
+\end_inset
+
+ can be used for posting SOSmessages and 
+\begin_inset Quotes eld
+\end_inset
+
+pysos.listen()
+\begin_inset Quotes erd
+\end_inset
+
+ allows us to receive SOSmessages.
+ More detailed tutorial can be found at 
+\begin_inset LatexCommand \ref{pySOS}
+
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+Since PowerMeasurement and RFID motes have their own protocol, we needed
+ to write translator modules which are PMparser and RFIDparser, respectively.
+ The reason why we use the backend for translating those information is
+ because they are strings and string processes are not well supported by
+ SOS.
+ 
+\end_layout
+
+\begin_layout Standard
+The protocol for the Watts Up Pro is an ASCII string 
+\begin_inset Quotes eld
+\end_inset
+
+#d,-,18,<W>,<V>,<A>,...;
+\begin_inset Quotes erd
+\end_inset
+
+ which implies (Command, NumberofArgument, Watt, Voltage, Ampere, ...).
+ PM mote forwards its powermeasurement reading with its network ID every
+ one second.
+ PMparser basically translates those two information into those 5 tuples
+ (TimeStamp, ApplianceID, Ampere, Watt, Voltage).
+ 
+\end_layout
+
+\begin_layout Standard
+The protocol of the RFID reader is simpler than that of the PM.
+ The packet from the RFID motes consists of their network address and TAG
+ ID reading.
+ Similarly, it translates these information into three tuples (TimeStamp,
+ ApplianceID, TAG ID).
+ 
+\end_layout
+
+\begin_layout Standard
+After both of translator modules make the data in appropriate form, XML
+ module generates appropriate sensorbase XML scripts from the data which
+ will eventually be sent to the sensorbase.
+ Then it puts these XML packets into a queue where spltSlog module, which
+ allows us to slog on the fly, grabs the data and sends it to the sensorbase.
+ Once all the tuples are stored at the sensorbase, it can be used for off-line
+ analysis as described in 
+\begin_inset LatexCommand \ref{section}
+
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Section
+RFID Mote
+\end_layout
+
+\begin_layout Subsection
+RFID Reader Hardware 
+\end_layout
+
+\begin_layout Standard
+Since we found SkyeTek RFID reader in the backroom, we chose it.
+ There were two choices, SkyeTek M1 and SkyeTek M1-mini.
+ The former one is a bigger one and the latter one is smaller.
+ One key difference between SkyeTek M1 and SkyeTek M1-mini is that the mini
+ accepts variable Vcc(From 1.8V to 5V) which allows a MicaZ mote to supply
+ power.
+ 
+\end_layout
+
+\begin_layout Standard
+SkyeTek RFID reader supports various TAG reading modes as well as other
+ functions such as writing and/or selecting TAGs.
+ And it is compatible to ISO15693 passive RFID TAG families such as Tag-It
+ HF-I(Texas Instrument), I-Code SLI(Phillips), my-d SRF55VxxP(Infineon),
+ and LRI512(ST-Microelectronics), which means there's no concern about TAG
+ compatibility.
+ 
+\end_layout
+
+\begin_layout Standard
+Since SkyeTek M1-mini supports 3.3V TTL level UART interface, it can be directly
+ connected to a MicaZ mote.
+ A small custom board is used to connect the (Vcc, Rx, Tx, GND) signals
+ to the appropriate pins on the 51-pin mote connector.
+ 
+\end_layout
+
+\begin_layout Subsection
+Software Interfacing
+\end_layout
+
+\begin_layout Standard
+The only concern for the RFID mote was the same as for the Watts Up pro.
+ It also requires RAW uart communication.
+ To cope with it, we used the same RAW UART communication module for the
+ RFID mote as for the Watts Up Pro mote.
+\end_layout
+
+\begin_layout Standard
+Although the RFID reader supports various reading modes, for our system
+ we only need the continuous reading mode where the RFID reader sends TAG
+ ID readings when TAGs are within the range, otherwise no data signal is
+ generated.
+ The RFID mote consists of four SOS modules called 
+\begin_inset Quotes eld
+\end_inset
+
+Neighbor
+\begin_inset Quotes erd
+\end_inset
+
+, 
+\begin_inset Quotes eld
+\end_inset
+
+Tree Routing
+\begin_inset Quotes erd
+\end_inset
+
+, 
+\begin_inset Quotes eld
+\end_inset
+
+UART Module
+\begin_inset Quotes erd
+\end_inset
+
+, and 
+\begin_inset Quotes eld
+\end_inset
+
+RFID Module
+\begin_inset Quotes erd
+\end_inset
+
+.
+ The 
+\begin_inset Quotes eld
+\end_inset
+
+Neighbor
+\begin_inset Quotes erd
+\end_inset
+
+ and 
+\begin_inset Quotes eld
+\end_inset
+
+Tree Routing
+\begin_inset Quotes erd
+\end_inset
+
+ modules are used to enable multi-hop communication because our SpotLight
+ system aims to be extensible to environment where the multi-hop communication
+ is needed.
+ As shown in section 
+\begin_inset Quotes eld
+\end_inset
+
+
+\begin_inset Quotes erd
+\end_inset
+
+, UART module is used to strip headers of standard SOS message and make
+ them RAW uart communication packets and vice versa.
+ In other words, UART module accepts and strips UART send message and transmits
+ RAW UART data to USARTx of the MicaZ mote.
+ RFID module is the main software interface for the RFID module.
+ When the module starts, it initializes the SkyeTek M1-mini RFID reader
+ and set it into the 
+\begin_inset Quotes eld
+\end_inset
+
+Continuous Reading mode.
+\begin_inset Quotes erd
+\end_inset
+
+ As soon as it receives any TAG ID readings, it forwards the data to the
+ 
+\begin_inset Quotes eld
+\end_inset
+
+Tree Routing module.
+\begin_inset Quotes erd
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename rfidsw.jpg
+	lyxscale 25
+	keepAspectRatio
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Caption
+\begin_inset LatexCommand \label{fig:RFID-mote-SOS}
+
+\end_inset
+
+fig:RFID mote SOS S/W
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document
