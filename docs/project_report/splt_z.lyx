@@ -2,7 +2,7 @@
 \lyxformat 245
 \begin_document
 \begin_header
-\textclass article
+\textclass IEEEtran
 \language english
 \inputencoding auto
 \fontscheme times

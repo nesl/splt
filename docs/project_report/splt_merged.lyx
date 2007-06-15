@@ -261,6 +261,11 @@ Presently, there is no policing in the usage profiling.
 
 \begin_layout Section
 Power Measurement
+\begin_inset LatexCommand \label{sec:Power-Measurement}
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Subsection
@@ -466,7 +471,7 @@ status collapsed
 \begin_inset Graphics
 	filename swinterface_z.png
 	lyxscale 25
-	width 2in
+	width 60col%
 
 \end_inset
 
@@ -503,14 +508,14 @@ Figure
 \begin_inset Float figure
 wide false
 sideways false
-status open
+status collapsed
 
 \begin_layout Standard
 \align center
 \begin_inset Graphics
 	filename ifd_z.png
 	lyxscale 25
-	height 0.4in
+	width 100col%
 
 \end_inset
 
@@ -602,159 +607,8 @@ An important issue that comes up with very short IFD at high baud rates
  its purpose well.
 \end_layout
 
-\begin_layout Section
-Related Work
-\end_layout
-
-\begin_layout Subsection
-Demand Response Enabling Technology Development - UC Berkeley 
-\end_layout
-
 \begin_layout Standard
-Demand Response refers to the mechanism by which utility providers can reduce
- the demand for electricity during shortages by setting variable rates based
- on the load with a mechanism for customers to respond to those rates.
- This means that if a customer can defer usage of an appliance to a time
- at which the rate is lower, it would result in a lower cost to the customer
- as well as the utility provider.
- New DR-enabled thermostats are proposed that have metering, communications
- and automatic response mechanisms.
- The new thermostats require the homeowner to program the system once to
- express her preferences for cost versus comfort.
- In addition, appliances include price indicators as familiar red-orange-green
- LEDs to indicate the current price scenario.
- The Berkeley system is deemed fairly close to our measurement of electrical
- energy, but is coarser grained.
- Their system is ?active? in its use of a feedback mechanism, whereas our
- system is designed to be a ?passive? profiling tool for an individual or
- a household.
- The Berkeley system requires communication with the utility provider and
- the provider has access to the energy consumption profile at all times.
- This may lead to privacy concerns.
- 
-\end_layout
 
-\begin_layout Subsection
-Samsung Electronic Company's Smart Building 
-\end_layout
-
-\begin_layout Standard
-Energy measurement and control system based upon occupancy is not just being
- explored in research but is also being adopted in real life.
- The new building at Samsung Electronic Company Digital Media R&D center,
- opened in Sep.
- 2005, is equipped with an RFID based systems for air conditioning and light
- level control.
- Each employee and visitor is required to carry an RFID tag.
- The RFID receivers and back-end systems identify the occupancy level in
- a room based on which the building controls its air conditioning and lighting
- systems.
- This system also helps the authorities track visitors? movements and avoid
- information theft.
- 
-\end_layout
-
-\begin_layout Standard
-In this work, we see that they measure and control the energy consumption
- of sharable electronic appliances.
- The ideas that we would like to explore in this project are similar but
- extend to all appliances that a person may come across.
- 
-\end_layout
-
-\begin_layout Section
-Final deployment and Project requirement
-\end_layout
-
-\begin_layout Subsection
-Deployment Scenario
-\end_layout
-
-\begin_layout Standard
-\begin_inset Float figure
-placement h
-wide false
-sideways false
-status collapsed
-
-\begin_layout Standard
-\begin_inset Graphics
-	filename finaldeployment.png
-	lyxscale 25
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Caption
-\begin_inset LatexCommand \label{fig:Final-deployment-topology}
-
-\end_inset
-
-Final deployment topology
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Figure 
-\begin_inset LatexCommand \ref{fig:Final-deployment-topology}
-
-\end_inset
-
- describes our deployment of SpotLight system in the NESL.
- There are two PM motes on the printer and the coffee machine where PM motes
- send power measurement packets to tree routing relay nodes once per a second.
- Also we placed RFID motes at the backdoor, the printer, and the coffee
- machine where they read TAG IDs as RFID TAGs are within the range.
- As soon as a RFID TAG is detected, they forward it to the tree routing
- relay so that it can reach the base node.
- The base node just sends data packets back to the backend gumstix on which
- SOS messages are translated and slogged to the sensorbase as described
- in 
-\begin_inset LatexCommand \ref{section}
-
-\end_inset
-
- 
-\end_layout
-
-\begin_layout Standard
-In the sense of the project requirement, we used 8 MicaZ motes: 1 for the
- base node, 2 for the relay nodes, 3 for the RFID motes, and 2 for the PM
- motes as well as we used the gumstix for the backend.
- And the current deployment shows that the maximum hop count is two.
- As described in 
-\begin_inset LatexCommand \ref{section}
-
-\end_inset
-
-, the backend sends data to the sensor base on the fly as well.
- And of course, more than two sensing modalities RFID and PowerMeasurement(curre
-nt, watts, voltage) are involved.
- 
-\end_layout
-
-\begin_layout Standard
-Some interesting observations are found during 3 weeks intermittent deployment.
- First, the sensorbase returns 
-\begin_inset Quotes eld
-\end_inset
-
-Fatal Error
-\begin_inset Quotes erd
-\end_inset
-
- when the number of rows of a table exceeds 100s of thousands of lines.
- The case will be reported to the administrator.
- In addition, we met lots of SOS kernel panics during the long-term deployment
- which are supposed not to happen.
- And discussed those panic problems with Simon.
- 
 \end_layout
 
 \begin_layout Standard
@@ -763,6 +617,11 @@ Fatal Error
 
 \begin_layout Section
 RFID
+\begin_inset LatexCommand \label{sec:RFID}
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Subsection
@@ -905,10 +764,11 @@ sideways false
 status collapsed
 
 \begin_layout Standard
+\align center
 \begin_inset Graphics
 	filename rfidsw.jpg
 	lyxscale 25
-	keepAspectRatio
+	width 60col%
 
 \end_inset
 
@@ -920,7 +780,7 @@ status collapsed
 
 \end_inset
 
-fig:RFID mote SOS S/W
+RFID mote SOS S/W
 \end_layout
 
 \end_inset
@@ -930,6 +790,11 @@ fig:RFID mote SOS S/W
 
 \begin_layout Section
 Back-end System
+\begin_inset LatexCommand \label{sec:Back-end-System}
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Subsection
@@ -1017,7 +882,7 @@ pysos.listen()
 
  allows us to receive SOSmessages.
  More detailed tutorial can be found at 
-\begin_inset LatexCommand \ref{pySOS}
+\begin_inset LatexCommand \cite{pysos}
 
 \end_inset
 
@@ -1069,7 +934,7 @@ After both of translator modules make the data in appropriate form, XML
  Once sets of all the tuples are stored at the predefined PowerMeasurement
  table and RFID table in the sensorbase, it can be used for off-line analysis
  as described in 
-\begin_inset LatexCommand \ref{section}
+\begin_inset LatexCommand \ref{sec:R-Algoriths}
 
 \end_inset
 
@@ -1078,7 +943,223 @@ After both of translator modules make the data in appropriate form, XML
 \end_layout
 
 \begin_layout Section
-Result
+R Algoriths 
+\begin_inset LatexCommand \label{sec:R-Algoriths}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We constructed two usage profile in our application: one for the sharable
+ appliances and one for the non-sharable.
+ 
+\end_layout
+
+\begin_layout Subsection
+Sharable Appliances
+\end_layout
+
+\begin_layout Standard
+For the sharable appliances, we need to construct an occupancy profile of
+ the users.
+ We do this by collecting RFID tag information on when the users enter and
+ leave the lab.
+ We assume that the user deligently tag him/herself when entering and leaving
+ the lab.
+ Our data collection profile is robust enough to ensure no lost information.
+ We start by assuming that no user is present in the lab.
+ Then whenever a RFID tag is received, it is believed that the user has
+ entered the lab and on the next occurance of the tag, it is believed that
+ the user has left the lab.
+ Whenever anyone enters or leaves the lab, we calculate the additional power
+ consumed by each user present in the lab during that duration and add it
+ to his/her total power consumption.
+ 
+\end_layout
+
+\begin_layout Subsection
+Non-sharable Appliances
+\end_layout
+
+\begin_layout Standard
+For non-sharable appliances, we simply detect usage by RFID readings.
+ Whenever we get a RFID reading on a particular appliance, we determine
+ that the appliance is used between a given interval before and after the
+ reading.
+ We will detect any appliance usage in this interval and allocate that consumpti
+on to the particular RFID reading.
+ 
+\end_layout
+
+\begin_layout Standard
+Before we can determine an appliance use, we need to filter out the transients
+ in the usage profile.
+ From the data collected from the power-meter, we have power readings of
+ the appliance at regular intervals.
+ We smooth out these readings by applying a exponentially weighted moving
+ average filter to the stream.
+ The equation of the filter is the following:
+\end_layout
+
+\begin_layout Standard
+\align center
+\begin_inset Formula $y(n)=\alpha x(n)+(1-\alpha)y(n-1)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\alpha$
+\end_inset
+
+ has to be smaller than 1.
+ Picking a big value for 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ emphasis the actual stream over the history and a smaller value emphasis
+ the history over stream.
+ Therefore, a small value will filter out more transients from the streams.
+ We pick a modest value of 0.1 for removing the transients from our data
+ stream.
+ We will be using this filtered stream for all our data processing in this
+ section.
+\end_layout
+
+\begin_layout Standard
+We use a much smaller value of 0.001 for calculating the idle power of the
+ device.
+ This value will filter out most transients from the stream to the point
+ that even when the device is in use, it will still have only a slight change
+ in the filtered stream.
+ Averaging the stream computes roughly the idle power of the device.
+ 
+\end_layout
+
+\begin_layout Standard
+After we have computed the idle power and the filtered stream, we are ready
+ to locate the usages of the devices based on the RFID readings.
+ Whenever we detect a tag, we look for the usages on the filtered stream.
+ We define the device to be in use whenever the filtered stream is outputing
+ a value greater than some threshold determines from the idle power.
+ We look for the closest such edge in our filtered stream to find the usage.
+ We locate the low-to-high and the high-to-low edge of the usage, integrate
+ it and add it to the user's consumption profile.
+ 
+\end_layout
+
+\begin_layout Section
+Final deployment and Project requirement
+\begin_inset LatexCommand \label{sec:Final-deployment-and}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Deployment Scenario
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement h
+wide false
+sideways false
+status collapsed
+
+\begin_layout Standard
+\align center
+\begin_inset Graphics
+	filename finaldeployment.png
+	lyxscale 25
+	width 100col%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Caption
+\begin_inset LatexCommand \label{fig:Final-deployment-topology}
+
+\end_inset
+
+Final deployment topology
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Figure 
+\begin_inset LatexCommand \ref{fig:Final-deployment-topology}
+
+\end_inset
+
+ describes our deployment of SpotLight system in the NESL.
+ There are two PM motes on the printer and the coffee machine where PM motes
+ send power measurement packets to tree routing relay nodes once per a second.
+ Also we placed RFID motes at the backdoor, the printer, and the coffee
+ machine where they read TAG IDs as RFID TAGs are within the range.
+ As soon as a RFID TAG is detected, they forward it to the tree routing
+ relay so that it can reach the base node.
+ The base node just sends data packets back to the backend gumstix on which
+ SOS messages are translated and slogged to the sensorbase as described
+ in 
+\begin_inset LatexCommand \ref{sec:Back-end-System}
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+In the sense of the project requirement, we used 8 MicaZ motes: 1 for the
+ base node, 2 for the relay nodes, 3 for the RFID motes, and 2 for the PM
+ motes as well as we used the gumstix for the backend.
+ And the current deployment shows that the maximum hop count is two.
+ As described in 
+\begin_inset LatexCommand \ref{sec:Back-end-System}
+
+\end_inset
+
+, the backend sends data to the sensor base on the fly as well.
+ And of course, more than two sensing modalities RFID and PowerMeasurement(curre
+nt, watts, voltage) are involved.
+ 
+\end_layout
+
+\begin_layout Standard
+Some interesting observations are found during 3 weeks intermittent deployment.
+ First, the sensorbase returns 
+\begin_inset Quotes eld
+\end_inset
+
+Fatal Error
+\begin_inset Quotes erd
+\end_inset
+
+ when the number of rows of a table exceeds 100s of thousands of lines.
+ The case will be reported to the administrator.
+ In addition, we met lots of SOS kernel panics during the long-term deployment
+ which are supposed not to happen.
+ And discussed those panic problems with Simon.
+ 
+\end_layout
+
+\begin_layout Section
+ResultS
+\begin_inset LatexCommand \label{sec:Results}
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Subsection
@@ -1098,14 +1179,13 @@ For three days deployment, we collected users' appliance usage profile.
 \end_layout
 
 \begin_layout Standard
-\begin_inset LatexCommand \label{table:Printer Usage Profile}
-
-\end_inset
-
-Printer Usage Profile
-\end_layout
+\begin_inset Float table
+wide true
+sideways false
+status collapsed
 
 \begin_layout Standard
+\align center
 \begin_inset Tabular
 <lyxtabular version="3" rows="6" columns="4">
 <features>
@@ -1348,15 +1428,24 @@ Akhi
 
 \end_layout
 
-\begin_layout Standard
-\begin_inset LatexCommand \label{table:Coffee machine Usage Profile}
+\begin_layout Caption
+\begin_inset LatexCommand \label{tab:Printer-Usage-Profile}
 
 \end_inset
 
-Coffee Machine Usage Profile
+Printer Usage Profile
 \end_layout
 
+\end_inset
+
+
+\begin_inset Float table
+wide true
+sideways false
+status collapsed
+
 \begin_layout Standard
+\align center
 \begin_inset Tabular
 <lyxtabular version="3" rows="4" columns="4">
 <features>
@@ -1523,20 +1612,33 @@ Younghun
 
 \end_layout
 
+\begin_layout Caption
+\begin_inset LatexCommand \label{tab:Coffee-Machine-Usage}
+
+\end_inset
+
+Coffee Machine Usage Profile
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
 \begin_layout Standard
 Table 
-\begin_inset LatexCommand \ref{table:Printer Usage Profile}
+\begin_inset LatexCommand \ref{tab:Printer-Usage-Profile}
 
 \end_inset
 
 ,
-\begin_inset LatexCommand \ref{table:Coffee machine Usage Profile}
+\begin_inset LatexCommand \ref{tab:Coffee-Machine-Usage}
 
 \end_inset
 
  illustrate that the SpotLight captures users' appliance usage profile.
  But, in table 
-\begin_inset LatexCommand \ref{table:Coffee machine Usage Profile}
+\begin_inset LatexCommand \ref{tab:Coffee-Machine-Usage}
 
 \end_inset
 
@@ -1585,23 +1687,23 @@ multiple tagging at a moment.
 \end_layout
 
 \begin_layout Standard
-Figure 
-\begin_inset LatexCommand \ref{fig}
+Figures 
+\begin_inset LatexCommand \ref{fig:Occupancy1}
 
 \end_inset
 
-
-\begin_inset LatexCommand \ref{fig}
-
-\end_inset
-
-
-\begin_inset LatexCommand \ref{fig}
+,
+\begin_inset LatexCommand \ref{fig:Occupancy2}
 
 \end_inset
 
+,
+\begin_inset LatexCommand \ref{fig:Occupancy3}
 
-\begin_inset LatexCommand \ref{fig}
+\end_inset
+
+ and 
+\begin_inset LatexCommand \ref{fig:Occupancy4}
 
 \end_inset
 
@@ -1610,118 +1712,115 @@ Figure
  
 \end_layout
 
-\begin_layout Section
-R Algoriths 
-\begin_inset LatexCommand \label{sec:R-Algoriths}
-
-\end_inset
-
-
-\end_layout
-
 \begin_layout Standard
-We constructed two usage profile in our application: one for the sharable
- appliances and one for the non-sharable.
- 
-\end_layout
-
-\begin_layout Subsection
-Sharable Appliances
-\end_layout
-
-\begin_layout Standard
-For the sharable appliances, we need to construct an occupancy profile of
- the users.
- We do this by collecting RFID tag information on when the users enter and
- leave the lab.
- We assume that the user deligently tag him/herself when entering and leaving
- the lab.
- Our data collection profile is robust enough to ensure no lost information.
- We start by assuming that no user is present in the lab.
- Then whenever a RFID tag is received, it is believed that the user has
- entered the lab and on the next occurance of the tag, it is believed that
- the user has left the lab.
- Whenever anyone enters or leaves the lab, we calculate the additional power
- consumed by each user present in the lab during that duration and add it
- to his/her total power consumption.
- 
-\end_layout
-
-\begin_layout Subsection
-Non-sharable Appliances
-\end_layout
-
-\begin_layout Standard
-For non-sharable appliances, we simply detect usage by RFID readings.
- Whenever we get a RFID reading on a particular appliance, we determine
- that the appliance is used between a given interval before and after the
- reading.
- We will detect any appliance usage in this interval and allocate that consumpti
-on to the particular RFID reading.
- 
-\end_layout
-
-\begin_layout Standard
-Before we can determine an appliance use, we need to filter out the transients
- in the usage profile.
- From the data collected from the power-meter, we have power readings of
- the appliance at regular intervals.
- We smooth out these readings by applying a exponentially weighted moving
- average filter to the stream.
- The equation of the filter is the following:
-\end_layout
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
 
 \begin_layout Standard
 \align center
-\begin_inset Formula $y(n)=\alpha x(n)+(1-\alpha)y(n-1)$
+\begin_inset Graphics
+	filename occupancy1.png
+	lyxscale 25
+	width 60col%
+
 \end_inset
 
 
 \end_layout
 
-\begin_layout Standard
-\begin_inset Formula $\alpha$
+\begin_layout Caption
+\begin_inset LatexCommand \label{fig:Occupancy1}
+
 \end_inset
 
- has to be smaller than 1.
- Picking a big value for 
-\begin_inset Formula $\alpha$
+Occupancy1
+\end_layout
+
 \end_inset
 
- emphasis the actual stream over the history and a smaller value emphasis
- the history over stream.
- Therefore, a small value will filter out more transients from the streams.
- We pick a modest value of 0.1 for removing the transients from our data
- stream.
- We will be using this filtered stream for all our data processing in this
- section.
-\end_layout
+
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
 
 \begin_layout Standard
-We use a much smaller value of 0.001 for calculating the idle power of the
- device.
- This value will filter out most transients from the stream to the point
- that even when the device is in use, it will still have only a slight change
- in the filtered stream.
- Averaging the stream computes roughly the idle power of the device.
- 
+\align center
+\begin_inset Graphics
+	filename occupancy2.png
+	lyxscale 25
+	width 60col%
+
+\end_inset
+
+
 \end_layout
+
+\begin_layout Caption
+\begin_inset LatexCommand \label{fig:Occupancy2}
+
+\end_inset
+
+Occupancy2
+\end_layout
+
+\end_inset
+
+
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
 
 \begin_layout Standard
-After we have computed the idle power and the filtered stream, we are ready
- to locate the usages of the devices based on the RFID readings.
- Whenever we detect a tag, we look for the usages on the filtered stream.
- We define the device to be in use whenever the filtered stream is outputing
- a value greater than some threshold determines from the idle power.
- We look for the closest such edge in our filtered stream to find the usage.
- We locate the low-to-high and the high-to-low edge of the usage, integrate
- it and add it to the user's consumption profile.
- 
+\align center
+\begin_inset Graphics
+	filename occupancy3.png
+	lyxscale 25
+	width 60col%
+
+\end_inset
+
+
 \end_layout
 
-\begin_layout Section
-Results 
-\begin_inset LatexCommand \label{sec:Results}
+\begin_layout Caption
+\begin_inset LatexCommand \label{fig:Occupancy3}
+
+\end_inset
+
+Occupancy3
+\end_layout
+
+\end_inset
+
+
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Standard
+\align center
+\begin_inset Graphics
+	filename occupancy4.png
+	lyxscale 25
+	width 60col%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Caption
+\begin_inset LatexCommand \label{fig:Occupancy4}
+
+\end_inset
+
+Occupancy4
+\end_layout
 
 \end_inset
 
@@ -1735,6 +1834,67 @@ Related Work
 \end_inset
 
 
+\end_layout
+
+\begin_layout Subsection
+Demand Response Enabling Technology Development - UC Berkeley 
+\end_layout
+
+\begin_layout Standard
+Demand Response 
+\begin_inset LatexCommand \cite{berkeley-dr}
+
+\end_inset
+
+ refers to the mechanism by which utility providers can reduce the demand
+ for electricity during shortages by setting variable rates based on the
+ load with a mechanism for customers to respond to those rates.
+ This means that if a customer can defer usage of an appliance to a time
+ at which the rate is lower, it would result in a lower cost to the customer
+ as well as the utility provider.
+ New DR-enabled thermostats are proposed that have metering, communications
+ and automatic response mechanisms.
+ The new thermostats require the homeowner to program the system once to
+ express her preferences for cost versus comfort.
+ In addition, appliances include price indicators as familiar red-orange-green
+ LEDs to indicate the current price scenario.
+ The Berkeley system is deemed fairly close to our measurement of electrical
+ energy, but is coarser grained.
+ Their system is ?active? in its use of a feedback mechanism, whereas our
+ system is designed to be a ?passive? profiling tool for an individual or
+ a household.
+ The Berkeley system requires communication with the utility provider and
+ the provider has access to the energy consumption profile at all times.
+ This may lead to privacy concerns.
+ 
+\end_layout
+
+\begin_layout Subsection
+Samsung Electronic Company's Smart Building 
+\end_layout
+
+\begin_layout Standard
+Energy measurement and control system based upon occupancy is not just being
+ explored in research but is also being adopted in real life.
+ The new building at Samsung Electronic Company Digital Media R&D center,
+ opened in Sep.
+ 2005, is equipped with an RFID based systems for air conditioning and light
+ level control.
+ Each employee and visitor is required to carry an RFID tag.
+ The RFID receivers and back-end systems identify the occupancy level in
+ a room based on which the building controls its air conditioning and lighting
+ systems.
+ This system also helps the authorities track visitors? movements and avoid
+ information theft.
+ 
+\end_layout
+
+\begin_layout Standard
+In this work, we see that they measure and control the energy consumption
+ of sharable electronic appliances.
+ The ideas that we would like to explore in this project are similar but
+ extend to all appliances that a person may come across.
+ 
 \end_layout
 
 \begin_layout Section
@@ -1763,6 +1923,11 @@ In conclusion, we have shown that energy consumption monitoring at a finer
 \end_inset
 
 .
+\begin_inset LatexCommand \bibtex[plain]{splt}
+
+\end_inset
+
+
 \end_layout
 
 \end_body
