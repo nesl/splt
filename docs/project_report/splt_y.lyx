@@ -47,7 +47,7 @@ Deployment Scenario
 placement h
 wide false
 sideways false
-status open
+status collapsed
 
 \begin_layout Standard
 \begin_inset Graphics
@@ -78,15 +78,16 @@ Figure
 
 \end_inset
 
- describes our deployment of SpotLight system in NESL lab.
- There are two PM motes on the printer and the coffee machine which send
- power measurements to a tree routing relay node every one second.
+ describes our deployment of SpotLight system in the NESL.
+ There are two PM motes on the printer and the coffee machine where PM motes
+ send power measurement packets to tree routing relay nodes once per a second.
  Also we placed RFID motes at the backdoor, the printer, and the coffee
  machine where they read TAG IDs as RFID TAGs are within the range.
  As soon as a RFID TAG is detected, they forward it to the tree routing
  relay so that it can reach the base node.
  The base node just sends data packets back to the backend gumstix on which
- SOS messages are translated and slogged as described in 
+ SOS messages are translated and slogged to the sensorbase as described
+ in 
 \begin_inset LatexCommand \ref{section}
 
 \end_inset
@@ -95,9 +96,9 @@ Figure
 \end_layout
 
 \begin_layout Standard
-In sum, we used 8 MicaZ motes, 1 for the base node, 2 for the relay nodes,
- 3 for the RFID motes, and 2 for the PM motes.
- For the backend, we used the gumstix.
+In the sense of the project requirement, we used 8 MicaZ motes: 1 for the
+ base node, 2 for the relay nodes, 3 for the RFID motes, and 2 for the PM
+ motes as well as we used the gumstix for the backend.
  And the current deployment shows that the maximum hop count is two.
  As described in 
 \begin_inset LatexCommand \ref{section}
@@ -120,9 +121,12 @@ Fatal Error
 \begin_inset Quotes erd
 \end_inset
 
- when the number of rows of a table exceeds 100s of thousands which will
- be reported.
- ??
+ when the number of rows of a table exceeds 100s of thousands of lines.
+ The case will be reported to the administrator.
+ In addition, we met lots of SOS kernel panics during the long-term deployment
+ which are supposed not to happen.
+ And discussed those panic problems with Simon.
+ 
 \end_layout
 
 \begin_layout Section
@@ -236,15 +240,15 @@ The protocol for the Watts Up Pro is an ASCII string
 \begin_inset Quotes eld
 \end_inset
 
-#d,-,18,<W>,<V>,<A>,...;
+#d,-,18,<W>,<V>,<A>,...;<CR><LF>
 \begin_inset Quotes erd
 \end_inset
 
  which implies (Command, NumberofArgument, Watt, Voltage, Ampere, ...).
  PM mote forwards its powermeasurement reading with its network ID every
  one second.
- PMparser basically translates those two information into those 5 tuples
- (TimeStamp, ApplianceID, Ampere, Watt, Voltage).
+ PMparser basically translates those two information into the 5 tuples (TimeStam
+p, ApplianceID, Ampere, Watt, Voltage).
  
 \end_layout
 
@@ -263,8 +267,9 @@ After both of translator modules make the data in appropriate form, XML
  will eventually be sent to the sensorbase.
  Then it puts these XML packets into a queue where spltSlog module, which
  allows us to slog on the fly, grabs the data and sends it to the sensorbase.
- Once all the tuples are stored at the sensorbase, it can be used for off-line
- analysis as described in 
+ Once sets of all the tuples are stored at the predefined PowerMeasurement
+ table and RFID table in the sensorbase, it can be used for off-line analysis
+ as described in 
 \begin_inset LatexCommand \ref{section}
 
 \end_inset
@@ -296,16 +301,17 @@ SkyeTek RFID reader supports various TAG reading modes as well as other
  functions such as writing and/or selecting TAGs.
  And it is compatible to ISO15693 passive RFID TAG families such as Tag-It
  HF-I(Texas Instrument), I-Code SLI(Phillips), my-d SRF55VxxP(Infineon),
- and LRI512(ST-Microelectronics), which means there's no concern about TAG
- compatibility.
+ and LRI512(ST-Microelectronics), which means there's no concern with TAG
+ compatibility issues.
  
 \end_layout
 
 \begin_layout Standard
 Since SkyeTek M1-mini supports 3.3V TTL level UART interface, it can be directly
  connected to a MicaZ mote.
- A small custom board is used to connect the (Vcc, Rx, Tx, GND) signals
- to the appropriate pins on the 51-pin mote connector.
+ Similar to the Watts Up Pro case, a small custom board is used to connect
+ the (Vcc, Rx, Tx, GND) signals to the appropriate pins on the 51-pin mote
+ connector.
  
 \end_layout
 
@@ -314,8 +320,8 @@ Software Interfacing
 \end_layout
 
 \begin_layout Standard
-The only concern for the RFID mote was the same as for the Watts Up pro.
- It also requires RAW uart communication.
+The only concern for the RFID mote was the same as for the Watts Up Pro.
+ It also requires RAW UART communication.
  To cope with it, we used the same RAW UART communication module for the
  RFID mote as for the Watts Up Pro mote.
 \end_layout
@@ -325,7 +331,7 @@ Although the RFID reader supports various reading modes, for our system
  we only need the continuous reading mode where the RFID reader sends TAG
  ID readings when TAGs are within the range, otherwise no data signal is
  generated.
- The RFID mote consists of four SOS modules called 
+ The RFID mote consists of the four SOS modules called 
 \begin_inset Quotes eld
 \end_inset
 
@@ -377,28 +383,26 @@ Tree Routing
  modules are used to enable multi-hop communication because our SpotLight
  system aims to be extensible to environment where the multi-hop communication
  is needed.
- As shown in section 
-\begin_inset Quotes eld
-\end_inset
+ As shown in 
+\begin_inset LatexCommand \ref{section}
 
-
-\begin_inset Quotes erd
 \end_inset
 
 , UART module is used to strip headers of standard SOS message and make
- them RAW uart communication packets and vice versa.
- In other words, UART module accepts and strips UART send message and transmits
- RAW UART data to USARTx of the MicaZ mote.
- RFID module is the main software interface for the RFID module.
+ them RAW UART communication packets and vice versa.
+ In other words, the UART module accepts and strips SOS_UART_send message
+ and transmits RAW UART data strings to USARTx of the MicaZ mote.
+ The RFID module is the main software interface for the RFID module.
  When the module starts, it initializes the SkyeTek M1-mini RFID reader
  and set it into the 
 \begin_inset Quotes eld
 \end_inset
 
-Continuous Reading mode.
+Continuous Reading
 \begin_inset Quotes erd
 \end_inset
 
+ mode.
  As soon as it receives any TAG ID readings, it forwards the data to the
  
 \begin_inset Quotes eld
@@ -439,6 +443,539 @@ fig:RFID mote SOS S/W
 \end_inset
 
 
+\end_layout
+
+\begin_layout Section
+Result
+\end_layout
+
+\begin_layout Subsection
+RFID with appliances
+\end_layout
+
+\begin_layout Standard
+For three days deployment, we collected users' appliance usage profile.
+ As described in 
+\begin_inset LatexCommand \ref{section}
+
+\end_inset
+
+, we placed two RFID motes at the coffee machine and the printer.
+ A simple python retrieving module was used to get and interpret data.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset LatexCommand \label{table:Printer Usage Profile}
+
+\end_inset
+
+Printer Usage Profile
+\end_layout
+
+\begin_layout Standard
+\begin_inset Tabular
+<lyxtabular version="3" rows="6" columns="4">
+<features>
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" rightline="true" width="0">
+<row topline="true" bottomline="true">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+UserName
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+TID
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+TimeStamp
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+Date/Time
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row topline="true">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+Younghun
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+14E0040100004288B9
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+1181758272
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+2007.June.13/11:11.12
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row topline="true">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+Younghun
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+14E0040100004288B9
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+1181846901
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+2007.June.14/11:48.21
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row topline="true">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+Younghun
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+14E0040100004288B9
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+1181863507
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+2007.June.14/16:25.07
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row topline="true">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+Akhi
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+14E004010000429DF7
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+1181858135
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+2007.June.14/14:55.35
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row topline="true" bottomline="true">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+Akhi
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+14E004010000429DF7
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+1181868116
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+2007.June.14/17:41.56
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset LatexCommand \label{table:Coffee machine Usage Profile}
+
+\end_inset
+
+Coffee Machine Usage Profile
+\end_layout
+
+\begin_layout Standard
+\begin_inset Tabular
+<lyxtabular version="3" rows="4" columns="4">
+<features>
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" rightline="true" width="0">
+<row topline="true" bottomline="true">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+UserName
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+TID
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+TimeStamp
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+Date/Time
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row topline="true">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+Younghun
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+14E0040100004288B9
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+1181779440
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+2007.June.13/17:04.00
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row topline="true">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+Younghun
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+14E0040100004288B9
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+1181779441
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+2007.June.13/17:04.01
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row topline="true" bottomline="true">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+Younghun
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+14E0040100004288B9
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+1181925106
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+2007.June.15/09:31.46
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Table 
+\begin_inset LatexCommand \ref{table:Printer Usage Profile}
+
+\end_inset
+
+,
+\begin_inset LatexCommand \ref{table:Coffee machine Usage Profile}
+
+\end_inset
+
+ illustrate that the SpotLight captures users' appliance usage profile.
+ But, in table 
+\begin_inset LatexCommand \ref{table:Coffee machine Usage Profile}
+
+\end_inset
+
+ we can see in the first and the second rows that two continuous time stamps
+ are stored, which makes off-line analysis tricky.
+ However, one can be smart to cope with it by assuming that users can only
+ use an appliance at once per 10 seconds or more.
+ But still, there are a couple of factors which make the analysis difficult.
+ For example, what happens if one user tags at the coffee machine and the
+ other one actually uses it.
+ And what happens if someone forgets tagging his or her TAG ID when they
+ are using appliances.
+ All those issues will be remaining works.
+ 
+\end_layout
+
+\begin_layout Subsection
+RFID for determining occupancy
+\end_layout
+
+\begin_layout Standard
+In oppose to the appliance case, we also deployed a RFID mote at the door
+ to determine who are in the lab.
+ The simple scheme to determine occupancy is the following.
+ Once one tags her/his ID, the system assumes she/he enters.
+ Similarly, she/he tags the ID again, it assumes she/he is leaving.
+ Although this scheme is simple and sensitive to malicious attacks such
+ as 
+\begin_inset Quotes eld
+\end_inset
+
+forget tagging
+\begin_inset Quotes erd
+\end_inset
+
+ and 
+\begin_inset Quotes eld
+\end_inset
+
+multiple tagging at a moment.
+\begin_inset Quotes erd
+\end_inset
+
+ We could find some interesting occupancy profile by analyzing those information.
+ 
+\end_layout
+
+\begin_layout Standard
+Figure 
+\begin_inset LatexCommand \ref{fig}
+
+\end_inset
+
+
+\begin_inset LatexCommand \ref{fig}
+
+\end_inset
+
+
+\begin_inset LatexCommand \ref{fig}
+
+\end_inset
+
+
+\begin_inset LatexCommand \ref{fig}
+
+\end_inset
+
+ give participants' occupancy profile, X-axis is time-stamp and 1 implies
+ she/he is in and 0 implies that she/he is not in.
+ 
 \end_layout
 
 \end_body
