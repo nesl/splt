@@ -60,8 +60,8 @@ The Veris H8035/8036 device shown in Figure
  from Aggregate kW (demand) and kWH (consumption) to power factor per phase.
  The H8035/36 Series combines a microprocessor based power meter and split-core
  instrument grade current transformers (CTs) in a single unit.
- The meter has the ability to sense upto 100 Amps of current at the maximum
- rate of the RS-485 interface.
+ The meter has the ability to sense up to 100 Amps of current with 100mW
+ precision at a 6 Hz sampling rate.
  
 \begin_inset Float figure
 wide false
@@ -111,7 +111,8 @@ ously displays the wattage being used.
  interfaced with the meter.
  The communication protocol is well documented, including a list of commands
  required for real-time logging.
- The maximum sampling rate of the Watts Up? Pro is once per second.
+ The maximum sampling rate of the Watts Up? Pro is once per second, with
+ a 100mW precision.
  
 \begin_inset Float figure
 wide false
@@ -157,7 +158,7 @@ The device chosen for current implementation of Spotlight is the Watts Up?
  Usage of the LCD reduced development time of the communication protocol
  and drivers considerably.
  Thirdly, the Veris device has an RS485 interface for which an independent
- hardware interface circuit would hvae to be built and tested before any
+ hardware interface circuit would have to be built and tested before any
  other development could begin.
  The interface for Watts Up? is USB, with PC software provided by the manufactur
 er.
@@ -225,11 +226,155 @@ Software Interfacing
 \begin_layout Standard
 In order to interface the Watts Up? Pro with SOS running on the MicaZ mote,
  a new UART driver was needed.
- The current driver implementation in the SOS kernel implements a framing
- based protocol architecture assuming that SOS messages flow on the UART
- channel.
+ The current UART driver in the SOS kernel implements a framing based protocol
+ architecture assuming that SOS messages flow on the UART channel.
  The Watts Up? Pro on the other hand has its own framing and message structure
- completely separate 
+ as does the RFID reader described in {section blah}.
+ 
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Standard
+\align center
+\begin_inset Graphics
+	filename swinterface_z.png
+	lyxscale 25
+	width 2in
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Caption
+\begin_inset LatexCommand \label{fig:Raw-UART-Driver}
+
+\end_inset
+
+Raw UART Driver Software Stack
+\end_layout
+
+\end_inset
+
+Figure 
+\begin_inset LatexCommand \ref{fig:Raw-UART-Driver}
+
+\end_inset
+
+ illustrates the software components developed to implement a custom UART
+ driver.
+ The driver is implemented as an SOS module, and reuses the UART HAL and
+ timers provided within SOS.
+ The RFID and PM (power measurement) modules implement device specific protocol
+ communication such as device initializaton and message parsing.
+ The raw UART module provides a messaging interface to the PM and RFID.
+ Each frame received on the UART link is forwarded as an SOS message to
+ the highler layer module.
+ However, since a raw channel does not provide any explicit framing mechanism,
+ some method must be devised to find frame delimiters.
+ 
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Standard
+\align center
+\begin_inset Graphics
+	filename ifd_z.png
+	lyxscale 25
+	height 0.4in
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Caption
+\begin_inset LatexCommand \label{fig:Frames-on-the}
+
+\end_inset
+
+Frames on the raw UART channel 
+\end_layout
+
+\end_inset
+
+ Figure 
+\begin_inset LatexCommand \ref{fig:Frames-on-the}
+
+\end_inset
+
+ shows how frames typically appear on the UART channel.
+ It is noted that frames usually arrive with some minimum delay between
+ frames called the inter frame delay or IFD.
+ By exploiting this fact, the raw UART module can derive the size of frame.
+ 
+\end_layout
+
+\begin_layout Standard
+The UART HAL implements an interrupt service routine that is called on reception
+ of every byte on the UART channel.
+ The raw UART module restarts a timer with the minimum IFD on every receive
+ interrupt.
+ The key idea is that if a new byte arrived before the IFD passed, the timer
+ would get restarted without firing.
+ Thus, when the timer does fire, it implies that a new byte has not been
+ received for IFD time, indicating the end of the current frame.
+ At this point, the raw UART module bundles up the data it has already received
+ for that frame into an SOS message and posts it to one of the higher layer
+ modules.
+ This is the scheme for data reception, the case for data transmission is
+ much simpler.
+ The higher layer PM (or RFID) module posts a message to the raw UART module
+ indicating the payload should be transmitted on the UART, handled by the
+ transmit interrupt service routine.
+ This IFD is typically device specific and depends on the baud rate as well
+ and thus the raw UART module requires to provide an API to the PM and RFID
+ module to access the UART channel correctly.
+\end_layout
+
+\begin_layout Standard
+An important issue that comes up with very short IFD at high baud rates
+ is that the timer API in SOS has a 500+ cycle latency, requring 
+\begin_inset Formula $62.5\mu s$
+\end_inset
+
+ to complete on an 
+\begin_inset Formula $8MHz$
+\end_inset
+
+ ATMega128 AVR processor.
+ The highest baud rate of 
+\begin_inset Formula $115.2kbps$
+\end_inset
+
+ interrupts the processor once every 
+\begin_inset Formula $86\mu s$
+\end_inset
+
+ leaving a small margin for the processor to complete other tasks.
+ To circumvent this issue, a couple of methods have been proposed.
+ The first mechanism uses the SOS counter API, which has a smaller (50 cycle)
+ latency, to measure the time difference between byte interrupts.
+ When the time difference between two bytes is found to be greater than
+ the IFD, it indicates that a new frame has just begun and the latter byte
+ is the first byte of a new frame.
+ Note that this method posts a message only after the first byte of a new
+ frame and thus the message delivery latency could be unbounded.
+ In other words, this mechanism works well when the device connected to
+ the UART is generating a constant stream of data frames.
+ If, however, the data frames arrive at sporadic intervals a frame is not
+ delivered until the next frame has just begun.
+ The other issue with this form of system is that since the processor spends
+ time posting an SOS message as a new frame is arriving, the message post
+ latency has to be less than the interrupt rate.
+ The second idea is to exploit some knowledge of the frames, such as header
+ or trailer bytes or size (for fixed length frames).
+ This last idea was implemented in the Spotlight project and has served
+ its purpose well.
 \end_layout
 
 \begin_layout Section
