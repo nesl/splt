@@ -33,6 +33,10 @@
 Spotlight: Focusing on the Individual
 \end_layout
 
+\begin_layout Author
+Zainul Charbiwala, Younghun Kim, Akhilesh Singhania
+\end_layout
+
 \begin_layout Abstract
 \begin_inset LatexCommand \label{sec:Abstract}
 
@@ -48,11 +52,13 @@ We present an application that can monitor the electrical energy consumption
  and a RFID reader.
  The user carries a RFID tag which is read by the instrument when it is
  in use by the user.
- Each non-sharable appliance has a power meter and a defining border with
- controlled entry and exit points.
- Personnel entring and exiting the range are detected.
+ Each sharable appliance has a power meter and a defining border with controlled
+ entry and exit points.
+ Personnel entering and exiting the range are detected.
  The power consumption is equally divided between the people sharing the
  appliance.
+ Our results show interesting individual behavior that could be used for
+ various energy optimizations.
 \end_layout
 
 \begin_layout Section
@@ -69,8 +75,8 @@ Presently all consumption monitoring is at the granularity of when the energy
  was used and where it was used.
  This measurement profile is very coarse and there is no notion of who used
  this energy.
- As the energy cost increase, it is becoming important to monitor the consumptio
-n at a finer granularity like at the level of individuals.
+ As energy cost increases, it is becoming important to monitor the consumption
+ at a finer granularity like at the level of individuals.
  This will allow organizations to optimize energy consumption in various
  ways.
  Employees can be assigned 
@@ -90,13 +96,13 @@ green
 \end_layout
 
 \begin_layout Standard
-We will attempt a basic attempt at monitoring individual consumption profile
- and try to offer some analysis at some of issues in solving this problem.
+We attempt a basic attempt at monitoring individual consumption profile
+ and offer some analysis of issues in solving this problem.
  Our results show that it is possible to carry out such profiling at an
  individual level with reasonable assumptions.
  Using our results a more sophisticated and detailed application can be
  constructed which would carry out such profiling for more appliances and
- collected more data.
+ also collect other data.
  
 \end_layout
 
@@ -108,7 +114,24 @@ This document is structured as follows.
 \end_inset
 
  describes our introductory application and some of its limitations.
- ....
+ Section 
+\begin_inset LatexCommand \ref{sec:Power-Measurement}
+
+\end_inset
+
+ discusses the methodology and device used for power measurement.
+ Section 
+\begin_inset LatexCommand \ref{sec:RFID}
+
+\end_inset
+
+ describes the RFID system used for identifying users and Section 
+\begin_inset LatexCommand \ref{sec:Back-end-System}
+
+\end_inset
+
+ details the back-end system used to collect and post data to a central
+ repository.
  Section 
 \begin_inset LatexCommand \ref{sec:R-Algoriths}
 
@@ -116,13 +139,19 @@ This document is structured as follows.
 
  describes the R algorithms used to analyze the data to construct a consumption
  profile of a user.
- We offer some results in section 
+ Section 
+\begin_inset LatexCommand \ref{sec:Final-deployment-and}
+
+\end_inset
+
+ illustrates the final deployment scenario and we offer some results in
+ Section 
 \begin_inset LatexCommand \ref{sec:Results}
 
 \end_inset
 
 .
- Finally we detail some related work in section 
+ Finally we detail some related work in Section 
 \begin_inset LatexCommand \ref{sec:Related-Work}
 
 \end_inset
@@ -184,7 +213,7 @@ We monitor the lights in our lab as the sharable appliance.
  We established one RFID reader at each door.
  This collects the RFID reading on people whenever they enter or exit the
  lab.
- Then using a algorithm on the backend, we will determine when a person
+ Then using a algorithm on the back-end, we will determine when a person
  is entering or leaving the lab.
  Our lab has two doors so two RFID readers were required to instrument the
  doors.
@@ -193,23 +222,23 @@ We monitor the lights in our lab as the sharable appliance.
 
 \begin_layout Standard
 The motes on the appliances collect the RFID or power-meter data and transmit
- to the basestation.
+ to the base-station.
  Since the deployment for this lab spanned a vast area, we had to use an
  additional mote to serve as a hop for all the motes to be able to send
- data to the basestation.
- We used an additional mote to serve as a basestation.
- The basestation is connected to a gumstix which sends all the collected
- data to sensorbase using an ethernet internet connection.
+ data to the base-station.
+ We used an additional mote to serve as a base-station.
+ The base-station is connected to a Gumstix which sends all the collected
+ data to SensorBase using an Ethernet Internet connection.
 \end_layout
 
 \begin_layout Standard
-We use sensorbase to aggregate all our data.
- The data is sent to it through the basestation.
- Then we can probe sensorbase for the collected data on the backend where
+We use SensorBase to aggregate all our data.
+ The data is sent to it through the base-station.
+ Then we can probe SensorBase for the collected data on the back-end where
  we run different algorithms written in R to compute the individual power
  consumption.
  The total amount of hardware used in the application is eight motes, two
- power-meters, four RFID readers, one gumstix and numerous RFID tags.
+ power-meters, four RFID readers, one Gumstix and numerous RFID tags.
  
 \end_layout
 
@@ -225,7 +254,7 @@ Limitations
 \begin_layout Standard
 There are certain limitations with our application which will have to be
  addressed for it to be used successfully in a real world deployment.
- One fundamental limitation steams from our divisioin of appliances into
+ One fundamental limitation steams from our division of appliances into
  sharable and non-sharable.
  There are certain appliances that do not necessarily fall in either category.
  A good example of this is servers and computers.
@@ -234,7 +263,7 @@ There are certain limitations with our application which will have to be
  In order to properly evaluate the individual profile for a server, we need
  to monitor a log of which user is actively running tasks on the system.
  Presently, we are monitoring the printer by assuming that the user performing
- the print job will pick up the work shortly afterwards.
+ the print job will pick up the work shortly afterward.
  If another person initiates another print job before the previous one is
  picked up, the profile will be incorrect.
  One way of improving this is to use print logs to determine the profile
@@ -249,10 +278,10 @@ Presently, there is no policing in the usage profiling.
  Anyone can use the appliance and as long as they do not register their
  RFID tags, it will not be counted against them.
  Some ways of improving this is to instrument the appliances such that a
- RFID registery is required in order to activate them.
+ RFID registry is required in order to activate them.
  This would require significant effort and is beyond the scope of this document
  but easily implemented in a general setting.
- Finally, we did not instrument the light fixtures in out lab to retrive
+ Finally, we did not instrument the light fixtures in out lab to retrieve
  consumption data.
  We simply profile the the details of the lab occupancy to model our sharable
  appliances.
@@ -459,7 +488,12 @@ In order to interface the Watts Up? Pro with SOS running on the MicaZ mote,
  The current UART driver in the SOS kernel implements a framing based protocol
  architecture assuming that SOS messages flow on the UART channel.
  The Watts Up? Pro on the other hand has its own framing and message structure
- as does the RFID reader described in {section blah}.
+ as does the RFID reader described in Section 
+\begin_inset LatexCommand \ref{sec:RFID}
+
+\end_inset
+
+.
  
 \begin_inset Float figure
 wide false
@@ -498,15 +532,15 @@ Figure
  The driver is implemented as an SOS module, and reuses the UART HAL and
  timers provided within SOS.
  The RFID and PM (power measurement) modules implement device specific protocol
- communication such as device initializaton and message parsing.
+ communication such as device initialization and message parsing.
  The raw UART module provides a messaging interface to the PM and RFID.
  Each frame received on the UART link is forwarded as an SOS message to
- the highler layer module.
+ the higher layer module.
  However, since a raw channel does not provide any explicit framing mechanism,
  some method must be devised to find frame delimiters.
  
 \begin_inset Float figure
-wide false
+wide true
 sideways false
 status collapsed
 
@@ -515,7 +549,7 @@ status collapsed
 \begin_inset Graphics
 	filename ifd_z.png
 	lyxscale 25
-	width 100col%
+	width 60page%
 
 \end_inset
 
@@ -568,7 +602,7 @@ The UART HAL implements an interrupt service routine that is called on reception
 
 \begin_layout Standard
 An important issue that comes up with very short IFD at high baud rates
- is that the timer API in SOS has a 500+ cycle latency, requring 
+ is that the timer API in SOS has a 500+ cycle latency, requiring 
 \begin_inset Formula $62.5\mu s$
 \end_inset
 
@@ -605,14 +639,6 @@ An important issue that comes up with very short IFD at high baud rates
  or trailer bytes or size (for fixed length frames).
  This last idea was implemented in the Spotlight project and has served
  its purpose well.
-\end_layout
-
-\begin_layout Standard
-
-\end_layout
-
-\begin_layout Standard
-
 \end_layout
 
 \begin_layout Section
@@ -655,6 +681,42 @@ Since SkyeTek M1-mini supports 3.3V TTL level UART interface, it can be directly
  the (Vcc, Rx, Tx, GND) signals to the appropriate pins on the 51-pin mote
  connector.
  
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Standard
+\align center
+\begin_inset Graphics
+	filename skyemodule_M1.png
+	lyxscale 25
+	width 30col%
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename skyemodule_M1-mini.png
+	lyxscale 25
+	width 30col%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Caption
+\begin_inset LatexCommand \label{fig:SkyeTek-RFID-Reader}
+
+\end_inset
+
+SkyeTek RFID Reader Modules
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Subsection
@@ -722,11 +784,11 @@ Tree Routing
 \begin_inset Quotes erd
 \end_inset
 
- modules are used to enable multi-hop communication because our SpotLight
+ modules are used to enable multi-hop communication because our Spotlight
  system aims to be extensible to environment where the multi-hop communication
  is needed.
  As shown in 
-\begin_inset LatexCommand \ref{section}
+\begin_inset LatexCommand \ref{sec:Power-Measurement}
 
 \end_inset
 
@@ -755,9 +817,6 @@ Tree Routing module.
 \end_inset
 
 
-\end_layout
-
-\begin_layout Standard
 \begin_inset Float figure
 wide false
 sideways false
@@ -766,7 +825,7 @@ status collapsed
 \begin_layout Standard
 \align center
 \begin_inset Graphics
-	filename rfidsw.jpg
+	filename rfidsw.png
 	lyxscale 25
 	width 60col%
 
@@ -802,25 +861,24 @@ Hardware Architecture
 \end_layout
 
 \begin_layout Standard
-To meet the second project requirement, we decided to set up a backend side
- with a gumstix.
- The gumstix is a finger size, full-function Linux computer which can expand
+To meet the second project requirement, we decided to set up a back-end
+ side with a Gumstix.
+ The Gumstix is a finger size, full-function Linux computer which can expand
  its functionality by stacking various expansion boards.
- Firstly, we stacked NetCFstix to support ethernet connectivity which enables
- the backend to send sensor readings to the sensorbase on the fly.
- For interfacing the backend and the infrastructure sensor nodes, we used
- BreakoutGs which provides most of all pinouts of the gumstix.
- The base sensor node is connected to the gumstix over the serial line through
+ Firstly, we stacked NetCFstix to support Ethernet connectivity which enables
+ the back-end to send sensor readings to the SensorBase on the fly.
+ For interfacing the back-end and the infrastructure sensor nodes, we used
+ BreakoutGs which provides most of all pin-outs of the Gumstix.
+ The base sensor node is connected to the Gumstix over the serial line through
  the BreakoutGS board.
  
 \end_layout
 
 \begin_layout Standard
-By introducing a way small size of the backbone computer, we are envisioning
- that the SpotLight system will be embedded to various environment such
- as smart home, smart building, and smart office environments as illustrated
- in 
-\begin_inset LatexCommand \ref{Section}
+By introducing a small sized back-end computer, we are envisioning that
+ the Spotlight system will be embedded to various environment such as smart
+ home, smart building, and smart office environments as illustrated in 
+\begin_inset LatexCommand \ref{sec:App}
 
 \end_inset
 
@@ -840,9 +898,9 @@ Software Architecture
 \end_layout
 
 \begin_layout Standard
-On the backend, we run two applications, which are the sos-server and the
- backend application.
- The sos-server basically opens a serial port to receive and send messages
+On the back-end, we run two applications, which are the SOS-server and the
+ back-end application.
+ The SOS-server basically opens a serial port to receive and send messages
  from/to a base sensor node.
  It also opens a network socket on the localhost so that other applications
  can communicate with the base node.
@@ -850,10 +908,10 @@ On the backend, we run two applications, which are the sos-server and the
 \end_layout
 
 \begin_layout Standard
-On the other hand, the backend application, which consists of several python
+On the other hand, the back-end application, which consists of several python
  modules such as pySOSmodule, PowerMeasurementParser, RFIDParser, XMLmodule
  and spltSlogmodule, translates data from the infrastructure nodes and sends
- the results to the sensorbase.
+ the results to the SensorBase.
  The pySOS provides several APIs for the SOSmessage communication.
  One can initialize pySOS module using 
 \begin_inset Quotes eld
@@ -863,7 +921,7 @@ pysos.sossrv()
 \begin_inset Quotes erd
 \end_inset
 
- which makes a socket connection to the sos-server through the localhost.
+ which makes a socket connection to the SOS-server through the localhost.
  Then 
 \begin_inset Quotes eld
 \end_inset
@@ -893,7 +951,7 @@ pysos.listen()
 \begin_layout Standard
 Since PowerMeasurement and RFID motes have their own protocol, we needed
  to write translator modules which are PMparser and RFIDparser, respectively.
- The reason why we use the backend for translating those information is
+ The reason why we use the back-end for translating those information is
  because they are strings and string processes are not well supported by
  SOS.
  
@@ -909,10 +967,10 @@ The protocol for the Watts Up Pro is an ASCII string
 \end_inset
 
  which implies (Command, NumberofArgument, Watt, Voltage, Ampere, ...).
- PM mote forwards its powermeasurement reading with its network ID every
+ PM mote forwards its power measurement reading with its network ID every
  one second.
- PMparser basically translates those two information into the 5 tuples (TimeStam
-p, ApplianceID, Ampere, Watt, Voltage).
+ PMparser basically translates this information into the 5 tuples (TimeStamp,
+ ApplianceID, Ampere, Watt, Voltage).
  
 \end_layout
 
@@ -927,12 +985,12 @@ The protocol of the RFID reader is simpler than that of the PM.
 
 \begin_layout Standard
 After both of translator modules make the data in appropriate form, XML
- module generates appropriate sensorbase XML scripts from the data which
- will eventually be sent to the sensorbase.
+ module generates appropriate SensorBase XML scripts from the data which
+ will eventually be sent to the SensorBase.
  Then it puts these XML packets into a queue where spltSlog module, which
- allows us to slog on the fly, grabs the data and sends it to the sensorbase.
+ allows us to slog on the fly, grabs the data and sends it to the SensorBase.
  Once sets of all the tuples are stored at the predefined PowerMeasurement
- table and RFID table in the sensorbase, it can be used for off-line analysis
+ table and RFID table in the SensorBase, it can be used for off-line analysis
  as described in 
 \begin_inset LatexCommand \ref{sec:R-Algoriths}
 
@@ -940,10 +998,39 @@ After both of translator modules make the data in appropriate form, XML
 
 .
  
+\begin_inset Float figure
+placement h
+wide false
+sideways false
+status collapsed
+
+\begin_layout Standard
+\align center
+\begin_inset Graphics
+	filename backend1.png
+	lyxscale 25
+	width 100col%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Caption
+\begin_inset LatexCommand \label{fig:Back-end-Software-Architecture}
+
+\end_inset
+
+Back-end Software Architecture
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Section
-R Algoriths 
+R Algorithms 
 \begin_inset LatexCommand \label{sec:R-Algoriths}
 
 \end_inset
@@ -954,7 +1041,6 @@ R Algoriths
 \begin_layout Standard
 We constructed two usage profile in our application: one for the sharable
  appliances and one for the non-sharable.
- 
 \end_layout
 
 \begin_layout Subsection
@@ -966,12 +1052,12 @@ For the sharable appliances, we need to construct an occupancy profile of
  the users.
  We do this by collecting RFID tag information on when the users enter and
  leave the lab.
- We assume that the user deligently tag him/herself when entering and leaving
+ We assume that the user diligently tag him/herself when entering and leaving
  the lab.
  Our data collection profile is robust enough to ensure no lost information.
  We start by assuming that no user is present in the lab.
  Then whenever a RFID tag is received, it is believed that the user has
- entered the lab and on the next occurance of the tag, it is believed that
+ entered the lab and on the next occurrence of the tag, it is believed that
  the user has left the lab.
  Whenever anyone enters or leaves the lab, we calculate the additional power
  consumed by each user present in the lab during that duration and add it
@@ -1043,7 +1129,7 @@ We use a much smaller value of 0.001 for calculating the idle power of the
 After we have computed the idle power and the filtered stream, we are ready
  to locate the usages of the devices based on the RFID readings.
  Whenever we detect a tag, we look for the usages on the filtered stream.
- We define the device to be in use whenever the filtered stream is outputing
+ We define the device to be in use whenever the filtered stream is outputting
  a value greater than some threshold determines from the idle power.
  We look for the closest such edge in our filtered stream to find the usage.
  We locate the low-to-high and the high-to-low edge of the usage, integrate
@@ -1102,15 +1188,15 @@ Figure
 
 \end_inset
 
- describes our deployment of SpotLight system in the NESL.
+ describes our deployment of Spotlight system in the NESL.
  There are two PM motes on the printer and the coffee machine where PM motes
  send power measurement packets to tree routing relay nodes once per a second.
  Also we placed RFID motes at the backdoor, the printer, and the coffee
  machine where they read TAG IDs as RFID TAGs are within the range.
  As soon as a RFID TAG is detected, they forward it to the tree routing
  relay so that it can reach the base node.
- The base node just sends data packets back to the backend gumstix on which
- SOS messages are translated and slogged to the sensorbase as described
+ The base node just sends data packets back to the back-end Gumstix on which
+ SOS messages are translated and slogged to the SensorBase as described
  in 
 \begin_inset LatexCommand \ref{sec:Back-end-System}
 
@@ -1122,22 +1208,23 @@ Figure
 \begin_layout Standard
 In the sense of the project requirement, we used 8 MicaZ motes: 1 for the
  base node, 2 for the relay nodes, 3 for the RFID motes, and 2 for the PM
- motes as well as we used the gumstix for the backend.
+ motes as well as we used the Gumstix for the back-end.
  And the current deployment shows that the maximum hop count is two.
  As described in 
 \begin_inset LatexCommand \ref{sec:Back-end-System}
 
 \end_inset
 
-, the backend sends data to the sensor base on the fly as well.
- And of course, more than two sensing modalities RFID and PowerMeasurement(curre
-nt, watts, voltage) are involved.
+, the back-end sends data to the sensor base on the fly as well.
+ And of course, two sensing modalities RFID and Power Measurement (current,
+ watts, voltage) are involved.
  
 \end_layout
 
 \begin_layout Standard
-Some interesting observations are found during 3 weeks intermittent deployment.
- First, the sensorbase returns 
+Some interesting observations are found during 3 weeks of intermittent deploymen
+t.
+ First, the SensorBase returns 
 \begin_inset Quotes eld
 \end_inset
 
@@ -1146,15 +1233,21 @@ Fatal Error
 \end_inset
 
  when the number of rows of a table exceeds 100s of thousands of lines.
- The case will be reported to the administrator.
- In addition, we met lots of SOS kernel panics during the long-term deployment
- which are supposed not to happen.
- And discussed those panic problems with Simon.
+ This case will be reported to the administrator.
+ In addition, we frequently encountered SOS 
+\begin_inset Quotes eld
+\end_inset
+
+kernel panic
+\begin_inset Quotes erd
+\end_inset
+
+ during the long-term deployment which is not supposed to happen.
  
 \end_layout
 
 \begin_layout Section
-ResultS
+Results
 \begin_inset LatexCommand \label{sec:Results}
 
 \end_inset
@@ -1169,7 +1262,7 @@ RFID with appliances
 \begin_layout Standard
 For three days deployment, we collected users' appliance usage profile.
  As described in 
-\begin_inset LatexCommand \ref{section}
+\begin_inset LatexCommand \ref{sec:Final-deployment-and}
 
 \end_inset
 
@@ -1636,7 +1729,7 @@ Table
 
 \end_inset
 
- illustrate that the SpotLight captures users' appliance usage profile.
+ illustrate that the Spotlight captures users' appliance usage profile.
  But, in table 
 \begin_inset LatexCommand \ref{tab:Coffee-Machine-Usage}
 
@@ -1707,8 +1800,12 @@ Figures
 
 \end_inset
 
- give participants' occupancy profile, X-axis is time-stamp and 1 implies
- she/he is in and 0 implies that she/he is not in.
+ give participants' occupancy profile, 
+\emph on
+x
+\emph default
+-axis is time-stamp and 1 implies she/he is in and 0 implies that she/he
+ is not in.
  
 \end_layout
 
@@ -1735,7 +1832,7 @@ status collapsed
 
 \end_inset
 
-Occupancy1
+Younghun's occupancy data
 \end_layout
 
 \end_inset
@@ -1763,7 +1860,7 @@ status collapsed
 
 \end_inset
 
-Occupancy2
+Zainul's occupancy data
 \end_layout
 
 \end_inset
@@ -1791,7 +1888,7 @@ status collapsed
 
 \end_inset
 
-Occupancy3
+Laura's occupancy data
 \end_layout
 
 \end_inset
@@ -1819,12 +1916,143 @@ status collapsed
 
 \end_inset
 
-Occupancy4
+Akhi's occupancy data
 \end_layout
 
 \end_inset
 
 
+\end_layout
+
+\begin_layout Subsection
+Idle/Usage Power measurement
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Standard
+\align center
+\begin_inset Graphics
+	filename power1.png
+	lyxscale 25
+	width 60col%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Caption
+\begin_inset LatexCommand \label{fig:Power1}
+
+\end_inset
+
+Raw power measurement data
+\end_layout
+
+\end_inset
+
+
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Standard
+\align center
+\begin_inset Graphics
+	filename power2.png
+	lyxscale 25
+	width 60col%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Caption
+\begin_inset LatexCommand \label{fig:Power2}
+
+\end_inset
+
+Filtered power measurement data
+\end_layout
+
+\end_inset
+
+
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Standard
+\align center
+\begin_inset Graphics
+	filename power3.png
+	lyxscale 25
+	width 60col%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Caption
+\begin_inset LatexCommand \label{fig:Power3}
+
+\end_inset
+
+Idle power estimation
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Figure 
+\begin_inset LatexCommand \ref{fig:Power1}
+
+\end_inset
+
+ shows the raw power measurement readings taken over a few days and illustrates
+ how the readings vary.
+ Using the algorithms described in Section 
+\begin_inset LatexCommand \ref{sec:R-Algoriths}
+
+\end_inset
+
+, the data is filtered for processing using two values of 
+\begin_inset Formula $\alpha$
+\end_inset
+
+.
+ A higher value of 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ provides a version without as many transients as shown in Figure 
+\begin_inset LatexCommand \ref{fig:Power2}
+
+\end_inset
+
+, and is useful for determining usage transition edges.
+ A much lower value of 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ is used to estimate the idle power as shown in Figure 
+\begin_inset LatexCommand \ref{fig:Power3}
+
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Section
