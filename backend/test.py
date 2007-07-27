@@ -14,6 +14,7 @@ class RadarGraph(wx.Window):
         self.title = title 
 	self.px=0
 	self.py=0 
+	self.pz=10
         self.titleFont = wx.Font(14, wx.SWISS, wx.NORMAL, wx.BOLD) 
         self.labelFont = wx.Font(10, wx.SWISS, wx.NORMAL, wx.NORMAL) 
         self.InitBuffer() 
@@ -35,6 +36,7 @@ class RadarGraph(wx.Window):
     def SetData(self, newData): 
         self.px = newData[0]
 	self.py = newData[1]
+	self.pz = newData[2]
 	dc = wx.BufferedDC(wx.ClientDC(self), self.buffer)   
         self.DrawGraph(dc) 
 
@@ -57,7 +59,7 @@ class RadarGraph(wx.Window):
         th = th + 2*spacer   
         cx = dw/2 
         cy = (dh-th)/2 + th 
-        dc.SetPen(wx.Pen("red", 20)) 
+        dc.SetPen(wx.Pen("red", self.pz)) 
         dc.SetBrush(wx.TRANSPARENT_BRUSH) 
 	dc.DrawPoint(self.px,self.py)
 
@@ -69,7 +71,7 @@ class TestFrame(wx.Frame):
 
 
         # Set some random initial data values 
-        self.plot.SetData((100,100)) 
+        self.plot.SetData((100,100,20,200,200,20)) 
         # Create a timer to update the data values 
         self.Bind(wx.EVT_TIMER, self.OnTimeout) 
         self.timer = wx.Timer(self) 
@@ -87,9 +89,10 @@ class TestFrame(wx.Frame):
 
 	self.py = 0
 	self.px = 0
+	self.pz = 10
 
     def OnTimeout(self, evt): 
-	data=(self.px,self.py)
+	data=(self.px,self.py,self.pz)
         self.plot.SetData(data) 
 
     def getSOSmsg(self):
@@ -102,7 +105,8 @@ class TestFrame(wx.Frame):
                                 self.py = 2*(accMsg[1]-511)+400
                         if accMsg[0]==1:
                                 self.px = 2*(accMsg[1]-511)+400
-
+			if accMsg[0]==3:
+				self.pz = (accMsg[1]-397)+80
                 except:
                         pass
 

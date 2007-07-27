@@ -31,12 +31,13 @@ class photoModule:
 				msg = self.srv.listen()
 				pkt = msg[0]['data']
 				photoMsg = pysos.unpack('<BH',pkt)
-				if photoMsg[0]==2:
+				if photoMsg[0]==3:
 					deltaV = self.constant*self.samplingtime*(photoMsg[1]-self.middle)
 					self.velocity = self.velocity+deltaV
 					deltaP = self.velocity*self.samplingtime
 					self.position = self.position+deltaP
-					print photoMsg[1]-self.middle
+					#print photoMsg[1]-self.middle
+					print photoMsg[1]
 			except:
 				pass
 		
