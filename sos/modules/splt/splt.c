@@ -15,7 +15,7 @@ typedef struct {
 } app_state_t;
 
 static int8_t splt_msg_handler(void *start, Message *e);
-static void send_msg(app_state_t *s, MsgParam* param, uint8_t type);
+//static void send_msg(app_state_t *s, MsgParam* param, uint8_t type);
 
 static const mod_header_t mod_header SOS_MODULE_HEADER = {
   .mod_id         = SPLT_MOD_PID,
@@ -80,7 +80,7 @@ static int8_t splt_msg_handler(void *state, Message *msg)
     {
 	  sys_led(LED_RED_TOGGLE);
       // send the received data
-      send_msg(s, (MsgParam*)(msg->data), SPLT_TYPE_PMREADING);
+  //    send_msg(s, (MsgParam*)(msg->data), SPLT_TYPE_PMREADING);
       break;
     }
 
@@ -88,7 +88,7 @@ static int8_t splt_msg_handler(void *state, Message *msg)
     {
 	  sys_led(LED_RED_TOGGLE);
       // send the received data
-      send_msg(s, (MsgParam*)(msg->data), SPLT_TYPE_RFREADING);
+//      send_msg(s, (MsgParam*)(msg->data), SPLT_TYPE_RFREADING);
       // ask for more data from rfid reader
       
       break;
@@ -105,7 +105,7 @@ static int8_t splt_msg_handler(void *state, Message *msg)
 		msg_len = msg->len;
 		payload = sys_msg_take_data(msg);
 		sys_post_uart(SPLT_MOD_PID, msg->type, msg_len,
-					  payload, SOS_MSG_RELEASE, BCAST_ADDRESS);
+					  (void*)payload, SOS_MSG_RELEASE, BCAST_ADDRESS);
       }
       break;
     }
@@ -121,7 +121,7 @@ static int8_t splt_msg_handler(void *state, Message *msg)
   
   return SOS_OK;
 }
-
+/*
 static void send_msg(app_state_t *s, MsgParam* param, uint8_t type) {
   uint8_t *pkt;
   SpltMsg *smsg;
@@ -141,7 +141,7 @@ static void send_msg(app_state_t *s, MsgParam* param, uint8_t type) {
   sys_post(TREE_ROUTING_PID, MSG_SEND_PACKET, 
 	   s->hdr_size + sizeof(SpltMsg), (void*)pkt, SOS_MSG_RELEASE);
 }
-
+*/
 #ifndef _MODULE_
 mod_header_ptr splt_get_header()
 {
