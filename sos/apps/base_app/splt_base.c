@@ -11,16 +11,17 @@ mod_header_ptr test_param_get_header();
 
 //! forward declaration
 //mod_header_ptr loader_get_header();
-mod_header_ptr neighbor_get_header();
-mod_header_ptr tree_routing_get_header();
-//mod_header_ptr splt_get_header();
+//mod_header_ptr neighbor_get_header();
+//mod_header_ptr tree_routing_get_header();
+mod_header_ptr rfid_get_header();
+mod_header_ptr uart_mod_get_header();
 
 void sos_start(void){
 //	ker_register_module(loader_get_header());
-	ker_register_module(neighbor_get_header());
-	ker_register_module(tree_routing_get_header());
-//	ker_register_module(splt_get_header());
-	
+//	ker_register_module(neighbor_get_header());
+//	ker_register_module(tree_routing_get_header());
+	ker_register_module(rfid_get_header());
+	ker_register_module(uart_mod_get_header());	
 
 #if 0
 	//#ifdef SOS_SIM
