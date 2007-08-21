@@ -75,7 +75,7 @@ class AppEnergy(wx.Frame):
         self.client = wxPlot.PlotCanvas(self)
         self.markers = wxPlot.PolyMarker(self.data, legend='', colour=self.color, marker='circle', size=1)
         self.gc = wxPlot.PlotGraphics([self.markers], name, 'Time', 'Watt')
-        self.client.Draw(self.gc, xAxis=(0,30), yAxis=(-5,1000))
+        self.client.Draw(self.gc, xAxis=(0,30), yAxis=(-5,300))
         self.Show(True)
 
         self.Bind(wx.EVT_CLOSE, self.OnCloseWindow)
@@ -88,7 +88,7 @@ class AppEnergy(wx.Frame):
         
         self.markers = wxPlot.PolyMarker(self.data, legend='', colour=self.color, marker='circle', size=1)
         self.gc = wxPlot.PlotGraphics([self.markers], self.name, 'Time', 'Watt')
-        self.client.Draw(self.gc, xAxis=(0,30), yAxis=(-5,1000))
+        self.client.Draw(self.gc, xAxis=(0,30), yAxis=(-5,300))
         self.Show(True)
         
     def OnCloseWindow(self, event):
@@ -159,7 +159,7 @@ class SpotLight(wx.Frame):
     def TVpop(self, event):
         self.TVFig = AppEnergy("TV Energy",(801,0),(400,300),"magenta")
     def Ironpop(self, event):
-        self.IronFig = AppEnergy("Iron Energy",(801,0),(400,300),"yellow")
+        self.IronFig = AppEnergy("Iron Energy",(801,0),(400,300),"red")
     def Light1pop(self, event):
         self.Light1Fig = AppEnergy("Light1 Energy",(801,0),(400,300),"red")
     def Light2pop(self, event):
@@ -410,9 +410,13 @@ class SpotLight(wx.Frame):
 		try:
 			msg = self.srv.listen()
 			pkt = msg[0]['data']
-			temp = pkt.split(',')
-			print temp[3]
-			self.Iron.energy = float(temp[3])/10
+			addr = pysos.unpack('<B',pkt[0])
+			#print addr[0]
+			temp = pkt[1:].split(',')
+			if addr[0]==3:
+				self.Iron.energy = float(temp[3])/10
+			if addr[0]==8:
+				self.Light1.energy = float(temp[3])/10
 		except:
 			pass
 

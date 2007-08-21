@@ -82,7 +82,7 @@ static int8_t rfid_msg_handler(void *state, Message *msg)
 
 //	  sys_post(TREE_ROUTING_PID, MSG_SEND_PACKET, msg_len, (void*)buff_to_send,SOS_MSG_RELEASE);
 	if (sys_id() ==1){
-		sys_post_uart(s->pid, MSG_RFID_RESPONSE, msg_len,(void*)buff_to_send, SOS_MSG_RELEASE, BCAST_ADDRESS);
+		sys_post_uart(msg->sid, MSG_RFID_RESPONSE, msg_len,(void*)buff_to_send, SOS_MSG_RELEASE, BCAST_ADDRESS);
 		sys_led(LED_RED_TOGGLE);
 	} else{
 
