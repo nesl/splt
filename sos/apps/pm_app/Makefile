@@ -3,7 +3,7 @@ PROJ = pm_mote
 
 ROOTDIR = $(SOSROOT)
 
-SRCS +=  neighbor.c tree_routing.c rfid.c uart_mod_pm.c
+SRCS +=  rfid.c uart_mod_pm.c activeRFIDreader.c
 
 
 #DEFS += -D'UART_ADDR=0x8000'
@@ -46,4 +46,4 @@ vpath neighbor.c $(ROOTDIR)/modules/routing/neighbor/
 vpath tree_routing.c $(ROOTDIR)/modules/routing/tree_routing/
 vpath rfid.c ../../modules/pm/
 vpath uart_mod_pm.c ../../modules/uart_mod/
-
+vpath activeRFIDreader.c ../../modules/activeRFIDreader/

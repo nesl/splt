@@ -106,7 +106,6 @@ class SpotLight(wx.Frame):
         self.Bind(wx.EVT_TIMER, self.OnTimeout)
         self.timer = wx.Timer(self)
         self.timer.Start(500)
-
         self.panel = wx.Panel(self, -1, pos=(601,0), size=(200,600))
         self.INIKim = wx.Button(self.panel, -1, "Enter Kim", pos=(0,0))
         self.INIKim.Bind(wx.EVT_LEFT_DOWN, self.EnterKim, self.INIKim)
@@ -159,7 +158,7 @@ class SpotLight(wx.Frame):
     def TVpop(self, event):
         self.TVFig = AppEnergy("TV Energy",(801,0),(400,300),"magenta")
     def Ironpop(self, event):
-        self.IronFig = AppEnergy("Iron Energy",(801,0),(400,300),"red")
+        self.IronFig = AppEnergy("Iron Energy",(801,0),(400,300),"black")
     def Light1pop(self, event):
         self.Light1Fig = AppEnergy("Light1 Energy",(801,0),(400,300),"red")
     def Light2pop(self, event):

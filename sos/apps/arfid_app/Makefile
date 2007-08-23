@@ -1,5 +1,5 @@
 
-PROJ = splt_base
+PROJ = arfid
 
 ROOTDIR = $(SOSROOT)
 
@@ -17,7 +17,7 @@ DEFS += -D'UART_ADDR=0x8000'
 #DEFS += -DUSE_UART1
 #DEFS += -DSOS_USE_LOGGING
 
-SRCS += loader.c rfid.c uart_mod_pm.c
+SRCS += loader.c rfidtag.c 
 
 #################################################
 # MEMORY PROTECTION OPTIONS
@@ -39,5 +39,4 @@ vpath loader.c $(ROOTDIR)/extensions/loader/
 vpath blink.c $(ROOTDIR)/modules/test_modules/blink/
 vpath surge.c $(ROOTDIR)/modules/test_modules/surge/
 vpath test_param.c $(ROOTDIR)/modules/test_modules/test_param/
-vpath rfid.c ../../modules/base/
-vpath uart_mod_pm.c ../../modules/uart_mod/ 
+vpath rfidtag.c ../../modules/activeRFIDtag/
