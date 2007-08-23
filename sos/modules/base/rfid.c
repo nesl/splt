@@ -38,7 +38,7 @@ static const mod_header_t mod_header SOS_MODULE_HEADER = {
   .code_id        = ehtons(DFLT_APP_ID0),
   .module_handler = rfid_msg_handler,
   .funct = {
-	  [0] = {error_8, "Cvv0", TREE_ROUTING_PID, MOD_GET_HDR_SIZE_FID},
+    [0] = {error_8, "Cvv0", TREE_ROUTING_PID, MOD_GET_HDR_SIZE_FID},
   },
 };
 
@@ -58,9 +58,9 @@ static int8_t rfid_msg_handler(void *state, Message *msg)
         DEBUG("Rfid Start\n");
 
         sys_post(KER_UART_PID, MSG_RFID_COMMAND, sizeof(rfid_cmd), rfid_cmd, 0);
-	s->counter = 0;
-	s->hdr_size = SOS_CALL(s->get_hdr_size, get_hdr_size_proto);
-	break;
+        s->counter = 0;
+        s->hdr_size = SOS_CALL(s->get_hdr_size, get_hdr_size_proto);
+        break;
       }
 
 
@@ -74,21 +74,26 @@ static int8_t rfid_msg_handler(void *state, Message *msg)
       {
         uint8_t msg_len;
         uint8_t *buff_to_send;
+        uint8_t *msg_rssi;
         msg_len = msg->len;
         buff_to_send = (uint8_t*)ker_msg_take_data(s->pid, msg);
         if (buff_to_send != NULL){
-     	  send_msg(s, buff_to_send, msg_len, SPLT_TYPE_RFREADING);
-//	  sys_free(buff_to_send);
+          send_msg(s, buff_to_send, msg_len, SPLT_TYPE_RFREADING);
+          //	  sys_free(buff_to_send);
 
-//	  sys_post(TREE_ROUTING_PID, MSG_SEND_PACKET, msg_len, (void*)buff_to_send,SOS_MSG_RELEASE);
-	if (sys_id() ==1){
-		sys_post_uart(msg->sid, MSG_RFID_RESPONSE, msg_len,(void*)buff_to_send, SOS_MSG_RELEASE, BCAST_ADDRESS);
-		sys_led(LED_RED_TOGGLE);
-	} else{
-
-      	sys_post_net(DFLT_APP_ID0, msg->type, msg_len, (void*)buff_to_send, SOS_MSG_RELEASE, BCAST_ADDRESS);
-}
-     	}
+          //	  sys_post(TREE_ROUTING_PID, MSG_SEND_PACKET, msg_len, (void*)buff_to_send,SOS_MSG_RELEASE);
+          if (sys_id() ==1){
+            sys_post_uart(msg->did, MSG_RFID_RESPONSE, msg_len,(void*)buff_to_send, SOS_MSG_RELEASE, BCAST_ADDRESS);
+            msg_rssi = sys_malloc(sizeof(int8_t));
+            if (msg_rssi != NULL){
+              *msg_rssi = msg->rssi;
+              sys_post_uart(msg->did, MSG_RFID_RESPONSE+1, sizeof((*msg_rssi)), (void*)msg_rssi, SOS_MSG_RELEASE, BCAST_ADDRESS);
+            }
+            sys_led(LED_RED_TOGGLE);
+          } else{
+            sys_post_net(DFLT_APP_ID0, msg->type, msg_len, (void*)buff_to_send, SOS_MSG_RELEASE, BCAST_ADDRESS);
+          }
+        }
 
         break;
       }
@@ -104,7 +109,7 @@ static void send_msg(app_state_t *s, uint8_t *buf, uint8_t msg_len,uint8_t msg_t
   uint8_t *pkt;
   SpltMsg *smsg;
 
-   // malloc the message
+  // malloc the message
   pkt = (uint8_t*)sys_malloc(s->hdr_size + msg_len + sizeof(SpltMsg));
   if(pkt == NULL) return;
 
@@ -119,11 +124,11 @@ static void send_msg(app_state_t *s, uint8_t *buf, uint8_t msg_len,uint8_t msg_t
   // send the message
 
   sys_post(TREE_ROUTING_PID, MSG_SEND_PACKET,
-  s->hdr_size + sizeof(SpltMsg)+msg_len, (uint8_t*)pkt, SOS_MSG_RELEASE);
-//  sys_free(pkt);
-	     
+      s->hdr_size + sizeof(SpltMsg)+msg_len, (uint8_t*)pkt, SOS_MSG_RELEASE);
+  //  sys_free(pkt);
+
 }
-	                                 
+
 
 
 
