@@ -9,7 +9,7 @@
 #include <routing/tree_routing/tree_routing.h>
 #include <module.h>
 
-#define aRFID_TIMER_INTERVAL	32L
+#define aRFID_TIMER_INTERVAL	256L
 #define aRFID_TID		0
 
 #define MSG_RFID_COMMAND (MOD_MSG_START+2)

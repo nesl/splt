@@ -9,7 +9,7 @@
 #include <routing/tree_routing/tree_routing.h>
 #include <module.h>
 
-#define aRFID_TIMER_INTERVAL	32L
+#define aRFID_TIMER_INTERVAL	1024L
 #define aRFID_TID		0
 
 #define MSG_RFID_COMMAND (MOD_MSG_START+2)
@@ -59,7 +59,8 @@ static int8_t rfidreader_msg_handler(void *state, Message *msg)
         s->state = 0;
         DEBUG("Rfidreader Start\n");
 
-	sys_timer_start(aRFID_TID,aRFID_TIMER_INTERVAL,TIMER_REPEAT);	
+	sys_timer_start(aRFID_TID,aRFID_TIMER_INTERVAL,TIMER_REPEAT);
+	s->counter = 0;	
         break;
       }
 
@@ -70,18 +71,29 @@ static int8_t rfidreader_msg_handler(void *state, Message *msg)
         break;
       }
 
+    case MSG_TIMER_TIMEOUT:
+	{
+		sys_led(LED_YELLOW_TOGGLE);
+		//sys_post_net(DFLT_APP_ID0, MSG_RFID_RESPONSE, 1, (void*)address, SOS_MSG_RELEASE, BCASE_ADDRESS);
+		s->counter=0;
+		break;
+
+	}
     case MSG_RFID_TAG:
 	{
 		sys_led(LED_RED_TOGGLE);
-		uint8_t *address;
-		uint8_t data;
-		data = sys_id();
-		address = sys_malloc(sizeof(uint8_t));
-		if (address !=NULL)
+		uint8_t *rfidfield;
+		uint8_t *payload;
+		payload = sys_msg_take_data(msg);
+		rfidfield = sys_malloc(3*sizeof(uint8_t));
+		if (rfidfield !=NULL)
 		{
-			*address = data;
-			sys_post_net(DFLT_APP_ID0, MSG_RFID_RESPONSE, 1, (void*)address, SOS_MSG_RELEASE, BCAST_ADDRESS);
+			rfidfield[0]=sys_id();
+			rfidfield[1]=msg->rssi;
+			memcpy(rfidfield+2, payload, 1);
+			sys_post_net(DFLT_APP_ID0, MSG_RFID_RESPONSE, 3, (void*)rfidfield, SOS_MSG_RELEASE, BCAST_ADDRESS);
 		}
+		sys_free(payload);
 		break;
 	}
     default:
