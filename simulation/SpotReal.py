@@ -105,7 +105,7 @@ class SpotLight(wx.Frame):
 
         self.Bind(wx.EVT_TIMER, self.OnTimeout)
         self.timer = wx.Timer(self)
-        self.timer.Start(500)
+        self.timer.Start(1000)
         self.panel = wx.Panel(self, -1, pos=(601,0), size=(200,600))
         self.INIKim = wx.Button(self.panel, -1, "Enter Kim", pos=(0,0))
         self.INIKim.Bind(wx.EVT_LEFT_DOWN, self.EnterKim, self.INIKim)
@@ -148,7 +148,7 @@ class SpotLight(wx.Frame):
 		thread.start_new_thread(self.getSOSmsg,())
 	except thread.error:
 		pass
-    
+
     def EnterKim(self, event):
         self.Kim = UserButton(self, "Kim", (20,20), (30,30))
         
@@ -380,7 +380,8 @@ class SpotLight(wx.Frame):
         except:
             pass
         try:
-            self.IronFig.Update(self.Iron.energy)
+            pass 
+	    #self.IronFig.Update(self.Iron.energy)
         except:
             pass
         try:
@@ -396,7 +397,8 @@ class SpotLight(wx.Frame):
         except:
             pass
         try:
-            self.KimFig.Update(self.Kim.energy)
+            pass 
+	    #self.KimFig.Update(self.Kim.energy)
         except:
             pass
         try:
@@ -409,13 +411,30 @@ class SpotLight(wx.Frame):
 		try:
 			msg = self.srv.listen()
 			pkt = msg[0]['data']
-			addr = pysos.unpack('<B',pkt[0])
-			#print addr[0]
-			temp = pkt[1:].split(',')
-			if addr[0]==3:
-				self.Iron.energy = float(temp[3])/10
-			if addr[0]==8:
-				self.Light1.energy = float(temp[3])/10
+			try: 
+				data = pysos.unpack('<BBB',pkt)
+				temp = float(data[1])
+				if temp < 40:
+					self.Kim.present = 1
+			except:
+				addr = pysos.unpack('<B',pkt[0])
+				temp = pkt[1:].split(',')
+				if addr[0]==3:
+					self.Iron.energy = float(temp[3])/10
+				        self.IronFig.Update(self.Iron.energy)
+					try:
+						if self.Kim.present == 1:
+							self.Kim.energy=self.Iron.energy
+						        self.KimFig.Update(self.Kim.energy)
+							self.Kim.present = 0
+						else:
+							self.Kim.energy = 0
+							self.Kim.present = 0
+							self.KimFig.Update(self.Kim.energy)
+					except:
+						pass
+#				if addr[0]==8:
+#					self.Light1.energy = float(temp[3])/10
 		except:
 			pass
 

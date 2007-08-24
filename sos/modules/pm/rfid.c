@@ -81,7 +81,7 @@ static int8_t rfid_msg_handler(void *state, Message *msg)
 //	  sys_free(buff_to_send);
 
 //	  sys_post(TREE_ROUTING_PID, MSG_SEND_PACKET, msg_len, (void*)buff_to_send,SOS_MSG_RELEASE);
-      	sys_post_net(DFLT_APP_ID0, msg->type, msg_len, (void*)buff_to_send, SOS_MSG_RELEASE, BCAST_ADDRESS);
+      	sys_post_net(DFLT_APP_ID0, msg->type, msg_len, (void*)buff_to_send, SOS_MSG_RELEASE | SOS_MSG_RELIABLE, 0x01);
 
      	}
 

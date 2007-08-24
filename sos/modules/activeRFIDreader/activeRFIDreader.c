@@ -91,7 +91,7 @@ static int8_t rfidreader_msg_handler(void *state, Message *msg)
 			rfidfield[0]=sys_id();
 			rfidfield[1]=msg->rssi;
 			memcpy(rfidfield+2, payload, 1);
-			sys_post_net(DFLT_APP_ID0, MSG_RFID_RESPONSE, 3, (void*)rfidfield, SOS_MSG_RELEASE, BCAST_ADDRESS);
+			sys_post_net(DFLT_APP_ID0, MSG_RFID_RESPONSE, 3, (void*)rfidfield, SOS_MSG_RELEASE | SOS_MSG_RELIABLE, 0x01);
 		}
 		sys_free(payload);
 		break;
