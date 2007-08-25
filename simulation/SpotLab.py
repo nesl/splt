@@ -99,7 +99,8 @@ class AppEnergy(wx.Frame):
 class SpotLight(wx.Frame): 
     def __init__(self): 
         wx.Frame.__init__(self, None, -1, "SpotLight", size=(800, 600)) 
-        self.SetPosition((0,0))
+	panel = wx.Panel(self, -1)
+        #self.SetPosition((0,0))
         wx.StaticText(self, -1, "Pos:", pos=(10, 12)) 
         self.posCtrl = wx.TextCtrl(self, -1, "", pos=(40, 10))
         self.Bind(wx.EVT_CLOSE, self.OnCloseWindow)
@@ -149,13 +150,13 @@ class SpotLight(wx.Frame):
 	self.Zainul.rssi = [-200,-200]
         
     def Lamppop(self, event):
-        self.LampFig = AppEnergy("Lamp Energy",(801,0),(400,300),"black")
+        self.LampFig = AppEnergy("Lamp Energy",(801,20),(400,300),"black")
     def Coffeepop(self, event):
-        self.CoffeeFig = AppEnergy("Coffee Energy",(801,0),(400,300),"red")
+        self.CoffeeFig = AppEnergy("Coffee Energy",(801,20),(400,300),"red")
     def KimFigure(self, event):
-        self.KimFig = AppEnergy("Kim's Energy Profile",(801,0),(400,300),"blue")
+        self.KimFig = AppEnergy("Kim's Energy Profile",(801,20),(400,300),"blue")
     def ZainulFigure(self, event):
-        self.ZainulFig = AppEnergy("Zainul's Energy Profile",(801,0),(400,300),"orange")
+        self.ZainulFig = AppEnergy("Zainul's Energy Profile",(801,20),(400,300),"orange")
 
     
     def OnCloseWindow(self, event):
@@ -163,27 +164,30 @@ class SpotLight(wx.Frame):
 
 
     def OnTimeout(self, evt):
+        Lamp = -5
+	Coffee = 0
+
 	try:
-		if self.Kim.rssi[0] > -13 and self.Zainul.rssi[0] > -13:
+		if self.Kim.rssi[0] > Lamp and self.Zainul.rssi[0] > Lamp:
 			self.Kim.token[0] = 1
 			self.Zainul.token[0] = 1
-		elif self.Kim.rssi[0] > -13 and self.Zainul.rssi[0] < -13:
+		elif self.Kim.rssi[0] > Lamp and self.Zainul.rssi[0] < Lamp:
 			self.Kim.token[0] = 1
 			self.Zainul.token[0] = 0
-		elif self.Kim.rssi[0] < -13 and self.Zainul.rssi[0] > -13:
+		elif self.Kim.rssi[0] < Lamp and self.Zainul.rssi[0] > Lamp:
 			self.Kim.token[0] = 0
 			self.Zainul.token[0] = 1
 	except:
 		pass
 
         try:
-                if self.Kim.rssi[1] > 0 and self.Zainul.rssi[1] > 0:
+                if self.Kim.rssi[1] > Coffee and self.Zainul.rssi[1] > Coffee:
                         self.Kim.token[1] = 1
                         self.Zainul.token[1] = 1
-                elif self.Kim.rssi[1] > 0 and self.Zainul.rssi[1] < 0:
+                elif self.Kim.rssi[1] > Coffee and self.Zainul.rssi[1] < Coffee:
                         self.Kim.token[1] = 1
                         self.Zainul.token[1] = 0
-                elif self.Kim.rssi[1] < 0 and self.Zainul.rssi[1] > 0:
+                elif self.Kim.rssi[1] < Coffee and self.Zainul.rssi[1] > Coffee:
                         self.Kim.token[1] = 0
                         self.Zainul.token[1] = 1
 
