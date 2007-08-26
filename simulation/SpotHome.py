@@ -191,10 +191,10 @@ class SpotLight(wx.Frame):
 
 
     def OnTimeout(self, evt):
-	TV = -19
-        Lamp = -28
+	TV = -18
+        Lamp = -22
 	Coffee = -5
-	Lamp2 = -28
+	Lamp2 = -22
 #TV
         try:
                 if self.Kim.rssi[0] > TV and self.Cho.rssi[0] > TV:
