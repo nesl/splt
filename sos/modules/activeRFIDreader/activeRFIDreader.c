@@ -13,11 +13,13 @@
 
 #define aRFID_TIMER_INTERVAL	1024L
 #define aRFID_TID		0
+#define RAND_TID		1
 
 #define MSG_RFID_COMMAND (MOD_MSG_START+2)
 #define MSG_RFID_RESPONSE (MOD_MSG_START+3)
 #define MSG_RFID_TAG (MOD_MSG_START+4)
 
+static uint8_t *rfid;
 
 typedef struct {
   func_cb_ptr get_hdr_size;
@@ -61,7 +63,6 @@ static int8_t rfidreader_msg_handler(void *state, Message *msg)
         s->state = 0;
         DEBUG("Rfidreader Start\n");
 
-	sys_timer_start(aRFID_TID,aRFID_TIMER_INTERVAL,TIMER_REPEAT);
 	s->counter = 0;	
         break;
       }
@@ -73,29 +74,29 @@ static int8_t rfidreader_msg_handler(void *state, Message *msg)
         break;
       }
 
-    case MSG_TIMER_TIMEOUT:
-	{
-		sys_led(LED_YELLOW_TOGGLE);
-		//sys_post_net(DFLT_APP_ID0, MSG_RFID_RESPONSE, 1, (void*)address, SOS_MSG_RELEASE, BCASE_ADDRESS);
-		s->counter=0;
-		break;
-
-	}
     case MSG_RFID_TAG:
 	{
 		sys_led(LED_RED_TOGGLE);
-		uint8_t *rfidfield;
 		uint8_t *payload;
 		payload = sys_msg_take_data(msg);
-		rfidfield = sys_malloc(3*sizeof(uint8_t));
-		if (rfidfield !=NULL)
+		rfid = sys_malloc(3*sizeof(uint8_t));
+		if (rfid !=NULL)
 		{
-			rfidfield[0]=sys_id();
-			rfidfield[1]=msg->rssi;
-			memcpy(rfidfield+2, payload, 1);
-			sys_post_net(DFLT_APP_ID0, MSG_RFID_RESPONSE, 3, (void*)rfidfield, SOS_MSG_RELEASE | SOS_MSG_RELIABLE, 0x01);
+			rfid[0]=sys_id();
+			rfid[1]=msg->rssi;
+			memcpy(rfid+2, payload, 1);
+			uint8_t time = (uint8_t)ker_rand();
+			sys_timer_start(RAND_TID, time/10, TIMER_ONE_SHOT);
 		}
 		sys_free(payload);
+		break;
+	}
+    case MSG_TIMER_TIMEOUT:
+	{
+		if (rfid !=NULL)
+		{
+		sys_post_net(DFLT_APP_ID0, MSG_RFID_RESPONSE, 3, (void*)rfid, SOS_MSG_RELEASE | SOS_MSG_RELIABLE, 0x01);
+		}
 		break;
 	}
     default:
