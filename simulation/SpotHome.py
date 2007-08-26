@@ -1,12 +1,20 @@
 #!/usr/bin python
 
+import sys
+import time
+import os
+import Queue
+import thread
 import wx
 import wx.lib.plot as wxPlot
 import random
 import math
-import time
 from pysos import pysos
-import thread
+from Slog import spltSlog
+
+
+SpHomeQueue = Queue.Queue(200)
+
 
 
 class UserButton(wx.Button):
@@ -144,6 +152,11 @@ class SpotLight(wx.Frame):
 		print "Please run sos_server first"
 	try:
 		self.srv.register_trigger(self.getSOSmsg)
+	except:
+		pass
+
+	try: 
+		thread.start_new_thread(self.DataSlog,())
 	except thread.error:
 		pass
 
@@ -178,7 +191,7 @@ class SpotLight(wx.Frame):
 
 
     def OnTimeout(self, evt):
-	TV = -18
+	TV = -19
         Lamp = -28
 	Coffee = -5
 	Lamp2 = -28
@@ -299,6 +312,20 @@ class SpotLight(wx.Frame):
         except:
             pass
 
+
+# Put Data into Queue
+	Data = (('200_Consumption',self.Cho.energy),('201_Consumption', self.Kim.energy),('200_RSSI',"%f:%f:%f:%f"%(self.Cho.rssi[0],self.Cho.rssi[1],self.Cho.rssi[2],self.Cho.rssi[3])), ('201_RSSI',"%f:%f:%f:%f"%(self.Kim.rssi[0],self.Kim.rssi[1],self.Kim.rssi[2],self.Kim.rssi[3])), ('200_Occupancy',"%i:%i:%i:%i"%(self.Cho.token[0],self.Cho.token[1],self.Cho.token[2],self.Cho.token[3])),('201_Occupancy',"%i:%i:%i:%i"%(self.Kim.token[0],self.Kim.token[1],self.Kim.token[2],self.Kim.token[3])),('Coffee', self.Coffee.energy), ('LampBed', self.Lamp2.energy), ('LampLiving', self.Lamp.energy), ('TV', self.TV.energy), ('TimeStamp',time.time()))
+	SpHomeQueue.put(Data,True,0.5)
+
+
+    def DataSlog(self):
+	while True:
+		try:
+			data = SpHomeQueue.get(False, 1)
+			spltSlog.spltSlog('SpotHome', data)
+		except:
+			pass
+
     def getSOSmsg(self,msg):
 		try:
 			pkt = msg['data']
@@ -307,7 +334,7 @@ class SpotLight(wx.Frame):
 				temp = float(data[1])
 
 # Moving average
-				alpha = 0.8
+				alpha = 0.7
 				if data[0] == 2 and data[2] == 200:
 					self.Cho.rssi[0] = self.Cho.rssi[0]*(1-alpha)+alpha*temp
 				elif data[0] == 3 and data[2] == 200:

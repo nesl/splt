@@ -35,11 +35,11 @@ class SpotLight:
 
 	def TimeOut(self):
 		while True:
-			time.sleep(10)
+			time.sleep(5)
 			for i in range(4):
 				if self.Kimcount[i]==0:
 					self.Kimrssi[i]=-200
-			#print self.Kimrssi
+			print self.Kimrssi
 			print self.Kimcount
 			self.Kimcount = [0,0,0,0]
 			
@@ -82,7 +82,6 @@ class SpotLight:
                                 elif data[0] == 8 and data[2] == 201:
                                         self.Kimrssi[3] = self.Kimrssi[3]*(1-alpha)+alpha*temp
 					self.Kimcount[3] = self.Kimcount[3]+1
-				print data
 			except:
 			#	pass
 				try:
