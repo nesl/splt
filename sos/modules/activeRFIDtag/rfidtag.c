@@ -80,7 +80,7 @@ static int8_t rfidtag_msg_handler(void *state, Message *msg)
 		if (address !=NULL)
 		{
 			*address = data;
-			sys_post_net(DFLT_APP_ID2, MSG_RFID_TAG, 1, (void*)address, SOS_MSG_RELEASE, BCAST_ADDRESS);
+			sys_post_net(DFLT_APP_ID2, MSG_RFID_TAG, 1, (void*)address, SOS_MSG_RELEASE | SOS_MSG_RELIABLE, BCAST_ADDRESS);
 		}
 		break;
 	}

@@ -38,8 +38,8 @@ class SpotLight:
 			time.sleep(10)
 			for i in range(4):
 				if self.Kimcount[i]==0:
-					print "miss"
-					print i
+					self.Kimrssi[i]=-200
+			#print self.Kimrssi
 			print self.Kimcount
 			self.Kimcount = [0,0,0,0]
 			
@@ -87,7 +87,7 @@ class SpotLight:
 			#	pass
 				try:
 					data = pysos.unpack('<B',pkt[0])
-					print data
+			#		print data
 			#		print pkt[1:]
 				except:
 					pass

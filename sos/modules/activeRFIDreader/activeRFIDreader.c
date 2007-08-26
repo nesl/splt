@@ -8,6 +8,8 @@
 #include "splt.h"
 #include <routing/tree_routing/tree_routing.h>
 #include <module.h>
+#include <random.h>
+
 
 #define aRFID_TIMER_INTERVAL	1024L
 #define aRFID_TID		0

@@ -143,7 +143,7 @@ class SpotLight(wx.Frame):
 	except:
 		print "Please run sos_server first"
 	try:
-		thread.start_new_thread(self.getSOSmsg,())
+		self.srv.register_trigger(self.getSOSmsg)
 	except thread.error:
 		pass
 
@@ -299,11 +299,9 @@ class SpotLight(wx.Frame):
         except:
             pass
 
-    def getSOSmsg(self):
-	while True:
+    def getSOSmsg(self,msg):
 		try:
-			msg = self.srv.listen()
-			pkt = msg[0]['data']
+			pkt = msg['data']
 			try: 
 				data = pysos.unpack('<BbB',pkt)
 				temp = float(data[1])
