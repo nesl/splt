@@ -14,6 +14,10 @@ User201 = retrieve.retrieve('SpotHome',"201_Consumption",1,0,10000)
 User200Occu = retrieve.retrieve('SpotHome',"200_Occupancy",1,0,10000)
 User201Occu = retrieve.retrieve('SpotHome',"201_Occupancy",1,0,10000)
 
+User200RSSI = retrieve.retrieve('SpotHome',"200_RSSI",1,0,10000)
+User201RSSI = retrieve.retrieve('SpotHome',"201_RSSI",1,0,10000)
+
+
 TV = TV.split()
 Coffee = Coffee.split()
 LampLiving = LampLiving.split()
@@ -22,6 +26,8 @@ User200 = User200.split()
 User201 = User201.split()
 User200Occu = User200Occu.split()
 User201Occu = User201Occu.split()
+User200RSSI = User200RSSI.split()
+User201RSSI = User201RSSI.split()
 
 
 import wx
@@ -89,6 +95,9 @@ class SpotDisplay(wx.Frame):
 		except:
 			print "haha"
 
+
+		print "User200 RSSI : %s"%(User200RSSI[self.index])
+		print "User201 RSSI : %s"%(User201RSSI[self.index])
 		self.index = self.index+1	
 		time.sleep(0.5)
 
