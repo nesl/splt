@@ -39,8 +39,10 @@ Younghun Kim, Zainul Charbiwala, Akhilesh Singhania, Mani B.
 \newline
 Networked and Embedded Systems Lab 
 \newline
-Dept.
- of Electrical Engineering, University of California, Los Angeles
+Department of Electrical Engineeri
+ng
+\newline
+University of California, Los Angeles
 \end_layout
 
 \begin_layout Abstract
@@ -53,28 +55,26 @@ We present Spotlight, a novel application that monitors in real-time the
  or office setting.
  Spotlight views appliances as rendering a service to a user and the energy
  consumption associated with the appliance as a cost for the service.
- Each appliance has a specified service range, a physical vicinity from
- the appliance within which the user benefits from the service.
- 
+ Each appliance is specified a service range, a physical vicinity from the
+ appliance within which the user benefits from the service.
+ Using RSSI with user-wearable active RFID tags, an appliance is able to
+ determine the users in its service range.
+ Each appliance is thus instrumented with a power meter and an active RFID
+ reader.
+ The current implementation of Spotlight uses a COTS power meter and MicaZ
+ motes as active RFID tags and readers.
 \end_layout
 
 \begin_layout Abstract
-with sharable and non-sharable appliances.
- A sharable appliance is one that multiple personnel can use at the same
- time like lights in a lab, television, etc.
- A non-sharable appliance is one that only one person uses at a time like
- microwave, coffee-maker, etc.
- All non-sharable appliances are instrumented to consist of a power-meter
- and a RFID reader.
- The user carries a RFID tag which is read by the instrument when it is
- in use by the user.
- Each sharable appliance has a power meter and a defining border with controlled
- entry and exit points.
- Personnel entering and exiting the range are detected.
- The power consumption is equally divided between the people sharing the
- appliance.
- Our results show interesting individual behavior that could be used for
- various energy optimizations.
+The Spotlight system was deployed over several days in an office as well
+ as a home setting with a diverse set of appliances and multiple users.
+ A virtual environment system has also been developed to test more complex
+ scenarios of usage.
+ We evaluate various schemes of accounting energy consumption based on an
+ individual's movement profile and the appliances' power profile.
+ Our results show interesting individual behavior that could be interpreted
+ for various energy optimizations.
+ 
 \end_layout
 
 \begin_layout Section
@@ -84,6 +84,14 @@ Introduction
 \end_inset
 
 
+\end_layout
+
+\begin_layout Standard
+Further, appliances are classified as shared or personal.
+ A shared appliance is one that multiple users can avail of at the same
+ time like lighting, HVAC, television, etc.
+ A personal appliance is one that only one person uses at a time like a
+ laptop, workstation, microwave oven, coffee-maker, etc.
 \end_layout
 
 \begin_layout Standard
