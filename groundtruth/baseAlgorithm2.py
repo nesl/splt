@@ -13,13 +13,13 @@ class SpotBase:
 #TV
 
         try:
-                if Kim[0]  >= 1 and Cho[0]  >= 1:
+                if Kim[0]  == 1 and Cho[0]  == 1:
                         self.Kimtoken[0] = 1
                         self.Chotoken[0] = 1
-                elif Kim[0]  >= 1 and Cho[0] == 0:
+                elif Kim[0]  == 1 and (Cho[0] == 0 or Cho[0] == 2):
                         self.Kimtoken[0] = 1
                         self.Chotoken[0] = 0
-                elif Kim[0] == 0 and Cho[0]  >= 1:
+                elif (Kim[0] == 0 or Kim[0] == 2) and Cho[0]  == 1:
                         self.Kimtoken[0] = 0
                         self.Chotoken[0] = 1
         except:
@@ -27,13 +27,13 @@ class SpotBase:
 
 #Lamp1
         try:
-                if Kim[1]  >= 1 and Cho[1]  >= 1:
+                if Kim[1]  == 1 and Cho[1]  == 1:
                         self.Kimtoken[1] = 1
                         self.Chotoken[1] = 1
-                elif Kim[1]  >= 1 and Cho[1] == 0:
+                elif Kim[1]  == 1 and Cho[1] == 0:
                         self.Kimtoken[1] = 1
                         self.Chotoken[1] = 0
-                elif Kim[1] == 0 and Cho[1]  >= 1:
+                elif Kim[1] == 0 and Cho[1]  == 1:
                         self.Kimtoken[1] = 0
                         self.Chotoken[1] = 1
 
@@ -44,13 +44,13 @@ class SpotBase:
 
 #Lamp2
         try:
-                if Kim[3]  >= 1 and Cho[3]  >= 1:
+                if Kim[3]  == 1 and Cho[3]  == 1:
                         self.Kimtoken[3] = 1
                         self.Chotoken[3] = 1
-                elif Kim[3]  >= 1 and Cho[3] == 0:
+                elif Kim[3]  == 1 and Cho[3] == 0:
                         self.Kimtoken[3] = 1
                         self.Chotoken[3] = 0
-                elif Kim[3] == 0 and Cho[3]  >= 1:
+                elif Kim[3] == 0 and Cho[3]  == 1:
                         self.Kimtoken[3] = 0
                         self.Chotoken[3] = 1
 
@@ -81,8 +81,11 @@ if __name__ == '__main__':
 
 		try:
 			base.Token(Kim,Cho)
-			print base.Kimtoken
-			print base.Chotoken
-			time.sleep(0.1)
+			print "======================================="
+			print Cho+Kim
+			print base.Chotoken + base.Kimtoken
+			#print base.Kimtoken
+			#print base.Chotoken
+			#time.sleep(0.1)
 		except:
 			pass

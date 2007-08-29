@@ -1,18 +1,3 @@
-import data
-
-
-print len(data.TV)
-
-for i in range(3424):
-	try:
-		if float(data.TimeStamp[i+1])-float(data.TimeStamp[i]) > 100:
-			print data.TimeStamp[i]
-			print data.TimeStamp[i+1]
-			StopPoint = i
-	except: 
-		pass
-
-
 class SpotBase:
     def __init__(self):
         self.Chorssi=[-200,-200,-200,-200]
@@ -106,10 +91,15 @@ class SpotBase:
 
 
 if __name__ == '__main__':
+	import data
 	import time
 	base = SpotBase()
 
-	for i in range(3424):
+	print data.TimeStamp[1876]
+	print data.TimeStamp[1877]
+	print data.TimeStamp[1878]
+
+	for i in range(1877):
 		RSSI1=data.User200RSSI[i].split(':')
 		RSSI2=data.User201RSSI[i].split(':')
 		RSSI1 = [float(RSSI1[0]),float(RSSI1[1]),float(RSSI1[2]),float(RSSI1[3])]
@@ -117,4 +107,16 @@ if __name__ == '__main__':
 		base.Token(RSSI1,RSSI2)
 		print base.Kimtoken
 		print base.Chotoken
-		time.sleep(0.1)
+		#time.sleep(0.1)
+
+	for i in range(3424-1877):
+                RSSI1=data.User200RSSI[i+1877].split(':')
+                RSSI2=data.User201RSSI[i+1877].split(':')
+                RSSI1 = [float(RSSI1[0]),float(RSSI1[1]),float(RSSI1[2]),float(RSSI1[3])]
+                RSSI2 = [float(RSSI2[0]),float(RSSI2[1]),float(RSSI2[2]),float(RSSI2[3])]
+                base.Token(RSSI1,RSSI2)
+                print base.Kimtoken
+                print base.Chotoken
+                #time.sleep(0.1)
+
+

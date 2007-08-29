@@ -1,6 +1,3 @@
-import data
-
-
 class SpotCali:
     def __init__(self):
         self.Chorssi=[-200,-200,-200,-200]
@@ -101,6 +98,7 @@ class SpotCali:
 
 
 if __name__ == '__main__':
+	import data
 	import time
 	base = SpotCali()
 
