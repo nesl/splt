@@ -103,7 +103,10 @@ if __name__ == '__main__':
 	KimToken = KimToken.split('\n')
 	ChoToken = ChoToken.split('\n')
 
-	
+
+	SuccessKim = 0
+	SuccessCho = 0
+	TotalCount = 0
         for i in range(1877):
                 RSSI1=data.User200RSSI[i].split(':')
                 RSSI2=data.User201RSSI[i].split(':')
@@ -118,10 +121,10 @@ if __name__ == '__main__':
 		SET = 33
 
 		if (i-SET)%10 == 0 and i >= SET:
-			print i
+			#print i
 			index=int((i-SET)/10)
-			print index
-			print "=========================="
+			#print index
+			#print "=========================="
 			#print data.User200RSSI[i]+data.User201RSSI[i]
 			ChoTemp = ChoToken[index].split(':')
 			KimTemp = KimToken[index].split(':')
@@ -132,14 +135,35 @@ if __name__ == '__main__':
 
 			#print base.Chotoken+base.Kimtoken
 			print ChoTemp+KimTemp
-			print cali.Chotoken+cali.Kimtoken
-			#print hys.Chotoken+hys.Kimtoken
-                	time.sleep(1)
+			#print cali.Chotoken+cali.Kimtoken
+			print hys.Chotoken+hys.Kimtoken
+			TotalCount = TotalCount + 1
+#			if KimTemp[3] == base.Kimtoken[3]:# and KimTemp[1] == base.Kimtoken[1] and KimTemp[3] == base.Kimtoken[3]:
+#				SuccessKim = SuccessKim+1
+#			if ChoTemp[3]==base.Chotoken[3]:# and ChoTemp[1]==base.Chotoken[1] and ChoTemp[3]==base.Chotoken[3]:
+#				SuccessCho = SuccessCho+1
+
+#                        if KimTemp[0] == cali.Kimtoken[0] and KimTemp[1] == cali.Kimtoken[1] and KimTemp[3] == cali.Kimtoken[3]:
+#                                SuccessKim = SuccessKim+1
+#                        if ChoTemp[0]==cali.Chotoken[0] and ChoTemp[1]==cali.Chotoken[1] and ChoTemp[3]==cali.Chotoken[3]:
+#                                SuccessCho = SuccessCho+1
+                        if KimTemp[3] == hys.Kimtoken[3]:# and KimTemp[1] == hys.Kimtoken[1] and KimTemp[3] == hys.Kimtoken[3]:
+                                SuccessKim = SuccessKim+1
+                        if ChoTemp[3]==hys.Chotoken[3]:# and ChoTemp[1]==hys.Chotoken[1] and ChoTemp[3]==hys.Chotoken[3]:
+                                SuccessCho = SuccessCho+1
+
+
+
+			print SuccessCho
+			print SuccessKim
+			print TotalCount 
 		#print "====================================="
                 #print base.Kimtoken+base.Chotoken
 		#print cali.Kimtoken+cali.Chotoken
                 #print hys.Kimtoken+hys.Chotoken
 
+
+	time.sleep(50)
 
 #phase 1 ended clear token
 

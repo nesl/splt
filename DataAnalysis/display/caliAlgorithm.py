@@ -8,14 +8,14 @@ class SpotCali:
 
 # will be first calibration constant
 
-	self.TVKim = -17
-	self.TVCho = -18
+	self.TVKim = -14
+	self.TVCho = -12 #-18
 	self.LampKim = -22
 	self.LampCho = -23
 	self.CoffeeKim = -8
 	self.CoffeeCho = -10
-	self.Lamp2Kim = -23
-	self.Lamp2Cho = -18
+	self.Lamp2Kim = -18
+	self.Lamp2Cho = -16
 
 
 

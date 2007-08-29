@@ -71,7 +71,7 @@ if __name__ == '__main__':
 	base = SpotBase()
 
 	phase1 = open('groundtruth/phase1.txt')
-
+	count = 0
 	for Line in phase1:
 		temp = Line.split(',')
 		Kim = temp[2].split(':')
@@ -82,10 +82,12 @@ if __name__ == '__main__':
 		try:
 			base.Token(Kim,Cho)
 			print "======================================="
+			count = count+1
+			print count
 			print Cho+Kim
 			print base.Chotoken + base.Kimtoken
 			#print base.Kimtoken
 			#print base.Chotoken
-			#time.sleep(0.1)
+			time.sleep(10)
 		except:
 			pass
