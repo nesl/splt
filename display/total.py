@@ -21,7 +21,7 @@ if __name__ == '__main__':
 		hys.Token(RSSI1,RSSI2)
 		print "====================================="
                 print base.Kimtoken+base.Chotoken
-		#print cali.Kimtoken+cali.Chotoken
+		print cali.Kimtoken+cali.Chotoken
                 print hys.Kimtoken+hys.Chotoken
                 time.sleep(0.1)
 

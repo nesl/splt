@@ -35,13 +35,12 @@ class SpotLight:
 
 	def TimeOut(self):
 		while True:
-			time.sleep(5)
+			time.sleep(1)
 			for i in range(4):
 				if self.Kimcount[i]==0:
 					self.Kimrssi[i]=-200
-			print self.Kimrssi
-			print self.Kimcount
-			self.Kimcount = [0,0,0,0]
+			#print self.Kimrssi
+			print self.Chorssi
 			
 
 	def getSOSmsg(self,msg):

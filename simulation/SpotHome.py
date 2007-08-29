@@ -13,7 +13,7 @@ from pysos import pysos
 from Slog import spltSlog
 
 
-SpHomeQueue = Queue.Queue(200)
+SpHomeQueue = Queue.Queue(800)
 
 
 
@@ -191,10 +191,10 @@ class SpotLight(wx.Frame):
 
 
     def OnTimeout(self, evt):
-	TV = -18
-        Lamp = -22
+	TV = -20
+        Lamp = -26
 	Coffee = -5
-	Lamp2 = -22
+	Lamp2 = -26
 #TV
         try:
                 if self.Kim.rssi[0] > TV and self.Cho.rssi[0] > TV:
@@ -322,7 +322,7 @@ class SpotLight(wx.Frame):
 	while True:
 		try:
 			data = SpHomeQueue.get(False, 1)
-			spltSlog.spltSlog('SpotHome', data)
+			spltSlog.spltSlog('SpotHome2', data)
 		except:
 			pass
 
