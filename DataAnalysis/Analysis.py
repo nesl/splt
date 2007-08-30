@@ -16,7 +16,7 @@ if __name__ == '__main__':
 	phase2Chotoken = [[],[]]
 
 	phase1 = Truth.SpotBase()
-
+	phase2 = Truth.SpotBase()
 	file = open('groundtruth/phase1.txt')
 	fileKim = open('phase1Kimtoken.txt','w')
 	fileCho = open('phase1Chotoken.txt','w')
@@ -68,7 +68,6 @@ if __name__ == '__main__':
                 Kim = [int(Kim[0]),int(Kim[1]),int(Kim[2]),int(Kim[3])]
                 Cho = temp[1].split(':')
                 Cho = [int(Cho[0]),int(Cho[1]),int(Cho[2]),int(Cho[3])]
-
 
 
                 try:
@@ -134,9 +133,9 @@ if __name__ == '__main__':
 			#print ChoToken[index].split(':')+KimToken[index].split(':')
 
 			#print base.Chotoken+base.Kimtoken
-			print ChoTemp+KimTemp
+			#print ChoTemp+KimTemp
 			#print cali.Chotoken+cali.Kimtoken
-			print hys.Chotoken+hys.Kimtoken
+			#print hys.Chotoken+hys.Kimtoken
 			TotalCount = TotalCount + 1
 #			if KimTemp[3] == base.Kimtoken[3]:# and KimTemp[1] == base.Kimtoken[1] and KimTemp[3] == base.Kimtoken[3]:
 #				SuccessKim = SuccessKim+1
@@ -154,16 +153,14 @@ if __name__ == '__main__':
 
 
 
-			print SuccessCho
-			print SuccessKim
-			print TotalCount 
+#			print SuccessCho
+#			print SuccessKim
+#			print TotalCount 
 		#print "====================================="
                 #print base.Kimtoken+base.Chotoken
 		#print cali.Kimtoken+cali.Chotoken
                 #print hys.Kimtoken+hys.Chotoken
 
-
-	time.sleep(50)
 
 #phase 1 ended clear token
 
@@ -197,9 +194,13 @@ if __name__ == '__main__':
         ChoToken = ChoToken.split('\n')
 
 
+        SuccessKim = 0   
+        SuccessCho = 0           
+        TotalCount = 0  
+
         for i in range(3424-1877):
-                RSSI1=data.User200RSSI[i].split(':')
-                RSSI2=data.User201RSSI[i].split(':')
+                RSSI1=data.User200RSSI[i+1877].split(':')
+                RSSI2=data.User201RSSI[i+1877].split(':')
                 RSSI1 = [float(RSSI1[0]),float(RSSI1[1]),float(RSSI1[2]),float(RSSI1[3])]
                 RSSI2 = [float(RSSI2[0]),float(RSSI2[1]),float(RSSI2[2]),float(RSSI2[3])]
                 base.Token(RSSI1,RSSI2)
@@ -208,13 +209,15 @@ if __name__ == '__main__':
 
 #index correlation for time sync
 
-                SET = 1880
+                #SET = 1880
+		SET = 3
 
                 if (i-SET)%10 == 0 and i >= SET:
-                        print i
+
+                        #print i
                         index=int((i-SET)/10)
-                        print index
-                        print "=========================="
+                        #print index
+                        #print "=========================="
                         #print data.User200RSSI[i]+data.User201RSSI[i]
                         ChoTemp = ChoToken[index].split(':')
                         KimTemp = KimToken[index].split(':')
@@ -224,9 +227,29 @@ if __name__ == '__main__':
                         #print ChoToken[index].split(':')+KimToken[index].split(':')
         
                         #print base.Chotoken+base.Kimtoken
-                        print ChoTemp+KimTemp
-                        print cali.Chotoken+cali.Kimtoken
+                        #print ChoTemp+KimTemp
+                        #print cali.Chotoken+cali.Kimtoken
                         #print hys.Chotoken+hys.Kimtoken
-                        time.sleep(1)
+                        TotalCount = TotalCount + 1
+#                       if KimTemp[3] == base.Kimtoken[3]:# and KimTemp[1] == base.Kimtoken[1] and KimTemp[3] == base.Kimtoken[3]:
+#                               SuccessKim = SuccessKim+1
+#                       if ChoTemp[3]==base.Chotoken[3]:# and ChoTemp[1]==base.Chotoken[1] and ChoTemp[3]==base.Chotoken[3]:
+#                               SuccessCho = SuccessCho+1
+        
+#                        if KimTemp[0] == cali.Kimtoken[0] and KimTemp[1] == cali.Kimtoken[1] and KimTemp[3] == cali.Kimtoken[3]:
+#                                SuccessKim = SuccessKim+1
+#                        if ChoTemp[0]==cali.Chotoken[0] and ChoTemp[1]==cali.Chotoken[1] and ChoTemp[3]==cali.Chotoken[3]:
+#                                SuccessCho = SuccessCho+1
+                        if KimTemp[0] == hys.Kimtoken[0]:# and KimTemp[1] == hys.Kimtoken[1] and KimTemp[3] == hys.Kimtoken[3]:
+                                SuccessKim = SuccessKim+1
+                        if ChoTemp[0]==hys.Chotoken[0]:# and ChoTemp[1]==hys.Chotoken[1] and ChoTemp[3]==hys.Chotoken[3]:
+                                SuccessCho = SuccessCho+1
+
+
+
+                        print SuccessCho
+                        print SuccessKim
+                        print TotalCount
+
 
 

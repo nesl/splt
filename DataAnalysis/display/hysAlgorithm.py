@@ -116,7 +116,7 @@ if __name__ == '__main__':
 
 	base = SpotCali()
 
-	for i in range(3424):
+	for i in range(1877):
 		RSSI1=data.User200RSSI[i].split(':')
 		RSSI2=data.User201RSSI[i].split(':')
 		RSSI1 = [float(RSSI1[0]),float(RSSI1[1]),float(RSSI1[2]),float(RSSI1[3])]
