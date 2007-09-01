@@ -25,7 +25,7 @@ plot(tag_p);
 %tag_e = cumsum(tag_p);
 %plot(tag_e);
 tag_e_tot = sum(tag_p);
-tag_p_avg = tag_e_tot / size(tag_p,1);
+tag_p_avg = tag_e_tot / size(tag_p,1)
 tag_lifetime = battery_e / tag_p_avg / (60 * 60 * 24)
 
 %% Wakeup Radio
@@ -38,7 +38,7 @@ plot(tag_p, 'm');
 %tag_e = cumsum(tag_p);
 %plot(tag_e);
 tag_e_tot = sum(tag_p);
-tag_p_avg = tag_e_tot / size(tag_p,1);
+tag_p_avg = tag_e_tot / size(tag_p,1)
 tag_lifetime = battery_e / tag_p_avg / (60 * 60 * 24)
 
 %% Use Accelerometer to Wakeup Radio
@@ -50,7 +50,7 @@ plot(tag_p,'r');
 %tag_e = cumsum(tag_p);
 %plot(tag_e);
 tag_e_tot = sum(tag_p);
-tag_p_avg = tag_e_tot / size(tag_p,1);
+tag_p_avg = tag_e_tot / size(tag_p,1)
 tag_lifetime = battery_e / tag_p_avg / (60 * 60 * 24)
 
 %% Use Accelerometer to Wakeup Radio
@@ -62,5 +62,5 @@ plot(tag_p,'y');
 %tag_e = cumsum(tag_p);
 %plot(tag_e);
 tag_e_tot = sum(tag_p);
-tag_p_avg = tag_e_tot / size(tag_p,1);
+tag_p_avg = tag_e_tot / size(tag_p,1)
 tag_lifetime = battery_e / tag_p_avg / (60 * 60 * 24)
