@@ -87,11 +87,11 @@ ylabel('RSSI');
 subplot(3, 2, 1), plot(htoken1tv_vic);
 grid on;
 axis([0 size(htoken1tv, 1) -0.5 1.5]);
-title('(a) Vicinity of User200 from TV');
+title('(a) Vicinity of User200 from TV (from RSSI)');
 subplot(3, 2, 2), plot(htoken2tv_vic);
 grid on;
 axis([0 size(htoken2tv, 1) -0.5 1.5]);
-title('(b) Vicinity of User201 from TV');
+title('(b) Vicinity of User201 from TV (from RSSI)');
 
 subplot(3, 2, 3), plot(htoken1tv);
 grid on;
