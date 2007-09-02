@@ -73,40 +73,50 @@ htoken2lamp2 = hyst(:,8);
 
 %% Plot the results
 subplot(5, 2, 1), plot(rssi1tv);
+grid on;
 axis([0 size(rssi1tv, 1) -50 12]);
 title('(a) RSSI at TV from User200');
 ylabel('RSSI');
 subplot(5, 2, 2), plot(rssi2tv);
+grid on;
 axis([0 size(rssi2tv, 1) -50 12]);
 title('(b) RSSI at TV from User201');
 ylabel('RSSI');
 
 subplot(5, 2, 3), plot(btoken1tv);
+grid on;
 axis([0 size(btoken1tv, 1) -0.5 1.5]);
 title('(c) Token issued to User200 using Simple Thresholding');
 subplot(5, 2, 4), plot(btoken2tv);
+grid on;
 axis([0 size(btoken2tv, 1) -0.5 1.5]);
 title('(d) Token issued to User201 using Simple Thresholding');
 
 subplot(5, 2, 5), plot(ctoken1tv);
+grid on;
 axis([0 size(ctoken1tv, 1) -0.5 1.5]);
 title('(e) Calibrated Thresholding');
 subplot(5, 2, 6), plot(ctoken2tv);
+grid on;
 axis([0 size(ctoken2tv, 1) -0.5 1.5]);
 title('(f) Calibrated Thresholding');
 
 subplot(5, 2, 7), plot(htoken1tv);
+grid on;
 axis([0 size(htoken1tv, 1) -0.5 1.5]);
 title('(g) Calibrated Thresholding with Hysteresis');
 subplot(5, 2, 8), plot(htoken2tv);
+grid on;
 axis([0 size(htoken2tv, 1) -0.5 1.5]);
 title('(h) Calibrated Thresholding with Hysteresis');
 
 subplot(5, 2, 9), plot(gtoken1tv);
+grid on;
 axis([0 size(gtoken1tv, 1) -0.5 1.5]);
 title('(i) Ground Truth');
 xlabel('Time (secs)');
 subplot(5, 2, 10), plot(gtoken2tv);
+grid on;
 axis([0 size(gtoken2tv, 1) -0.5 1.5]);
 title('(j) Ground Truth');
 xlabel('Time (secs)');
