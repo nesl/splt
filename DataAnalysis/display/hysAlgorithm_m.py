@@ -44,16 +44,16 @@ class SpotCali:
 
 #self.TV
         try:
+                 if self.Kimrssi[0] > self.TVKim and self.Chorssi[0] > self.TVCho:
+                         self.Kimtoken[0] = 1
+                         self.Chotoken[0] = 1
+                 elif self.Kimrssi[0] > self.TVKim and self.Chorssi[0] < (self.TVCho-self.Chotoken[0]*self.hysK):
+                         self.Kimtoken[0] = 1
+                         self.Chotoken[0] = 0
+                 elif self.Kimrssi[0] < (self.TVKim-self.Kimtoken[0]*self.hysK) and self.Chorssi[0] > self.TVCho:
+                         self.Kimtoken[0] = 0
+                         self.Chotoken[0] = 1
 
-                if self.Kimrssi[0] > self.TVKim and self.Chorssi[0] > self.TVCho:
-                        self.Kimtoken[0] = 1
-                        self.Chotoken[0] = 1
-                elif self.Kimrssi[0] > self.TVKim and self.Chorssi[0] < (self.TVCho-self.Chotoken[0]*self.hysK):
-                        self.Kimtoken[0] = 1
-                        self.Chotoken[0] = 0
-                elif self.Kimrssi[0] < (self.TVKim-self.Kimtoken[0]*self.hysK) and self.Chorssi[0] > self.TVCho:
-                        self.Kimtoken[0] = 0
-                        self.Chotoken[0] = 1
         except:
                 pass
 
