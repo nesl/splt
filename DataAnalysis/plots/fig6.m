@@ -104,7 +104,7 @@ subplot(2, 2, 2), h=area([power2tot_useful power2tot_wasted]);
 grid on;
 axis([0 length(power1tv) 0 max(max(power1tot), max(power2tot))*1.1]);
 title('(b) Power Consumed by User201');
-set(h(1),'FaceColor',[0 0.5 0.0])
+set(h(1),'FaceColor',[1 0.6 0.0])
 set(h(2),'FaceColor',[0.86 0.22 0.07])
 set(gca,'Layer','top');
 legend('Useful', 'Wasted');
