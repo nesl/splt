@@ -1,17 +1,25 @@
-#LyX 1.4.4 created this file. For more info see http://www.lyx.org/
-\lyxformat 245
+#LyX 1.5.1 created this file. For more info see http://www.lyx.org/
+\lyxformat 276
 \begin_document
 \begin_header
 \textclass IEEEtran
 \language english
 \inputencoding auto
-\fontscheme default
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
 \graphics default
 \paperfontsize default
 \spacing single
 \papersize default
 \use_geometry false
 \use_amsmath 1
+\use_esint 0
 \cite_engine basic
 \use_bibtopic false
 \paperorientation portrait
@@ -25,6 +33,7 @@
 \paperpagestyle default
 \tracking_changes false
 \output_changes false
+\author "" 
 \end_header
 
 \begin_body
@@ -46,7 +55,8 @@ University of California, Los Angeles
 \end_layout
 
 \begin_layout Abstract
-\begin_inset LatexCommand \label{sec:Abstract}
+\begin_inset LatexCommand label
+name "sec:Abstract"
 
 \end_inset
 
@@ -79,7 +89,8 @@ The Spotlight system was deployed over several days in an office as well
 
 \begin_layout Section
 Introduction
-\begin_inset LatexCommand \label{sec:Introduction}
+\begin_inset LatexCommand label
+name "sec:Introduction"
 
 \end_inset
 
@@ -91,7 +102,38 @@ Motivation
 \end_layout
 
 \begin_layout Standard
-Why is this dimension of measurement cool
+United Nations Economic and Social Commission for Asia and the Pacific is
+ concerned with sustainable energy consumption.
+ Dr.
+ Song et.
+ al.
+ claims that energy consumption pattern per household can provide a good
+ way to determine socio-economic level of society as well as a solution
+ for saving energy.
+ In EU, there are many attempts including [], [], to provide energy consumers
+ a better way to save energy by informing average power consumption of specific
+ appliances over a year and suggests them to change their appliances.
+ For their sake, people are aware of that they need to somehow consume energy
+ in a better way.
+ To the best of our knowledge, however, there are few attempts to profile
+ individual's energy consumption pattern, and , therefore, it is hard for
+ individuals to save their energy consumption in personal level on a daily
+ basis.
+ The reasons are two-folds.
+ One : privacy concern Two : hard to provide the information.
+ In this paper, we introduce the system called SpotLight that profiles individua
+l's energy consumption pattern levereaging existing platforms.
+ Since the system can be operated locally/globally, users can keep the informati
+on on a personal computer.
+ Therefore, privacy concern could be resolved by giving end users the right
+ to disclose the information.
+ On the other hand, it is still challenging to enable the system to profile
+ individual's energy consumption patter because the system tends to be context
+ unaware.
+ For the second, David Jea et.
+ al.
+ presents a system that is aware of the context in access to public devices
+ by leveraging various sensing modality.
 \end_layout
 
 \begin_layout Subsection
@@ -272,55 +314,64 @@ We attempt a basic attempt at monitoring individual consumption profile
 \begin_layout Standard
 This document is structured as follows.
  Section 
-\begin_inset LatexCommand \ref{sec:App}
+\begin_inset LatexCommand ref
+reference "sec:App"
 
 \end_inset
 
  describes our introductory application and some of its limitations.
  Section 
-\begin_inset LatexCommand \ref{sec:Power-Measurement}
+\begin_inset LatexCommand ref
+reference "sec:Power-Measurement"
 
 \end_inset
 
  discusses the methodology and device used for power measurement.
  Section 
-\begin_inset LatexCommand \ref{sec:RFID}
+\begin_inset LatexCommand ref
+reference "sec:RFID"
 
 \end_inset
 
  describes the RFID system used for identifying users and Section 
-\begin_inset LatexCommand \ref{sec:Back-end-System}
+\begin_inset LatexCommand ref
+reference "sec:Back-end-System"
 
 \end_inset
 
  details the back-end system used to collect and post data to a central
  repository.
  Section 
-\begin_inset LatexCommand \ref{sec:R-Algoriths}
+\begin_inset LatexCommand ref
+reference "sec:R-Algoriths"
 
 \end_inset
 
  describes the R algorithms used to analyze the data to construct a consumption
  profile of a user.
  Section 
-\begin_inset LatexCommand \ref{sec:Final-deployment-and}
+\begin_inset LatexCommand ref
+reference "sec:Final-deployment-and"
 
 \end_inset
 
  illustrates the final deployment scenario and we offer some results in
  Section 
-\begin_inset LatexCommand \ref{sec:Results}
+\begin_inset LatexCommand ref
+reference "sec:Results"
 
 \end_inset
 
 .
  Finally we detail some related work in Section 
-\begin_inset LatexCommand \ref{sec:Related-Work}
+\begin_inset LatexCommand ref
+reference "sec:Related-Work"
 
 \end_inset
 
  and conclude in section 
-\begin_inset LatexCommand \ref{sec:Conclusion}
+\begin_inset LatexCommand ref
+reference "sec:Conclusion"
 
 \end_inset
 
@@ -329,7 +380,8 @@ This document is structured as follows.
 
 \begin_layout Section
 Application
-\begin_inset LatexCommand \label{sec:App}
+\begin_inset LatexCommand label
+name "sec:App"
 
 \end_inset
 
@@ -343,7 +395,8 @@ We discuss our introductory application and some of the limitations of the
 
 \begin_layout Subsection
 Application Details
-\begin_inset LatexCommand \label{sub:Application-Details}
+\begin_inset LatexCommand label
+name "sub:Application-Details"
 
 \end_inset
 
@@ -407,7 +460,8 @@ We use SensorBase to aggregate all our data.
 
 \begin_layout Subsection
 Limitations
-\begin_inset LatexCommand \label{sub:Limitations}
+\begin_inset LatexCommand label
+name "sub:Limitations"
 
 \end_inset
 
@@ -453,7 +507,8 @@ Presently, there is no policing in the usage profiling.
 
 \begin_layout Section
 Power Measurement
-\begin_inset LatexCommand \label{sec:Power-Measurement}
+\begin_inset LatexCommand label
+name "sec:Power-Measurement"
 
 \end_inset
 
@@ -472,7 +527,8 @@ Two units for measuring power consumption have been studied - Veris Hawkeye
 
 \begin_layout Standard
 The Veris H8035/8036 device shown in Figure 
-\begin_inset LatexCommand \ref{fig:Veris-Hawkeye-8035}
+\begin_inset LatexCommand ref
+reference "fig:Veris-Hawkeye-8035"
 
 \end_inset
 
@@ -502,8 +558,12 @@ status collapsed
 
 \end_layout
 
-\begin_layout Caption
-\begin_inset LatexCommand \label{fig:Veris-Hawkeye-8035}
+\begin_layout Standard
+\begin_inset Caption
+
+\begin_layout Standard
+\begin_inset LatexCommand label
+name "fig:Veris-Hawkeye-8035"
 
 \end_inset
 
@@ -515,9 +575,15 @@ Veris Hawkeye 8035
 
 \end_layout
 
+\end_inset
+
+
+\end_layout
+
 \begin_layout Standard
 The Watts Up? Pro device shown in Figure 
-\begin_inset LatexCommand \ref{fig:Watts-Up?-Pro}
+\begin_inset LatexCommand ref
+reference "fig:Watts-Up?-Pro"
 
 \end_inset
 
@@ -553,13 +619,22 @@ status collapsed
 
 \end_layout
 
-\begin_layout Caption
+\begin_layout Standard
+\begin_inset Caption
+
+\begin_layout Standard
 \noindent
-\begin_inset LatexCommand \label{fig:Watts-Up?-Pro}
+\begin_inset LatexCommand label
+name "fig:Watts-Up?-Pro"
 
 \end_inset
 
 Watts Up? Pro
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \end_inset
@@ -652,7 +727,8 @@ In order to interface the Watts Up? Pro with SOS running on the MicaZ mote,
  architecture assuming that SOS messages flow on the UART channel.
  The Watts Up? Pro on the other hand has its own framing and message structure
  as does the RFID reader described in Section 
-\begin_inset LatexCommand \ref{sec:RFID}
+\begin_inset LatexCommand ref
+reference "sec:RFID"
 
 \end_inset
 
@@ -675,8 +751,12 @@ status collapsed
 
 \end_layout
 
-\begin_layout Caption
-\begin_inset LatexCommand \label{fig:Raw-UART-Driver}
+\begin_layout Standard
+\begin_inset Caption
+
+\begin_layout Standard
+\begin_inset LatexCommand label
+name "fig:Raw-UART-Driver"
 
 \end_inset
 
@@ -685,8 +765,14 @@ Raw UART Driver Software Stack
 
 \end_inset
 
+
+\end_layout
+
+\end_inset
+
 Figure 
-\begin_inset LatexCommand \ref{fig:Raw-UART-Driver}
+\begin_inset LatexCommand ref
+reference "fig:Raw-UART-Driver"
 
 \end_inset
 
@@ -719,8 +805,12 @@ status collapsed
 
 \end_layout
 
-\begin_layout Caption
-\begin_inset LatexCommand \label{fig:Frames-on-the}
+\begin_layout Standard
+\begin_inset Caption
+
+\begin_layout Standard
+\begin_inset LatexCommand label
+name "fig:Frames-on-the"
 
 \end_inset
 
@@ -729,8 +819,14 @@ Frames on the raw UART channel
 
 \end_inset
 
+
+\end_layout
+
+\end_inset
+
  Figure 
-\begin_inset LatexCommand \ref{fig:Frames-on-the}
+\begin_inset LatexCommand ref
+reference "fig:Frames-on-the"
 
 \end_inset
 
@@ -806,7 +902,8 @@ An important issue that comes up with very short IFD at high baud rates
 
 \begin_layout Section
 RFID
-\begin_inset LatexCommand \label{sec:RFID}
+\begin_inset LatexCommand label
+name "sec:RFID"
 
 \end_inset
 
@@ -869,12 +966,21 @@ status collapsed
 
 \end_layout
 
-\begin_layout Caption
-\begin_inset LatexCommand \label{fig:SkyeTek-RFID-Reader}
+\begin_layout Standard
+\begin_inset Caption
+
+\begin_layout Standard
+\begin_inset LatexCommand label
+name "fig:SkyeTek-RFID-Reader"
 
 \end_inset
 
 SkyeTek RFID Reader Modules
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \end_inset
@@ -951,7 +1057,8 @@ Tree Routing
  system aims to be extensible to environment where the multi-hop communication
  is needed.
  As shown in 
-\begin_inset LatexCommand \ref{sec:Power-Measurement}
+\begin_inset LatexCommand ref
+reference "sec:Power-Measurement"
 
 \end_inset
 
@@ -997,8 +1104,12 @@ status collapsed
 
 \end_layout
 
-\begin_layout Caption
-\begin_inset LatexCommand \label{fig:RFID-mote-SOS}
+\begin_layout Standard
+\begin_inset Caption
+
+\begin_layout Standard
+\begin_inset LatexCommand label
+name "fig:RFID-mote-SOS"
 
 \end_inset
 
@@ -1010,9 +1121,15 @@ RFID mote SOS S/W
 
 \end_layout
 
+\end_inset
+
+
+\end_layout
+
 \begin_layout Section
 Back-end System
-\begin_inset LatexCommand \label{sec:Back-end-System}
+\begin_inset LatexCommand label
+name "sec:Back-end-System"
 
 \end_inset
 
@@ -1041,7 +1158,8 @@ To meet the second project requirement, we decided to set up a back-end
 By introducing a small sized back-end computer, we are envisioning that
  the Spotlight system will be embedded to various environment such as smart
  home, smart building, and smart office environments as illustrated in 
-\begin_inset LatexCommand \ref{sec:App}
+\begin_inset LatexCommand ref
+reference "sec:App"
 
 \end_inset
 
@@ -1103,7 +1221,8 @@ pysos.listen()
 
  allows us to receive SOSmessages.
  More detailed tutorial can be found at 
-\begin_inset LatexCommand \cite{pysos}
+\begin_inset LatexCommand cite
+key "pysos"
 
 \end_inset
 
@@ -1155,7 +1274,8 @@ After both of translator modules make the data in appropriate form, XML
  Once sets of all the tuples are stored at the predefined PowerMeasurement
  table and RFID table in the SensorBase, it can be used for off-line analysis
  as described in 
-\begin_inset LatexCommand \ref{sec:R-Algoriths}
+\begin_inset LatexCommand ref
+reference "sec:R-Algoriths"
 
 \end_inset
 
@@ -1179,8 +1299,12 @@ status collapsed
 
 \end_layout
 
-\begin_layout Caption
-\begin_inset LatexCommand \label{fig:Back-end-Software-Architecture}
+\begin_layout Standard
+\begin_inset Caption
+
+\begin_layout Standard
+\begin_inset LatexCommand label
+name "fig:Back-end-Software-Architecture"
 
 \end_inset
 
@@ -1192,9 +1316,15 @@ Back-end Software Architecture
 
 \end_layout
 
+\end_inset
+
+
+\end_layout
+
 \begin_layout Section
 R Algorithms 
-\begin_inset LatexCommand \label{sec:R-Algoriths}
+\begin_inset LatexCommand label
+name "sec:R-Algoriths"
 
 \end_inset
 
@@ -1302,7 +1432,8 @@ After we have computed the idle power and the filtered stream, we are ready
 
 \begin_layout Section
 Final deployment and Project requirement
-\begin_inset LatexCommand \label{sec:Final-deployment-and}
+\begin_inset LatexCommand label
+name "sec:Final-deployment-and"
 
 \end_inset
 
@@ -1332,8 +1463,12 @@ status collapsed
 
 \end_layout
 
-\begin_layout Caption
-\begin_inset LatexCommand \label{fig:Final-deployment-topology}
+\begin_layout Standard
+\begin_inset Caption
+
+\begin_layout Standard
+\begin_inset LatexCommand label
+name "fig:Final-deployment-topology"
 
 \end_inset
 
@@ -1345,9 +1480,15 @@ Final deployment topology
 
 \end_layout
 
+\end_inset
+
+
+\end_layout
+
 \begin_layout Standard
 Figure 
-\begin_inset LatexCommand \ref{fig:Final-deployment-topology}
+\begin_inset LatexCommand ref
+reference "fig:Final-deployment-topology"
 
 \end_inset
 
@@ -1361,7 +1502,8 @@ Figure
  The base node just sends data packets back to the back-end Gumstix on which
  SOS messages are translated and slogged to the SensorBase as described
  in 
-\begin_inset LatexCommand \ref{sec:Back-end-System}
+\begin_inset LatexCommand ref
+reference "sec:Back-end-System"
 
 \end_inset
 
@@ -1374,7 +1516,8 @@ In the sense of the project requirement, we used 8 MicaZ motes: 1 for the
  motes as well as we used the Gumstix for the back-end.
  And the current deployment shows that the maximum hop count is two.
  As described in 
-\begin_inset LatexCommand \ref{sec:Back-end-System}
+\begin_inset LatexCommand ref
+reference "sec:Back-end-System"
 
 \end_inset
 
@@ -1411,7 +1554,8 @@ kernel panic
 
 \begin_layout Section
 Results
-\begin_inset LatexCommand \label{sec:Results}
+\begin_inset LatexCommand label
+name "sec:Results"
 
 \end_inset
 
@@ -1425,7 +1569,8 @@ RFID with appliances
 \begin_layout Standard
 For three days deployment, we collected users' appliance usage profile.
  As described in 
-\begin_inset LatexCommand \ref{sec:Final-deployment-and}
+\begin_inset LatexCommand ref
+reference "sec:Final-deployment-and"
 
 \end_inset
 
@@ -1684,12 +1829,21 @@ Akhi
 
 \end_layout
 
-\begin_layout Caption
-\begin_inset LatexCommand \label{tab:Printer-Usage-Profile}
+\begin_layout Standard
+\begin_inset Caption
+
+\begin_layout Standard
+\begin_inset LatexCommand label
+name "tab:Printer-Usage-Profile"
 
 \end_inset
 
 Printer Usage Profile
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \end_inset
@@ -1868,8 +2022,12 @@ Younghun
 
 \end_layout
 
-\begin_layout Caption
-\begin_inset LatexCommand \label{tab:Coffee-Machine-Usage}
+\begin_layout Standard
+\begin_inset Caption
+
+\begin_layout Standard
+\begin_inset LatexCommand label
+name "tab:Coffee-Machine-Usage"
 
 \end_inset
 
@@ -1881,20 +2039,28 @@ Coffee Machine Usage Profile
 
 \end_layout
 
+\end_inset
+
+
+\end_layout
+
 \begin_layout Standard
 Table 
-\begin_inset LatexCommand \ref{tab:Printer-Usage-Profile}
+\begin_inset LatexCommand ref
+reference "tab:Printer-Usage-Profile"
 
 \end_inset
 
 ,
-\begin_inset LatexCommand \ref{tab:Coffee-Machine-Usage}
+\begin_inset LatexCommand ref
+reference "tab:Coffee-Machine-Usage"
 
 \end_inset
 
  illustrate that the Spotlight captures users' appliance usage profile.
  But, in table 
-\begin_inset LatexCommand \ref{tab:Coffee-Machine-Usage}
+\begin_inset LatexCommand ref
+reference "tab:Coffee-Machine-Usage"
 
 \end_inset
 
@@ -1944,22 +2110,26 @@ multiple tagging at a moment.
 
 \begin_layout Standard
 Figures 
-\begin_inset LatexCommand \ref{fig:Occupancy1}
+\begin_inset LatexCommand ref
+reference "fig:Occupancy1"
 
 \end_inset
 
 ,
-\begin_inset LatexCommand \ref{fig:Occupancy2}
+\begin_inset LatexCommand ref
+reference "fig:Occupancy2"
 
 \end_inset
 
 ,
-\begin_inset LatexCommand \ref{fig:Occupancy3}
+\begin_inset LatexCommand ref
+reference "fig:Occupancy3"
 
 \end_inset
 
  and 
-\begin_inset LatexCommand \ref{fig:Occupancy4}
+\begin_inset LatexCommand ref
+reference "fig:Occupancy4"
 
 \end_inset
 
@@ -1990,12 +2160,21 @@ status collapsed
 
 \end_layout
 
-\begin_layout Caption
-\begin_inset LatexCommand \label{fig:Occupancy1}
+\begin_layout Standard
+\begin_inset Caption
+
+\begin_layout Standard
+\begin_inset LatexCommand label
+name "fig:Occupancy1"
 
 \end_inset
 
 Younghun's occupancy data
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \end_inset
@@ -2018,12 +2197,21 @@ status collapsed
 
 \end_layout
 
-\begin_layout Caption
-\begin_inset LatexCommand \label{fig:Occupancy2}
+\begin_layout Standard
+\begin_inset Caption
+
+\begin_layout Standard
+\begin_inset LatexCommand label
+name "fig:Occupancy2"
 
 \end_inset
 
 Zainul's occupancy data
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \end_inset
@@ -2046,12 +2234,21 @@ status collapsed
 
 \end_layout
 
-\begin_layout Caption
-\begin_inset LatexCommand \label{fig:Occupancy3}
+\begin_layout Standard
+\begin_inset Caption
+
+\begin_layout Standard
+\begin_inset LatexCommand label
+name "fig:Occupancy3"
 
 \end_inset
 
 Laura's occupancy data
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \end_inset
@@ -2074,12 +2271,21 @@ status collapsed
 
 \end_layout
 
-\begin_layout Caption
-\begin_inset LatexCommand \label{fig:Occupancy4}
+\begin_layout Standard
+\begin_inset Caption
+
+\begin_layout Standard
+\begin_inset LatexCommand label
+name "fig:Occupancy4"
 
 \end_inset
 
 Akhi's occupancy data
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \end_inset
@@ -2109,12 +2315,21 @@ status collapsed
 
 \end_layout
 
-\begin_layout Caption
-\begin_inset LatexCommand \label{fig:Power1}
+\begin_layout Standard
+\begin_inset Caption
+
+\begin_layout Standard
+\begin_inset LatexCommand label
+name "fig:Power1"
 
 \end_inset
 
 Raw power measurement data
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \end_inset
@@ -2137,12 +2352,21 @@ status collapsed
 
 \end_layout
 
-\begin_layout Caption
-\begin_inset LatexCommand \label{fig:Power2}
+\begin_layout Standard
+\begin_inset Caption
+
+\begin_layout Standard
+\begin_inset LatexCommand label
+name "fig:Power2"
 
 \end_inset
 
 Filtered power measurement data
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \end_inset
@@ -2165,8 +2389,12 @@ status collapsed
 
 \end_layout
 
-\begin_layout Caption
-\begin_inset LatexCommand \label{fig:Power3}
+\begin_layout Standard
+\begin_inset Caption
+
+\begin_layout Standard
+\begin_inset LatexCommand label
+name "fig:Power3"
 
 \end_inset
 
@@ -2178,16 +2406,23 @@ Idle power estimation
 
 \end_layout
 
+\end_inset
+
+
+\end_layout
+
 \begin_layout Standard
 Figure 
-\begin_inset LatexCommand \ref{fig:Power1}
+\begin_inset LatexCommand ref
+reference "fig:Power1"
 
 \end_inset
 
  shows the raw power measurement readings taken over a few days and illustrates
  how the readings vary.
  Using the algorithms described in Section 
-\begin_inset LatexCommand \ref{sec:R-Algoriths}
+\begin_inset LatexCommand ref
+reference "sec:R-Algoriths"
 
 \end_inset
 
@@ -2201,7 +2436,8 @@ Figure
 \end_inset
 
  provides a version without as many transients as shown in Figure 
-\begin_inset LatexCommand \ref{fig:Power2}
+\begin_inset LatexCommand ref
+reference "fig:Power2"
 
 \end_inset
 
@@ -2211,7 +2447,8 @@ Figure
 \end_inset
 
  is used to estimate the idle power as shown in Figure 
-\begin_inset LatexCommand \ref{fig:Power3}
+\begin_inset LatexCommand ref
+reference "fig:Power3"
 
 \end_inset
 
@@ -2220,7 +2457,8 @@ Figure
 
 \begin_layout Section
 Related Work 
-\begin_inset LatexCommand \label{sec:Related-Work}
+\begin_inset LatexCommand label
+name "sec:Related-Work"
 
 \end_inset
 
@@ -2233,7 +2471,8 @@ Demand Response Enabling Technology Development - UC Berkeley
 
 \begin_layout Standard
 Demand Response 
-\begin_inset LatexCommand \cite{berkeley-dr}
+\begin_inset LatexCommand cite
+key "berkeley-dr"
 
 \end_inset
 
@@ -2290,7 +2529,8 @@ In this work, we see that they measure and control the energy consumption
 
 \begin_layout Section
 Conclusion 
-\begin_inset LatexCommand \label{sec:Conclusion}
+\begin_inset LatexCommand label
+name "sec:Conclusion"
 
 \end_inset
 
@@ -2309,12 +2549,15 @@ In conclusion, we have shown that energy consumption monitoring at a finer
  other appliances that do not fall in either category and developing profiling
  algorithms for them and also addressing some of the limitations of our
  application discussed in section 
-\begin_inset LatexCommand \ref{sub:Limitations}
+\begin_inset LatexCommand ref
+reference "sub:Limitations"
 
 \end_inset
 
 .
-\begin_inset LatexCommand \bibtex[plain]{percom08}
+\begin_inset LatexCommand bibtex
+options "plain"
+bibfiles "percom08"
 
 \end_inset
 
