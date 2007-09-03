@@ -118,8 +118,10 @@ subplot(3, 2, 5), h=area([(power1tv .* htoken1tv_vic) (power1tv .* htoken1tv_was
 grid on;
 axis([0 length(power1tv) 0 max(max(power1tv), max(power2tv))*1.1]);
 title('(e) Power Consumed by User200 for TV');
-set(h(1),'FaceColor',[1 0.6 0.0])
-set(h(2),'FaceColor',[0.86 0.22 0.07])
+%set(h(1),'FaceColor',[1 0.6 0.0])
+%set(h(2),'FaceColor',[0.86 0.22 0.07])
+set(h(1),'FaceColor',[0.27 0.89 0.27]);
+set(h(2),'FaceColor',[1.0 0.30 0.30]);
 set(gca,'Layer','top');
 legend('Useful', 'Wasted');
 ylabel('Power (W)');
@@ -131,8 +133,10 @@ grid on;
 axis([0 length(power1tv) 0 max(max(power1tv), max(power2tv))*1.1]);
 title('(f) Power Consumed by User201 for TV');
 xlabel('Time (secs)');
-set(h(1),'FaceColor',[1 0.6 0.0])
-set(h(2),'FaceColor',[0.86 0.22 0.07])
+%set(h(1),'FaceColor',[1 0.6 0.0])
+%set(h(2),'FaceColor',[0.86 0.22 0.07])
+set(h(1),'FaceColor',[0.27 0.89 0.27]);
+set(h(2),'FaceColor',[1.0 0.30 0.30]);
 set(gca,'Layer','top');
 legend('Useful', 'Wasted');
 ylabel('Power (W)');

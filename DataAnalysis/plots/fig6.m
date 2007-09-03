@@ -94,8 +94,8 @@ subplot(2, 2, 1), h=area([power1tot_useful power1tot_wasted]);
 grid on;
 axis([0 length(power1tv) 0 max(max(power1tot), max(power2tot))*1.1]);
 title('(a) Power Consumed by User200');
-set(h(1),'FaceColor',[1 0.6 0.0])
-set(h(2),'FaceColor',[0.86 0.22 0.07])
+set(h(1),'FaceColor',[0.27 0.89 0.27])
+set(h(2),'FaceColor',[1.0 0.30 0.30])
 set(gca,'Layer','top');
 legend('Useful', 'Wasted');
 ylabel('Power (W)');
@@ -104,18 +104,41 @@ subplot(2, 2, 2), h=area([power2tot_useful power2tot_wasted]);
 grid on;
 axis([0 length(power1tv) 0 max(max(power1tot), max(power2tot))*1.1]);
 title('(b) Power Consumed by User201');
-set(h(1),'FaceColor',[1 0.6 0.0])
-set(h(2),'FaceColor',[0.86 0.22 0.07])
+set(h(1),'FaceColor',[0.27 0.89 0.27]);
+set(h(2),'FaceColor',[1.0 0.30 0.30]);
 set(gca,'Layer','top');
 legend('Useful', 'Wasted');
 ylabel('Power (W)');
 
+subplot(2, 2, 3), plot(energy1tot_useful, 'g');
+hold on;
+plot(energy1tot_wasted, 'r');
+axis([0 length(power1tv) 0 max(max(energy1tot), max(energy2tot))*1.1]);
+title('(c) Energy Consumed by User200');
+grid on;
+set(gca,'Layer','top');
+legend('Useful', 'Wasted');
+ylabel('Energy (KWh)');
+xlabel('Time (secs)');
+
+subplot(2, 2, 4), plot(energy2tot_useful, 'g');
+hold on;
+plot(energy2tot_wasted, 'r');
+axis([0 length(power1tv) 0 max(max(energy1tot), max(energy2tot))*1.1]);
+title('(c) Energy Consumed by User201');
+grid on;
+set(gca,'Layer','top');
+legend('Useful', 'Wasted');
+ylabel('Energy (KWh)');
+xlabel('Time (secs)');
+
+%{
 subplot(2, 2, 3), h=area([energy1tot_useful energy1tot_wasted]);
 grid on;
 axis([0 length(power1tv) 0 max(max(energy1tot), max(energy2tot))*1.1]);
 title('(c) Energy Consumed by User200');
-set(h(1),'FaceColor',[1 0.6 0.0])
-set(h(2),'FaceColor',[0.86 0.22 0.07])
+set(h(1),'FaceColor',[1 0.72 0.30])
+set(h(2),'FaceColor',[0.86 0.40 0.30])
 set(gca,'Layer','top');
 %legend('Useful', 'Wasted', 'Location', 'BestOutside');
 ylabel('Energy (KWh)');
@@ -126,9 +149,9 @@ grid on;
 axis([0 length(power1tv) 0 max(max(energy1tot), max(energy2tot))*1.1]);
 title('(d) Energy Consumed by User201');
 xlabel('Time (secs)');
-set(h(1),'FaceColor',[1 0.6 0.0])
-set(h(2),'FaceColor',[0.86 0.22 0.07])
+set(h(1),'FaceColor',[1 0.72 0.30])
+set(h(2),'FaceColor',[0.86 0.40 0.30])
 set(gca,'Layer','top');
 %legend('Useful', 'Wasted');
 ylabel('Energy (KWh)');
-
+%}
