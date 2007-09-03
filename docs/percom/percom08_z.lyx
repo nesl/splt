@@ -72,16 +72,16 @@ Spotlight: Focusing on the Individual
 Younghun Kim, Zainul Charbiwala, Akhilesh Singhania, Mani B.
  Srivastava
 \newline
-Networked and Embedded Systems Lab 
+Networked and Embedded Systems Laboratory 
 \newline
-Department of Electrical Engineeri
-ng
+Department of Electrical
+ Engineering
 \newline
 University of California, Los Angeles
 \newline
-{kimyh, zainul, akhi, mbs}@ucla.edu
+{kimyh, zainul, akhi, mbs}@ucla.
+edu
 \newline
-
  
 \end_layout
 
@@ -499,6 +499,34 @@ Active RFID Tag Lifetimes for 1500mAh 'AA' alkaline batteries
 \end_inset
 
 
+\end_layout
+
+\begin_layout Standard
+=========================================================
+\end_layout
+
+\begin_layout Standard
+Intro Application detail Discussion why physical vicinity is imperfect remote
+ services(public service) being around but not benefited (pairing problem)
+ not being around but benefited
+\end_layout
+
+\begin_layout Standard
+System design Overall design H/W arch of app S/W arch of app S/W arch of
+ backend -> energy accounting
+\end_layout
+
+\begin_layout Standard
+Evaluation Deployment Results/graphs Groundtruth/comparison
+\end_layout
+
+\begin_layout Standard
+Related work Conclusion
+\end_layout
+
+\begin_layout Standard
+Issues Why rssi is imperfect How do we make it immuned What if multiple
+ appliances are co-located Tokens to be issued to a particular subgroup
 \end_layout
 
 \begin_layout Standard
