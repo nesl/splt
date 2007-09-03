@@ -1,4 +1,4 @@
-#LyX 1.4.3 created this file. For more info see http://www.lyx.org/
+#LyX 1.4.4 created this file. For more info see http://www.lyx.org/
 \lyxformat 245
 \begin_document
 \begin_header
@@ -84,6 +84,145 @@ Introduction
 \end_inset
 
 
+\end_layout
+
+\begin_layout Subsection
+Motivation
+\end_layout
+
+\begin_layout Standard
+Why is this dimension of measurement cool
+\end_layout
+
+\begin_layout Subsection
+Classification of Appliances
+\end_layout
+
+\begin_layout Standard
+Based on our analysis of different appliances in used, we have the following
+ breakdown of appliances in terms of the kind of service they provide.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Need physical presence to receive the service from the appliance.
+ Examples of appliances in this class include television, coffee machine,
+ etc.
+ Only persons within a vicinity of the appliance can benefit from it.
+ This class includes appliances which may benefit more than one user at
+ the same time.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Physical presence is not required to benefit from the appliance.
+ Examples of appliances in this class include servers, networked printers,
+ etc.
+ Persons are able to receive service from these appliances without being
+ present in the vicinity of the appliance.
+ Typically this is done by logging into the appliance remotely.
+\end_layout
+
+\begin_layout Enumerate
+Finally, there are certain appliances that cannot be characterized into
+ either of the two classifications.
+ These appliances provide a service regardless of the duration of time a
+ user is interacting with it.
+ Examples of appliances in this class include refrigirator, alarm clocks,
+ etc.
+ Regardless of the amount of times a person accesses these appliances, they
+ are still providing a service to the user.
+ The refrigirator by keeping the food cold and the alarm clock by maintaining
+ the time.
+ 
+\end_layout
+
+\begin_layout Subsection
+Accounting for energy consumption
+\end_layout
+
+\begin_layout Standard
+Most appliances can unambigiously be characterized into one of the three
+ classes.
+ Each class of appliances has a different policy for accounting for energy
+ consumption.
+ 
+\end_layout
+
+\begin_layout Enumerate
+For the class one appliances, consumption is determined by physical vicinity
+ of the user to the appliance.
+ The key contribution of our work is in accounting for these set of appliances.
+\end_layout
+
+\begin_layout Enumerate
+A number of policies can be used here.
+ Based on the available information such as account logs, it can be determined
+ who used which appliance for what period of time.
+ Implementing this policy will require a per appliance implementation based
+ on the type of logging an appliance if any it presents.
+ Another policy to account for consumption here is to simply charge the
+ owner or the operator of the appliance for the energy consumption.
+ It is determined that there exists a relationship between the user and
+ the owner of the appliance based on which the owner is allowing the user
+ its use.
+ This relationship may take a economic or a social personal form.
+ Such a relationship can be determined for each appliance in this class.
+ 
+\end_layout
+
+\begin_layout Enumerate
+The appliances in this class can be handled by an extension of class one
+ appliances.
+ The token system as introduced in section XX can be modified to issue indefinit
+e tokens to all users of the appliances and the consumption will be split
+ equally among them.
+ 
+\end_layout
+
+\begin_layout Standard
+There is one case that we cannot handle with this scheme.
+ This case pertains to the class one appliances.
+ It is possible that a person is present in the vicinity of the appliance
+ but not actually benefiting from it or using it.
+ For example, a person maybe present in the vicinity of a television but
+ actually watching it.
+ If other persons are around and the television is turned on, the consumption
+ will be split evenly among everyone.
+ This is a case of pairing problem which is under research on a separate
+ project in our lab.
+ Presently, we fail to account for this case and will over estimate the
+ consumption of the user.
+ 
+\end_layout
+
+\begin_layout Section
+Application Description
+\end_layout
+
+\begin_layout Standard
+We developed and deployed an application to estimate the consumption under
+ the first classification of appliances.
+ The third class of appliances and if the latter consumption policy for
+ the second class of appliances is followed, they too can be monitored under
+ this application with minor modifications.
+ 
+\end_layout
+
+\begin_layout Subsection
+Token System
+\end_layout
+
+\begin_layout Subsubsection
+Token Issue
+\end_layout
+
+\begin_layout Subsubsection
+Token Expiry
+\end_layout
+
+\begin_layout Standard
+=========================================================
 \end_layout
 
 \begin_layout Standard
