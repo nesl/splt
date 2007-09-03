@@ -2,9 +2,34 @@
 \lyxformat 276
 \begin_document
 \begin_header
-\textclass ieee
+\textclass article
+\begin_preamble
+
+%
+%  $Description: Author guidelines and sample document in LaTeX 2.09$ 
+%
+%  $Author: ienne $
+%  $Date: 1995/09/15 15:20:59 $
+%  $Revision: 1.4 $
+%
+
+ 
+\usepackage{latex8}
+
+\usepackage{times}
+
+
+%\documentstyle[times,art10,twocolumn,latex8]{article}
+
+%------------------------------------------------------------------------- 
+% take the % away on next line to produce the final camera-ready version 
+
+
+%------------------------------------------------------------------------- 
+\end_preamble
+\options times, 10pt,twocolumn
 \language english
-\inputencoding auto
+\inputencoding latin1
 \font_roman default
 \font_sans default
 \font_typewriter default
@@ -18,8 +43,8 @@
 \spacing single
 \papersize default
 \use_geometry false
-\use_amsmath 1
-\use_esint 1
+\use_amsmath 0
+\use_esint 0
 \cite_engine basic
 \use_bibtopic false
 \paperorientation portrait
@@ -30,7 +55,7 @@
 \quotes_language english
 \papercolumns 1
 \papersides 1
-\paperpagestyle default
+\paperpagestyle empty
 \tracking_changes false
 \output_changes false
 \author "" 
@@ -39,7 +64,7 @@
 
 \begin_body
 
-\begin_layout Standard
+\begin_layout Section
 Intro:
 \end_layout
 
@@ -356,7 +381,7 @@ Calibration parameter
 
 \begin_layout Standard
 \begin_inset Float table
-wide false
+wide true
 sideways false
 status collapsed
 
@@ -1440,10 +1465,6 @@ Token Issue Success, False Positive, False Negative rates
 
 \end_layout
 
-\begin_layout Standard
-
-\end_layout
-
 \end_inset
 
 
@@ -1474,7 +1495,8 @@ status collapsed
 
 \begin_layout Standard
 \begin_inset Graphics
-	filename /Users/Administrator/splt/trunk/docs/percom/Fig1.png
+	filename Fig1.png
+	scale 30
 
 \end_inset
 
@@ -1490,10 +1512,6 @@ Token Issue
 
 \end_inset
 
-
-\end_layout
-
-\begin_layout Standard
 
 \end_layout
 
@@ -1662,7 +1680,7 @@ status collapsed
 
 \begin_layout Standard
 \begin_inset Graphics
-	filename /Users/Administrator/splt/trunk/docs/percom/UserSpecified.png
+	filename UserSpecified.png
 	scale 40
 
 \end_inset
@@ -1682,10 +1700,6 @@ User Defined RSSI token space
 
 \end_layout
 
-\begin_layout Standard
-
-\end_layout
-
 \end_inset
 
 
@@ -1699,7 +1713,7 @@ status collapsed
 
 \begin_layout Standard
 \begin_inset Graphics
-	filename /Users/Administrator/splt/trunk/docs/percom/RSSI_TV_COFFEE_BED.png
+	filename RSSI_TV_COFFEE_BED.png
 	scale 40
 
 \end_inset
@@ -1719,10 +1733,6 @@ Measured RSSI Token Space
 
 \end_layout
 
-\begin_layout Standard
-
-\end_layout
-
 \end_inset
 
 
@@ -1736,14 +1746,14 @@ status collapsed
 
 \begin_layout Standard
 \begin_inset Graphics
-	filename RSSI_bed.png
+	filename /Users/zainul/Desktop/splt/docs/percom/RSSI_bed.png
 	scale 33
 
 \end_inset
 
 
 \begin_inset Graphics
-	filename RSSI_Liv.png
+	filename /Users/zainul/Desktop/splt/docs/percom/RSSI_Liv.png
 	scale 33
 
 \end_inset
@@ -1753,14 +1763,14 @@ status collapsed
 
 \begin_layout Standard
 \begin_inset Graphics
-	filename RSSI_TV.png
+	filename /Users/zainul/Desktop/splt/docs/percom/RSSI_TV.png
 	scale 33
 
 \end_inset
 
 
 \begin_inset Graphics
-	filename RSSI_COFFEE.png
+	filename /Users/zainul/Desktop/splt/docs/percom/RSSI_COFFEE.png
 	scale 33
 
 \end_inset
@@ -1777,10 +1787,6 @@ Measured RSSI Token Space
 
 \end_inset
 
-
-\end_layout
-
-\begin_layout Standard
 
 \end_layout
 
@@ -1812,6 +1818,10 @@ Although the token space is roughly static and is definable, the system's
  check routine (i.e.
  issuance threshold = -12, expiration threshold = -17).
  
+\end_layout
+
+\begin_layout Standard
+
 \end_layout
 
 \end_body
