@@ -2,7 +2,7 @@
 \lyxformat 276
 \begin_document
 \begin_header
-\textclass article
+\textclass ieee
 \language english
 \inputencoding auto
 \font_roman default
@@ -15,6 +15,7 @@
 \font_tt_scale 100
 \graphics default
 \paperfontsize default
+\spacing single
 \papersize default
 \use_geometry false
 \use_amsmath 1
@@ -37,6 +38,44 @@
 \end_header
 
 \begin_body
+
+\begin_layout Standard
+Intro:
+\end_layout
+
+\begin_layout Standard
+United Nations Economic and Social Commission for Asia and the Pacific is
+ concerned with sustainable energy consumption.
+ Dr.
+ Song et.
+ al.
+ claims that energy consumption pattern per household can provide a good
+ way to determine socio-economic level of society as well as a solution
+ for saving energy.
+ In EU, there are many attempts including [], [], to provide energy consumers
+ a better way to save energy by providing average power consumption of specific
+ appliances over a year and suggests them to change their appliances.
+ For their sake, people are aware of that they need to somehow consume energy
+ in a better way.
+ To the best of our knowledge, however, there are few attempts to profile
+ individual's energy consumption pattern, and , therefore, it is hard for
+ individuals to save their energy consumption in personal level.
+ The reasons are two-folds.
+ One : privacy concern Two : hard to provide the information.
+ In this paper, we introduce the system called SpotLight that profiles individua
+l's energy consumption pattern levereaging existing platforms.
+ 
+\end_layout
+
+\begin_layout Standard
+What I want to add?
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+wide false
+sideways false
+status collapsed
 
 \begin_layout Standard
 \begin_inset Tabular
@@ -282,16 +321,6 @@ BedRoomLamp
 \end_layout
 
 \begin_layout Standard
-\begin_inset Float table
-wide false
-sideways false
-status collapsed
-
-\begin_layout Standard
-
-\end_layout
-
-\begin_layout Standard
 \begin_inset Caption
 
 \begin_layout Standard
@@ -307,6 +336,12 @@ Calibration parameter
 
 
 \end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+wide false
+sideways false
+status collapsed
 
 \begin_layout Standard
 \begin_inset Tabular
@@ -1374,13 +1409,6 @@ Hysteresis
 \end_inset
 
 
-\begin_inset Float table
-wide false
-sideways false
-status collapsed
-
-\begin_layout Standard
-
 \end_layout
 
 \begin_layout Standard
@@ -1417,12 +1445,8 @@ Observations - classification
 \end_layout
 
 \begin_layout Standard
-\begin_inset Graphics
-	filename Fig1.png
-
-\end_inset
-
-
+List appliances and focus on those.
+ 
 \end_layout
 
 \begin_layout Standard
@@ -1432,6 +1456,11 @@ sideways false
 status collapsed
 
 \begin_layout Standard
+\begin_inset Graphics
+	filename /Users/Administrator/splt/trunk/docs/percom/Fig1.png
+
+\end_inset
+
 
 \end_layout
 
@@ -1457,7 +1486,7 @@ Token Issue
 \end_layout
 
 \begin_layout Standard
-Binary detection problem :
+Binary detection problem:
 \end_layout
 
 \begin_layout Standard
@@ -1465,12 +1494,11 @@ One can see the token issuance algorithm is similar to the binary detection
  problem [].
  Due to serious uncertainty of RSSI values associated with antenna orientation,
  antenna characteristics, ambient attenuation characteristics, obstruction
- of Line-of-Sight and etc., however, it is very challenging to define a mathemati
-cally tractable and reasonable detection model for it which could be our
- further work.
- So, we designed the detection problem by several observations of human
- behavior and RSSI characteristics.
- Our heuristics is the following.
+ of Line-of-Sight and etc., however, it is challenging to define a mathematically
+ tractable and reasonable binary detection model for it.
+ So, we designed the detection problem from some observations of human behavior
+ and RSSI characteristics.
+ Our observations are the following.
 \end_layout
 
 \begin_layout Standard
@@ -1482,13 +1510,13 @@ cally tractable and reasonable detection model for it which could be our
 \end_layout
 
 \begin_layout Standard
-(c) Once we two motes are the same, the characteristics doesn't change over
- time.
+(c) Once we two motes are the same, the characteristics doesn't change a
+ lot over time.
 \end_layout
 
 \begin_layout Standard
 (d) When an individual uses an appliance, he/she tends to be close when
- tries to use it.
+ he/she starts to use it.
  
 \end_layout
 
@@ -1505,7 +1533,9 @@ From (a),(b) and (c), we need to find calibrated service range in RSSI value
 \end_layout
 
 \begin_layout Standard
-To detect whether people are within its range or not, 
+To detect whether people are within its range or not, we wanted to make
+ use of the fact (b).
+ 
 \end_layout
 
 \begin_layout Standard
@@ -1514,7 +1544,7 @@ Ideas
 
 \begin_layout Standard
 One fundamental question we have to answer to is that who is responsible
- for energy consumption or resource consumption.
+ for energy consumption.
  To answer to it, I want to bring a notion of a token and service range.
  The service range implies that each appliance has its own service range
  and individuals who are within the range are actually consuming its service
@@ -1549,7 +1579,7 @@ So, the basic energy consumption policy is that
 (i) the system assumes every individual who has a token is responsible for
  the energy consumed by an appliance.
  And, therefore, by (b) if someone has left an appliance on, he/she is responsib
-le for the waste energy until the other one has come to the service range
+le for the wasted energy until another one has come to the service range
  of the appliance.
  (ii) the system equally distributes the energy into individuals if more
  than one person are within the service range of an appliance.
@@ -1571,7 +1601,7 @@ We are interested in two aspects of energy profiles: first, total energy
  equally distributes the energy to each token holder.
  To know the amount of wasted energy, we need to define the policy that
  determines wasted energy.
- for the class I device one can argue that if someone is left an appliance
+ For the class I device we can argue that if someone is left an appliance
  on, he/she is wasting the energy because it's not beneficial but energy
  is consumed.
  Based upon RSSI values, therefore, the system can know when and who is
@@ -1595,7 +1625,106 @@ Others?
 \end_layout
 
 \begin_layout Standard
-Describing plots
+Describing plots 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename /Users/Administrator/splt/trunk/docs/percom/UserSpecified.png
+	scale 40
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Caption
+
+\begin_layout Standard
+User Defined RSSI token space
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename /Users/Administrator/splt/trunk/docs/percom/RSSI_TV_COFFEE_BED.png
+	scale 40
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Caption
+
+\begin_layout Standard
+Measured RSSI Token Space
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+To confirm whether the RSSI based token issuance algorithm works, we evaluated
+ the token issuance algorithm.
+ Firstly, we made 30cm by 30cm grids over the house except the bathroom.
+ And then with the calibrated RSSI service range, we tried to issue a token
+ for 5 times at each grid, then counted number of issuance.
+ Based on this numbers, we plot the contour maps of the token space.
+ And in the figure green, red and yellow color gives you the token space
+ of TV, bedroom lamp and coffee machine, respectively.
+ Because of the imperfection of RSSI values, we can see some outliers at
+ (),(),(), but mostly it gives us rough service range as well.
+ 
+\end_layout
+
+\begin_layout Standard
+Although the token space is roughly static and is definable, the system's
+ token algorithm is susceptible to a small noise when users are around the
+ boundary of the service range.
+ To avoid such case, we added hysteresis feature to the token issuance algorithm.
+ Instead of having the same threshold value for both of issuance and expiration
+ check routine (i.e.
+ issuance threshold = -12, expiration threshold = -17).
+ 
 \end_layout
 
 \end_body
