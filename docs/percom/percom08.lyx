@@ -2,9 +2,34 @@
 \lyxformat 276
 \begin_document
 \begin_header
-\textclass IEEEtran
+\textclass article
+\begin_preamble
+
+%
+%  $Description: Author guidelines and sample document in LaTeX 2.09$ 
+%
+%  $Author: ienne $
+%  $Date: 1995/09/15 15:20:59 $
+%  $Revision: 1.4 $
+%
+
+ 
+\usepackage{latex8}
+
+\usepackage{times}
+
+
+%\documentstyle[times,art10,twocolumn,latex8]{article}
+
+%------------------------------------------------------------------------- 
+% take the % away on next line to produce the final camera-ready version 
+
+
+%------------------------------------------------------------------------- 
+\end_preamble
+\options times, 10pt,twocolumn
 \language english
-\inputencoding auto
+\inputencoding latin1
 \font_roman default
 \font_sans default
 \font_typewriter default
@@ -18,7 +43,7 @@
 \spacing single
 \papersize default
 \use_geometry false
-\use_amsmath 1
+\use_amsmath 0
 \use_esint 0
 \cite_engine basic
 \use_bibtopic false
@@ -30,7 +55,7 @@
 \quotes_language english
 \papercolumns 1
 \papersides 1
-\paperpagestyle default
+\paperpagestyle empty
 \tracking_changes false
 \output_changes false
 \author "" 
@@ -53,6 +78,27 @@ Department of Electrical
  Engineering
 \newline
 University of California, Los Angeles
+\newline
+{kimyh, zainul, akhi, mbs}@ucla.
+edu
+\newline
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status collapsed
+
+\begin_layout Standard
+
+
+\backslash
+thispagestyle{empty}
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Abstract
@@ -85,7 +131,6 @@ The Spotlight system was deployed over several days in an office as well
  individual's movement profile and the appliances' power profile.
  Our results show interesting individual behavior that could be interpreted
  for various energy optimizations.
- 
 \end_layout
 
 \begin_layout Section
@@ -262,6 +307,298 @@ Token Issue
 
 \begin_layout Subsubsection
 Token Expiry
+\end_layout
+
+\begin_layout Section
+System Design
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+wide false
+sideways false
+status collapsed
+
+\begin_layout Standard
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="5" columns="3">
+<features>
+<column alignment="left" valignment="top" leftline="true" rightline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" width="0.5in">
+<column alignment="center" valignment="top" leftline="true" rightline="true" width="0.5in">
+<row topline="true" bottomline="true">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+Avg Power (mW)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+Lifetime (days)
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row topline="true">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+1Hz timer triggered, radio always ON
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+66.3
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+2.82
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row topline="true">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+1Hz timer, radio OFF (when not TX)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+6.9
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+27.23
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row topline="true">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+Vibration triggered, radio OFF, all events
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+10.7
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+17.52
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row topline="true" bottomline="true">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+Vibration triggered, radio OFF, no events
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+6.6
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+28.52
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Caption
+
+\begin_layout Standard
+\begin_inset LatexCommand label
+name "tab:Active-RFID-Tag"
+
+\end_inset
+
+Active RFID Tag Lifetimes for 1500mAh 'AA' alkaline batteries
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+=========================================================
+\end_layout
+
+\begin_layout Standard
+Intro 
+\end_layout
+
+\begin_layout Standard
+Application detail 
+\end_layout
+
+\begin_layout Standard
+Discussion 
+\end_layout
+
+\begin_layout Standard
+why physical vicinity is imperfect 
+\end_layout
+
+\begin_layout Standard
+remote services(public service) 
+\end_layout
+
+\begin_layout Standard
+being around but not benefited (pairing problem) 
+\end_layout
+
+\begin_layout Standard
+not being around but benefited
+\end_layout
+
+\begin_layout Standard
+System design 
+\end_layout
+
+\begin_layout Standard
+Overall design 
+\end_layout
+
+\begin_layout Standard
+H/W arch of app 
+\end_layout
+
+\begin_layout Standard
+S/W arch of app 
+\end_layout
+
+\begin_layout Standard
+S/W arch of backend 
+\end_layout
+
+\begin_layout Standard
+-> energy accounting
+\end_layout
+
+\begin_layout Standard
+Evaluation 
+\end_layout
+
+\begin_layout Standard
+Deployment 
+\end_layout
+
+\begin_layout Standard
+Results/graphs 
+\end_layout
+
+\begin_layout Standard
+Groundtruth/comparison
+\end_layout
+
+\begin_layout Standard
+Related work 
+\end_layout
+
+\begin_layout Standard
+Conclusion
+\end_layout
+
+\begin_layout Standard
+Issues 
+\end_layout
+
+\begin_layout Standard
+Why rssi is imperfect 
+\end_layout
+
+\begin_layout Standard
+How do we make it immuned W
+\end_layout
+
+\begin_layout Standard
+hat if multiple appliances are co-located 
+\end_layout
+
+\begin_layout Standard
+Tokens to be issued to a particular subgroup
 \end_layout
 
 \begin_layout Standard
@@ -550,7 +887,7 @@ status collapsed
 \begin_layout Standard
 \align center
 \begin_inset Graphics
-	filename veris8036.png
+	filename /Users/zainul/Desktop/splt/docs/percom/veris8036.png
 	lyxscale 25
 	height 1.5in
 
@@ -611,7 +948,7 @@ status collapsed
 \begin_layout Standard
 \align center
 \begin_inset Graphics
-	filename wupro.png
+	filename /Users/zainul/Desktop/splt/docs/percom/wupro.png
 	lyxscale 25
 	height 1.5in
 
@@ -743,7 +1080,7 @@ status collapsed
 \begin_layout Standard
 \align center
 \begin_inset Graphics
-	filename swinterface_z.png
+	filename /Users/zainul/Desktop/splt/docs/percom/swinterface_z.png
 	lyxscale 25
 	width 60col%
 
@@ -797,7 +1134,7 @@ status collapsed
 \begin_layout Standard
 \align center
 \begin_inset Graphics
-	filename ifd_z.png
+	filename /Users/zainul/Desktop/splt/docs/percom/ifd_z.png
 	lyxscale 25
 	width 60page%
 
@@ -950,7 +1287,7 @@ status collapsed
 \begin_layout Standard
 \align center
 \begin_inset Graphics
-	filename skyemodule_M1.png
+	filename /Users/zainul/Desktop/splt/docs/percom/skyemodule_M1.png
 	lyxscale 25
 	width 30col%
 
@@ -958,7 +1295,7 @@ status collapsed
 
 
 \begin_inset Graphics
-	filename skyemodule_M1-mini.png
+	filename /Users/zainul/Desktop/splt/docs/percom/skyemodule_M1-mini.png
 	lyxscale 25
 	width 30col%
 
@@ -1096,7 +1433,7 @@ status collapsed
 \begin_layout Standard
 \align center
 \begin_inset Graphics
-	filename rfidsw.png
+	filename /Users/zainul/Desktop/splt/docs/percom/rfidsw.png
 	lyxscale 25
 	width 60col%
 
@@ -1291,7 +1628,7 @@ status collapsed
 \begin_layout Standard
 \align center
 \begin_inset Graphics
-	filename backend1.png
+	filename /Users/zainul/Desktop/splt/docs/percom/backend1.png
 	lyxscale 25
 	width 100col%
 
@@ -1455,7 +1792,7 @@ status collapsed
 \begin_layout Standard
 \align center
 \begin_inset Graphics
-	filename finaldeployment.png
+	filename /Users/zainul/Desktop/splt/docs/percom/finaldeployment.png
 	lyxscale 25
 	width 100col%
 
@@ -2152,7 +2489,7 @@ status collapsed
 \begin_layout Standard
 \align center
 \begin_inset Graphics
-	filename occupancy1.png
+	filename /Users/zainul/Desktop/splt/docs/percom/occupancy1.png
 	lyxscale 25
 	width 60col%
 
@@ -2189,7 +2526,7 @@ status collapsed
 \begin_layout Standard
 \align center
 \begin_inset Graphics
-	filename occupancy2.png
+	filename /Users/zainul/Desktop/splt/docs/percom/occupancy2.png
 	lyxscale 25
 	width 60col%
 
@@ -2226,7 +2563,7 @@ status collapsed
 \begin_layout Standard
 \align center
 \begin_inset Graphics
-	filename occupancy3.png
+	filename /Users/zainul/Desktop/splt/docs/percom/occupancy3.png
 	lyxscale 25
 	width 60col%
 
@@ -2263,7 +2600,7 @@ status collapsed
 \begin_layout Standard
 \align center
 \begin_inset Graphics
-	filename occupancy4.png
+	filename /Users/zainul/Desktop/splt/docs/percom/occupancy4.png
 	lyxscale 25
 	width 60col%
 
@@ -2307,7 +2644,7 @@ status collapsed
 \begin_layout Standard
 \align center
 \begin_inset Graphics
-	filename power1.png
+	filename /Users/zainul/Desktop/splt/docs/percom/power1.png
 	lyxscale 25
 	width 60col%
 
@@ -2344,7 +2681,7 @@ status collapsed
 \begin_layout Standard
 \align center
 \begin_inset Graphics
-	filename power2.png
+	filename /Users/zainul/Desktop/splt/docs/percom/power2.png
 	lyxscale 25
 	width 60col%
 
@@ -2381,7 +2718,7 @@ status collapsed
 \begin_layout Standard
 \align center
 \begin_inset Graphics
-	filename power3.png
+	filename /Users/zainul/Desktop/splt/docs/percom/power3.png
 	lyxscale 25
 	width 60col%
 
@@ -2562,6 +2899,10 @@ bibfiles "percom08"
 
 \end_inset
 
+
+\end_layout
+
+\begin_layout Standard
 
 \end_layout
 
