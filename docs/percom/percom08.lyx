@@ -2949,18 +2949,36 @@ Conclusion
 In conclusion, we presented a new system that profiles energy consumption
  pattern of individuals based on raw RSSI measurement among active RFID
  tags and readers.
- Our detection scheme gives fairly reasonable successful detection rate
- as in the table 
+ Our detection scheme gives reasonably successful detection rate as in the
+ table 
 \begin_inset LatexCommand ref
 reference "tab:Token-Issue-Success,"
 
 \end_inset
 
 .
- While analyzing We are interested in two aspects of energy profiles: first,
- total energy consumption, which gives us how much energy is consumed by
- an individual whether it's useful or not, and second total wasted energy,
- which implies the energy wasted by an individual unintentionally.
+ While analyzing energy consumption pattern of users, we found the system
+ can profile two interesting aspects of energy profiles: first, total energy
+ consumption, which gives us how much energy is consumed by an individual
+ whether it's useful or not, and second total wasted energy, which implies
+ the energy wasted by an individual unintentionally.
+ By notifying the total amount of energy users consume, on one hand, the
+ system can encourage users to reduce their energy consumption.
+ If users are aware of their consumption and their need for energy on the
+ regular basis, users could plan and optimize theirs.
+ On the other hand, the system also gives users the information when they
+ unintentionally wasted energy.
+ In addition to that, users also could optimize their energy consumption
+ schedule by observing their energy usage pattern on a daily basis.
+ 
+\end_layout
+
+\begin_layout Standard
+For the future works, we can further the detection algorithm by correlating
+ multiple RSSI readings among appliances.
+ Could extend tokens and policy more flexible so that users could figure
+ out.
+ 
 \end_layout
 
 \begin_layout Standard
