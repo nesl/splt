@@ -571,7 +571,7 @@ Results/graphs
 \begin_inset Float figure
 wide true
 sideways false
-status open
+status collapsed
 
 \begin_layout Standard
 \align center
@@ -608,14 +608,14 @@ Appliance power and energy consumption per user
 \begin_inset Float figure
 wide true
 sideways false
-status open
+status collapsed
 
 \begin_layout Standard
 \align center
 \begin_inset Graphics
 	filename figures/fig35.eps
 	lyxscale 50
-	width 75text%
+	width 100text%
 
 \end_inset
 
@@ -657,7 +657,7 @@ Token mechanisms
 \begin_inset Float figure
 wide true
 sideways false
-status open
+status collapsed
 
 \begin_layout Standard
 \align center
@@ -689,7 +689,7 @@ Useful/Wasted Power and Energy for TV
 \begin_inset Float figure
 wide true
 sideways false
-status open
+status collapsed
 
 \begin_layout Standard
 \align center
