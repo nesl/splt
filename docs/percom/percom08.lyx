@@ -325,6 +325,11 @@ We developed and deployed an application to estimate the consumption under
  instrumented with a RFID reader and a power meter.
  The power meter records the energy consumption of the appliance and the
  RFID reader detects when a user enters the service range of the appliance.
+ When a user is present in the service range of an appliance, the user is
+ charged for the energy consumption of the appliance.
+ If multiple users are present in the range, the charge is divided equally.
+ The last person to leave the range will continue to be charged for the
+ consumption of that appliance until another person enters the service range.
  
 \end_layout
 
