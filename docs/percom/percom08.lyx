@@ -2564,7 +2564,50 @@ Simple thresholding and calibrated techniques suffers significantly from
  The hysteresis technique is most resilient to the variations in RSSI values
  as it can also cope with slight variations in the RSSI values of the tags.
  Since the hysteresis technique has been identified as the dominant technique,
- all sequential data will be charactertized using this technique.
+ and the technique that comes closest to the ground truth, all sequential
+ data will be charactertized using this technique.
+ 
+\end_layout
+
+\begin_layout Subsection
+Results/graphs
+\end_layout
+
+\begin_layout Standard
+We outline some results and observations made by analyzing the found data
+ from our deployment.
+ Figure 
+\begin_inset LatexCommand ref
+reference "fig:Appliance-power-and"
+
+\end_inset
+
+ details the power consumption of the users over the different instrumented
+ appliances and the actual energy consumption in 
+\begin_inset LatexCommand ref
+reference "fig:Appliance-power-and"
+
+\end_inset
+
+(f).
+ Only user201 used the coffee maker so no data was collected for user200.
+ The spikes in the power consumption of the lamps were exhibited because
+ these lamps are three way lamps.
+ Turning them off requires cycles through all the power stages of the lamp.
+ The graph in figure 
+\begin_inset LatexCommand ref
+reference "fig:Appliance-power-and"
+
+\end_inset
+
+(e) is a sum of the power consumption of all the graphs (a) through (d)
+ and figure 
+\begin_inset LatexCommand ref
+reference "fig:Appliance-power-and"
+
+\end_inset
+
+(f) is the area under the curve of the figure in (e).
  
 \end_layout
 
@@ -2577,7 +2620,7 @@ status collapsed
 \begin_layout Standard
 \align center
 \begin_inset Graphics
-	filename figures/fig3.eps
+	filename /Users/darknight/projects/splt/docs/percom/figures/fig3.eps
 	lyxscale 50
 	width 75text%
 
@@ -2606,15 +2649,59 @@ Appliance power and energy consumption per user
 \end_inset
 
 
+\end_layout
+
+\begin_layout Standard
+Figure 
+\begin_inset LatexCommand ref
+reference "fig:Useful/Wasted-Power-and"
+
+\end_inset
+
+highlights the amount of useful and wasted energy consumed by the television.
+ The energy consumed is useful if one of the users was in the vicinity and
+ hence benefiting from the consumption.
+ The energy is wasted if no user was present in the vicinity and the energy
+ is wasted.
+ As per our token issuance policy, we count this wasted energy against the
+ person who was the last one to exit the service range of the appliance.
+ Figure 
+\begin_inset LatexCommand ref
+reference "fig:Useful/Wasted-Power-and"
+
+\end_inset
+
+(a) and (b) show the RSSI values for the two users as collected by the RFID
+ reader on the television.
+ Using the hysteresis technique, figure 
+\begin_inset LatexCommand ref
+reference "fig:Useful/Wasted-Power-and"
+
+\end_inset
+
+(c) and (d) show the token issuance and expiry for the two users.
+ Based on the vicinity information from the RSSI values and the token informatio
+n, figure 
+\begin_inset LatexCommand ref
+reference "fig:Useful/Wasted-Power-and"
+
+\end_inset
+
+(e) and (f) show the useful and wasted energy as consumed by the television
+ and as accounted for the two users.
+ 
+\end_layout
+
+\begin_layout Standard
 \begin_inset Float figure
 wide true
 sideways false
-status collapsed
+status open
 
 \begin_layout Standard
 \align center
 \begin_inset Graphics
-	filename figures/fig5.eps
+	filename /Users/darknight/projects/splt/docs/percom/figures/fig5.eps
 	lyxscale 50
 	width 75text%
 
@@ -2628,7 +2715,8 @@ status collapsed
 
 \begin_layout Standard
 Useful/Wasted Power and Energy for TV
-\end_layout
+\begin_inset LatexCommand label
+name "fig:Useful/Wasted-Power-and"
 
 \end_inset
 
@@ -2638,6 +2726,14 @@ Useful/Wasted Power and Energy for TV
 \end_inset
 
 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
 \begin_inset Float figure
 wide true
 sideways false
@@ -2650,7 +2746,7 @@ status collapsed
 
 
 \begin_inset Graphics
-	filename figures/fig6.eps
+	filename /Users/darknight/projects/splt/docs/percom/figures/fig6.eps
 	lyxscale 50
 	width 75text%
 
@@ -2681,10 +2777,6 @@ Total Useful/Wasted Power and Energy
 
 \end_layout
 
-\begin_layout Subsection
-Results/graphs
-\end_layout
-
 \begin_layout Section
 Related works
 \end_layout
@@ -2694,7 +2786,7 @@ Conclusion
 \end_layout
 
 \begin_layout Standard
-=========================================================
+================================
 \end_layout
 
 \begin_layout Standard
@@ -2794,7 +2886,7 @@ Tokens to be issued to a particular subgroup
 \end_layout
 
 \begin_layout Standard
-=========================================================
+==============================
 \end_layout
 
 \begin_layout Standard
