@@ -311,19 +311,29 @@ e tokens to all users of the appliances and the consumption will be split
  
 \end_layout
 
+\begin_layout Subsection
+Limitations of the policies
+\end_layout
+
 \begin_layout Standard
-There is one case that we cannot handle with this scheme.
- This case pertains to the class one appliances.
+There are certain cases of energy consumption which we are unable to properly
+ account for.
+ Policy one can be stated as being around and being benefited.
+ Policy two can be stated as not being around and being benefited.
+ One policy case we cannot properly account for is being around and not
+ being benefited.
  It is possible that a person is present in the vicinity of the appliance
- but not actually benefiting from it or using it.
+ but not actually receiving any services from it.
  For example, a person maybe present in the vicinity of a television but
- actually watching it.
- If other persons are around and the television is turned on, the consumption
- will be split evenly among everyone.
+ not actually watching it.
+ If the television is turned on, the person will be charged for it but the
+ person is not actually benefiting from it.
+ Presently, our system will claim that the person is actually benefiting
+ from it as the person is inside the service range.
  This is a case of the pairing problem which is under research on a separate
  project in our lab [David Jea].
- Presently, we fail to account for this case and will over estimate the
- consumption of the user.
+ We fail to account for this case and will over estimate the consumption
+ of the user.
  
 \end_layout
 
