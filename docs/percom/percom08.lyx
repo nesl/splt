@@ -525,20 +525,6 @@ Although the token space is roughly static and is definable, the system's
 \end_layout
 
 \begin_layout Standard
-To confirm whether the RSSI based token issuance algorithm works, we measured
- the number of tokens issued at each point of predefined grids.
- Firstly, we made 30cm by 30cm grids over the house except the bathroom.
- And then with the calibrated RSSI service range, we tried to issue a token
- for 5 times at each point, then counted number of issuance.
- Based on this numbers, we plot the contour maps of the token space.
- And in the figure green, red and yellow color gives you the token space
- of TV, bedroom lamp and coffee machine, respectively.
- Because of the imperfection of RSSI values, we can see some outliers at
- (),(),(), but mostly it gives us rough service range as well.
- 
-\end_layout
-
-\begin_layout Standard
 The design of the Spotlight system is centered around 
 \end_layout
 
@@ -771,8 +757,8 @@ For the evaluation, we placed four power measurement units and micaz motes
  at the living room lamp, TV, coffee machine and bedroom lamp in a small
  1 bedroom and 1 bathroom house environment.
  There are two users carrying their active RFID tags.
- One other micaz mote is used for snooping and collecting power measurement
- of the appliances and RSSI information as well.
+ The other micaz mote is used for snooping and collecting power measurement
+ of the appliances and RSSI information.
  One apple PowerBook G4 is used for local data processing, storing and tranferri
 ng.
  For the post-deployment data analysis, we stored RSSI, token information,
@@ -2451,6 +2437,10 @@ Measured RSSI Token Space
 \end_inset
 
 
+\end_layout
+
+\begin_layout Subsection
+Evaluation of RSSI based token space
 \end_layout
 
 \begin_layout Standard
