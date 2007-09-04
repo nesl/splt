@@ -152,15 +152,15 @@ Energy production and consumption comes with a significant cost.
  the cost of energy consumption.
  The cost is also affecting many households with significant consumption.
  United Nations Economic and Social Commission for Asia and the Pacific
- is concerned with sustainable energy consumption.
+ is concerned with sustainable energy consumption [].
  Dr.
  Song et.
  al.
  claim that energy consumption pattern per household can provide a good
  way to determine socio-economic level of society as well as a solution
  for saving energy.
- The traditional dimensions is measuring energy consumption are at a very
- coarse-grained granularity.
+ The traditional dimensions measure the consumption at a very coarse-grained
+ granularity.
  The consumption is given in terms of household and over a period of many
  days.
  This allows for a only partial awareness on the part of the users about
@@ -170,8 +170,12 @@ Energy production and consumption comes with a significant cost.
  a finer granularity, it will help the users in pinpointing their specific
  habbits and trends, modifying which would aid in significant improvements
  in energy consumption.
- Different agencies in the Europrean Union have initiated programs [][]
- to make the consumers more aware of their consumption profile.
+ 
+\end_layout
+
+\begin_layout Standard
+Different agencies in the Europrean Union have initiated programs [][] to
+ make the consumers more aware of their consumption profile.
  The ___ program [] provides the power consumption of the entire household
  in realtime to the users, information on the average power consumption
  of different appliances and provide suggestions in replacing certain appliances
@@ -182,12 +186,13 @@ Energy production and consumption comes with a significant cost.
 \end_layout
 
 \begin_layout Standard
-All these programs are still aimed profiling at a household level of granularity.
- To the best of our knowledge, there has been no attempts at profiling an
+All these programs are still aimed profiling the consumption at the granularity
+ of a household.
+ To the best of our knowledge, there has been no attempts to profile an
  individual's energy consumption pattern.
- We believe that such a profile would further aid the consumers in pinpointing
- other trends and consumption profiles to further improve their consumption
- pattern.
+ We believe that profiling at this granularity would further aid the consumers
+ in pinpointing their consumption patterns and profiles to further improve
+ energy consumption.
  We introduce a system called Spotlight capable of estimating an individual's
  personal energy consumption profile.
  The system can be operated at a household level or on a larger scale allowing
@@ -196,9 +201,25 @@ All these programs are still aimed profiling at a household level of granularity
 \end_layout
 
 \begin_layout Standard
+After the initial deployment of the system, it operates with little intervention
+ from the user.
+ Users are able to monitor their consumption pattern in real time.
+ The application can detect instances of wasted energy where an appliance
+ was operating but no one was benefiting from it and the person responsible
+ for the wasted energy.
+ The application also details how much of a user's energy consumption came
+ from specific appliances and how much energy was consumed by different
+ appliances.
+ This information can be used by the users to make decisions on the efficiency
+ of different appliances and about their personal habbits.
+ 
+\end_layout
+
+\begin_layout Standard
 To measure the consumption profile for a user, we first classify the typical
  appliances into different categories based on the type of service they
- provide and then offer policies in monitoring those appliances.
+ provide and then offer policies to monitor and measure the energy consumption
+ of those appliances.
  
 \end_layout
 
@@ -207,8 +228,9 @@ Classification of Appliances
 \end_layout
 
 \begin_layout Standard
-Based on our analysis of different appliances in used, we have the following
- breakdown of appliances in terms of the kind of service they provide.
+Based on our analysis of different appliances in common use, we have the
+ following breakdown of appliances in terms of the kind of service they
+ provide.
  
 \end_layout
 
@@ -260,7 +282,8 @@ Most appliances can unambiguously be characterized into one of the three
 \begin_layout Enumerate
 For the class one appliances, consumption is determined by physical vicinity
  of the user to the appliance.
- The key contribution of our work is in accounting for these set of appliances.
+ The key contribution of our work is in measuring the consumption for these
+ set of appliances.
 \end_layout
 
 \begin_layout Enumerate
