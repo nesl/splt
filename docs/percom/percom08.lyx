@@ -2448,21 +2448,28 @@ Evaluation of RSSI based token space
 \begin_layout Standard
 To confirm whether the RSSI based token issuance algorithm works, we measured
  the number of tokens issued at each point of predefined grids.
- Firstly, we made 30cm by 30cm grids over the house except the bathroom.
+ Firstly, users define the service range of the appliances based upon physical
+ vicinity information then draw rough boundaries.
+ While users are walking along the boundaries with their RFID tags, the
+ system averages RSSI for the initial calibration.
+ After setting up the RSSI based service range, we made 30cm by 30cm grids
+ over the house except the bathroom.
  And then with the calibrated RSSI service range, we tried to issue a token
  for 5 times at each point, then counted number of issuance.
  Based on this numbers, we plot the contour maps of the token space.
  And in the figure green, red and yellow color gives you the token space
  of TV, bedroom lamp and coffee machine, respectively.
  Because of the imperfection of RSSI values, we can see some outliers at
- (),(),(), but mostly it gives us rough service range as well.
+ (),(),(), and see some none uniform contours in fig [].
+ But, at the same time, it roughly gives us the real RSSI service range
+ of the appliances.
  
 \end_layout
 
 \begin_layout Standard
-Although the token space is roughly static and is definable, the system's
- token algorithm is susceptible to a small noise when users are around the
- boundary of the service range.
+As in the figure [] the token space is roughly static and is definable.
+ The calibrated token issuange algorithm could be, however, susceptible
+ to a small noise when users are around the boundaries of the service range.
  To avoid such case, we added hysteresis feature to the token issuance algorithm.
  Instead of having the same threshold value for both of issuance and expiration
  check routine (i.e.
