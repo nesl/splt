@@ -506,13 +506,6 @@ Binary detection problem and token issuance problem
 \end_layout
 
 \begin_layout Standard
-: (Textbook) R.
- N.
- McDonough and A.D.
- Whalen, Detection of Signals in Noise, 2nd edition, Academic Press, 1995
-\end_layout
-
-\begin_layout Standard
 There are two main issues that lead the token issuance problem hard.
  On one hand, RSSI suffers from significant variations over time and different
  devices.
@@ -545,11 +538,11 @@ Assuming that the RSSI token space is uniform and signals and noises are
 Although the token space is roughly static and is definable, the system's
  token algorithm is susceptible to a small noise when users are around the
  boundary of the service range.
- To avoid such case, we added hysteresis feature to the token issuance algorithm.
+ To avoid such case, we wanted to add hysteresis feature to the token issuance
+ algorithm.
  Instead of having the same threshold value for both of issuance and expiration
  check routine (i.e.
  issuance threshold = -12, expiration threshold = -17).
- And the motivation for us to set the hysteresis is the following.
  
 \end_layout
 
