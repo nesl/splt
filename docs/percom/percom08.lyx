@@ -415,7 +415,7 @@ The design of the Spotlight system is centered around
 \begin_inset Float table
 wide false
 sideways false
-status open
+status collapsed
 
 \begin_layout Standard
 \align center
@@ -947,17 +947,18 @@ Calibration parameter
 \begin_inset Float table
 wide true
 sideways false
-status open
+status collapsed
 
 \begin_layout Standard
 
 \end_layout
 
 \begin_layout Standard
+\align center
 \begin_inset Tabular
 <lyxtabular version="3" rows="6" columns="19">
 <features>
-<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" width="0.7in">
 <column alignment="center" valignment="top" leftline="true" width="0">
 <column alignment="center" valignment="top" leftline="true" width="0">
 <column alignment="center" valignment="top" leftline="true" width="0">
@@ -1346,6 +1347,8 @@ User201
 
 \begin_layout Standard
 
+\size footnotesize
+Thresholding
 \end_layout
 
 \end_inset
@@ -1556,7 +1559,7 @@ FN
 \begin_layout Standard
 
 \size footnotesize
-Single Threshold
+Single
 \end_layout
 
 \end_inset
@@ -1567,7 +1570,7 @@ Single Threshold
 \begin_layout Standard
 
 \size footnotesize
-39.46
+39.5
 \end_layout
 
 \end_inset
@@ -1589,7 +1592,7 @@ Single Threshold
 \begin_layout Standard
 
 \size footnotesize
-0.54
+0.5
 \end_layout
 
 \end_inset
@@ -1600,40 +1603,7 @@ Single Threshold
 \begin_layout Standard
 
 \size footnotesize
-72.97
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Standard
-
-\size footnotesize
-0
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Standard
-
-\size footnotesize
-27.03
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Standard
-
-\size footnotesize
-96.22
+73
 \end_layout
 
 \end_inset
@@ -1655,7 +1625,7 @@ Single Threshold
 \begin_layout Standard
 
 \size footnotesize
-3.78
+27
 \end_layout
 
 \end_inset
@@ -1666,7 +1636,40 @@ Single Threshold
 \begin_layout Standard
 
 \size footnotesize
-95.14
+96.2
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+
+\size footnotesize
+0
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+
+\size footnotesize
+3.8
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+
+\size footnotesize
+95.1
 \end_layout
 
 \end_inset
@@ -1688,7 +1691,7 @@ Single Threshold
 \begin_layout Standard
 
 \size footnotesize
-2.16
+2.2
 \end_layout
 
 \end_inset
@@ -1699,7 +1702,7 @@ Single Threshold
 \begin_layout Standard
 
 \size footnotesize
-74.59
+74.6
 \end_layout
 
 \end_inset
@@ -1710,7 +1713,7 @@ Single Threshold
 \begin_layout Standard
 
 \size footnotesize
-25.41
+25.4
 \end_layout
 
 \end_inset
@@ -1732,7 +1735,7 @@ Single Threshold
 \begin_layout Standard
 
 \size footnotesize
-68.65
+68.7
 \end_layout
 
 \end_inset
@@ -1743,7 +1746,7 @@ Single Threshold
 \begin_layout Standard
 
 \size footnotesize
-7.03
+7.0
 \end_layout
 
 \end_inset
@@ -1754,7 +1757,7 @@ Single Threshold
 \begin_layout Standard
 
 \size footnotesize
-24.32
+24.3
 \end_layout
 
 \end_inset
@@ -1767,7 +1770,7 @@ Single Threshold
 \begin_layout Standard
 
 \size footnotesize
-Calibrated Threshold
+Calibrated 
 \end_layout
 
 \end_inset
@@ -1778,7 +1781,7 @@ Calibrated Threshold
 \begin_layout Standard
 
 \size footnotesize
-58.92
+58.9
 \end_layout
 
 \end_inset
@@ -1789,7 +1792,7 @@ Calibrated Threshold
 \begin_layout Standard
 
 \size footnotesize
-35.14
+35.1
 \end_layout
 
 \end_inset
@@ -1800,7 +1803,7 @@ Calibrated Threshold
 \begin_layout Standard
 
 \size footnotesize
-5.94
+6
 \end_layout
 
 \end_inset
@@ -1811,7 +1814,7 @@ Calibrated Threshold
 \begin_layout Standard
 
 \size footnotesize
-63.78
+63.8
 \end_layout
 
 \end_inset
@@ -1822,7 +1825,7 @@ Calibrated Threshold
 \begin_layout Standard
 
 \size footnotesize
-3.78
+3.8
 \end_layout
 
 \end_inset
@@ -1833,7 +1836,7 @@ Calibrated Threshold
 \begin_layout Standard
 
 \size footnotesize
-32.44
+32.4
 \end_layout
 
 \end_inset
@@ -1844,7 +1847,7 @@ Calibrated Threshold
 \begin_layout Standard
 
 \size footnotesize
-94.59
+94.6
 \end_layout
 
 \end_inset
@@ -1866,7 +1869,7 @@ Calibrated Threshold
 \begin_layout Standard
 
 \size footnotesize
-5.41
+5.4
 \end_layout
 
 \end_inset
@@ -1877,7 +1880,7 @@ Calibrated Threshold
 \begin_layout Standard
 
 \size footnotesize
-92.43
+92.4
 \end_layout
 
 \end_inset
@@ -1888,7 +1891,7 @@ Calibrated Threshold
 \begin_layout Standard
 
 \size footnotesize
-1.62
+1.6
 \end_layout
 
 \end_inset
@@ -1899,7 +1902,7 @@ Calibrated Threshold
 \begin_layout Standard
 
 \size footnotesize
-5.95
+6
 \end_layout
 
 \end_inset
@@ -1910,7 +1913,7 @@ Calibrated Threshold
 \begin_layout Standard
 
 \size footnotesize
-98.38
+98.4
 \end_layout
 
 \end_inset
@@ -1921,7 +1924,7 @@ Calibrated Threshold
 \begin_layout Standard
 
 \size footnotesize
-0.54
+0.5
 \end_layout
 
 \end_inset
@@ -1932,7 +1935,7 @@ Calibrated Threshold
 \begin_layout Standard
 
 \size footnotesize
-1.08
+1.1
 \end_layout
 
 \end_inset
@@ -1943,7 +1946,7 @@ Calibrated Threshold
 \begin_layout Standard
 
 \size footnotesize
-99.46
+99.5
 \end_layout
 
 \end_inset
@@ -1954,7 +1957,7 @@ Calibrated Threshold
 \begin_layout Standard
 
 \size footnotesize
-0.54
+0.5
 \end_layout
 
 \end_inset
@@ -1989,7 +1992,7 @@ Hysteresis
 \begin_layout Standard
 
 \size footnotesize
-88.11
+88.1
 \end_layout
 
 \end_inset
@@ -2000,7 +2003,7 @@ Hysteresis
 \begin_layout Standard
 
 \size footnotesize
-9.73
+9.7
 \end_layout
 
 \end_inset
@@ -2011,7 +2014,7 @@ Hysteresis
 \begin_layout Standard
 
 \size footnotesize
-2.16
+2.2
 \end_layout
 
 \end_inset
@@ -2022,40 +2025,7 @@ Hysteresis
 \begin_layout Standard
 
 \size footnotesize
-90.27
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Standard
-
-\size footnotesize
-0
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Standard
-
-\size footnotesize
-9.73
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Standard
-
-\size footnotesize
-95.68
+90.3
 \end_layout
 
 \end_inset
@@ -2077,7 +2047,7 @@ Hysteresis
 \begin_layout Standard
 
 \size footnotesize
-4.32
+9.7
 \end_layout
 
 \end_inset
@@ -2088,7 +2058,7 @@ Hysteresis
 \begin_layout Standard
 
 \size footnotesize
-95.14
+95.7
 \end_layout
 
 \end_inset
@@ -2099,7 +2069,40 @@ Hysteresis
 \begin_layout Standard
 
 \size footnotesize
-2.16
+0
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+
+\size footnotesize
+4.3
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+
+\size footnotesize
+95.1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+
+\size footnotesize
+2.2
 \end_layout
 
 \end_inset
@@ -2121,7 +2124,7 @@ Hysteresis
 \begin_layout Standard
 
 \size footnotesize
-98.38
+98.4
 \end_layout
 
 \end_inset
@@ -2132,7 +2135,7 @@ Hysteresis
 \begin_layout Standard
 
 \size footnotesize
-0.54
+0.5
 \end_layout
 
 \end_inset
@@ -2143,7 +2146,7 @@ Hysteresis
 \begin_layout Standard
 
 \size footnotesize
-1.08
+1.1
 \end_layout
 
 \end_inset
@@ -2154,7 +2157,7 @@ Hysteresis
 \begin_layout Standard
 
 \size footnotesize
-99.46
+99.5
 \end_layout
 
 \end_inset
@@ -2165,7 +2168,7 @@ Hysteresis
 \begin_layout Standard
 
 \size footnotesize
-0.54
+0.5
 \end_layout
 
 \end_inset
@@ -2210,9 +2213,10 @@ Token Issue Success, False Positive, False Negative rates
 \begin_inset Float figure
 wide false
 sideways false
-status collapsed
+status open
 
 \begin_layout Standard
+\align center
 \begin_inset Graphics
 	filename Fig1.png
 	lyxscale 50
