@@ -473,20 +473,33 @@ One can see the token issuance algorithm is similar to the binary detection
  tractable and reasonable binary detection model for it.
  So, we designed the detection problem from some observations of human behavior
  and RSSI characteristics.
- Our observations are the following.
+ There are many attempts to make use of RSSI to localize mobile nodes.
+ [],[], and [] gives us rough approximation of the relationship between
+ distance and RSSI.
+ And they are
 \end_layout
 
 \begin_layout Standard
-(a) RSSI value between two motes varies over devices.
+(a) RSSI varies over devices.
 \end_layout
 
 \begin_layout Standard
-(b) RSSI value between two motes increases as the distance decreases.
+(b) RSSI increases as the distance decreases.
 \end_layout
 
 \begin_layout Standard
-(c) Once we two motes are the same, the characteristics doesn't change a
- lot over time.
+RSSI between two nodes at a fixed position is time independent.
+ Therefore, once we calibrate the parameters, we could have rough estimation
+ of range information based upon RSSI.
+ Although the token space is roughly static and is definable, the system's
+ token algorithm is susceptible to a small noise when users are around the
+ boundary of the service range.
+ To avoid such case, we added hysteresis feature to the token issuance algorithm.
+ Instead of having the same threshold value for both of issuance and expiration
+ check routine (i.e.
+ issuance threshold = -12, expiration threshold = -17).
+ And the motivation for us to set the hysteresis is the following.
+ 
 \end_layout
 
 \begin_layout Standard
@@ -501,8 +514,8 @@ One can see the token issuance algorithm is similar to the binary detection
 \end_layout
 
 \begin_layout Standard
-From (a),(b) and (c), we need to find calibrated service range in RSSI value
- for each pair of tags and readers.
+From (a),(b), we need to find calibrated service range in RSSI value for
+ each pair of tags and readers.
  And for (d) and (e), we also set a hysteresis constant for expiring tokens.
  
 \end_layout
@@ -510,17 +523,6 @@ From (a),(b) and (c), we need to find calibrated service range in RSSI value
 \begin_layout Standard
 To detect whether people are within its range or not, we wanted to make
  use of the fact (b).
- 
-\end_layout
-
-\begin_layout Standard
-Although the token space is roughly static and is definable, the system's
- token algorithm is susceptible to a small noise when users are around the
- boundary of the service range.
- To avoid such case, we added hysteresis feature to the token issuance algorithm.
- Instead of having the same threshold value for both of issuance and expiration
- check routine (i.e.
- issuance threshold = -12, expiration threshold = -17).
  
 \end_layout
 
