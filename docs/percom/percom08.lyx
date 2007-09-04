@@ -2550,7 +2550,7 @@ To confirm whether the RSSI based token issuance algorithm works, we measured
  system averages RSSI for the initial calibration.
  After setting up the RSSI based service range, we made 30cm by 30cm grids
  over the house except the bathroom.
- And then with the calibrated RSSI service range, we tried to issue a token
+ And then with the calibrated RSSI service range, we tried to issue tokens
  for 5 times at each point, then counted number of issuance.
  Based on this numbers, we plot the contour maps of the token space.
  And in the figure green, red and yellow color gives you the token space
