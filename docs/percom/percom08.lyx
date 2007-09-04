@@ -480,6 +480,16 @@ The design of the Spotlight system is centered around instrumentation of
  The MicaZ mote is equipped with a 2.4 GHz radio that 
 \end_layout
 
+\begin_layout Standard
+Citing 
+\begin_inset LatexCommand cite
+key "RSSI_yale"
+
+\end_inset
+
+ 
+\end_layout
+
 \begin_layout Subsection
 Hardware architecture
 \end_layout
