@@ -109,29 +109,31 @@ name "sec:Abstract"
 \end_inset
 
 We present Spotlight, a novel application that monitors in real-time the
- electrical energy consumption of individuals in an indoor setting.
+ electrical energy consumption at the individual level.
  Obtaining reports of energy consumption at this fine granularity allows
- identifying new areas for energy saving and acting upon it immediately.
+ identifying new areas for energy saving and acting upon it in real-time.
  Spotlight views appliances as rendering a service to a user and the energy
  consumption associated with the appliance as a cost for the service.
  Each participating appliance is specified a service range, a physical vicinity
  from the appliance within which the user benefits from the service.
- Using RSSI with user-wearable active RFID tags, an appliance is able to
- determine users in its service range.
- In order to enable these measurements, each appliance is instrumented with
- a COTS power meter and a MicaZ mote as an active RFID tag reader.
+ Using RSSI from user-wearable active RFID tags, an appliance is able to
+ determine the users in its service range.
+ In order to make these measurements, each appliance is instrumented with
+ a power meter and an active RFID tag reader.
+ The current implementation of Spotlight uses a COTS power meter and MicaZ
+ motes as active RFID tags and readers.
 \end_layout
 
 \begin_layout Abstract
-The Spotlight system was deployed and tested in an experimental setup with
- a various appliances and users.
+The Spotlight system is deployed and tested in an experimental setup with
+ various appliances and users.
  A virtual environment system was also developed to test more complex scenarios
  of usage.
  We evaluate various schemes of accounting energy consumption based on an
  individual's movement profile and the appliances' power profile.
- Our results show interesting individual behavior that could be interpreted
- for various energy optimizations.
- 
+ Our results show how the system interesting individual behavior that could
+ be interpreted for various energy optimizations.
+ We also discuss the chall
 \end_layout
 
 \begin_layout Section
@@ -168,14 +170,14 @@ United Nations Economic and Social Commission for Asia and the Pacific is
  basis.
  The reasons are two-folds.
  One : privacy concern Two : hard to provide the information.
- In this paper, we introduce the system called SpotLight that profiles individua
-l's energy consumption pattern levereaging existing platforms.
+ In this paper, we introduce the system called Spotlight that profiles individua
+ls energy consumption pattern leveraging existing platforms.
  Since the system can be operated locally/globally, users can keep the informati
 on on a personal computer.
  Therefore, privacy concern could be resolved by giving end users the right
  to disclose the information.
  On the other hand, it is still challenging to enable the system to profile
- individual's energy consumption patter because the system tends to be context
+ individuals energy consumption patter because the system tends to be context
  unaware.
  For the second, David Jea et.
  al.
@@ -217,11 +219,11 @@ Finally, there are certain appliances that cannot be characterized into
  either of the two classifications.
  These appliances provide a service regardless of the duration of time a
  user is interacting with it.
- Examples of appliances in this class include refrigirator, alarm clocks,
+ Examples of appliances in this class include refrigerator, alarm clocks,
  etc.
  Regardless of the amount of times a person accesses these appliances, they
  are still providing a service to the user.
- The refrigirator by keeping the food cold and the alarm clock by maintaining
+ The refrigerator by keeping the food cold and the alarm clock by maintaining
  the time.
  
 \end_layout
@@ -231,7 +233,7 @@ Accounting for energy consumption
 \end_layout
 
 \begin_layout Standard
-Most appliances can unambigiously be characterized into one of the three
+Most appliances can unambiguously be characterized into one of the three
  classes.
  Each class of appliances has a different policy for accounting for energy
  consumption.
@@ -313,7 +315,7 @@ To account for energy consumption, we introduce the notion of token and
  tokens.
  Energy consumption of users is counted against the tokens issued to the
  user.
- The policy for issuing and expering tokens is following:
+ The policy for issuing and expiring tokens is following:
 \end_layout
 
 \begin_layout Itemize
@@ -360,7 +362,7 @@ The user with a token for an appliance is responsible for the energy consumed
 
 \begin_layout Itemize
 If more than one users hold a token to an appliance, the energy consumption
- is equally divided amoungst them.
+ is equally divided amongst them.
  
 \end_layout
 
@@ -412,7 +414,7 @@ Further issues on Tokens
 \begin_layout Standard
 Since the notion of the token is an abstraction for accounting energy consumptio
 n of individuals, one could extend it.
- The extended token is a tuple associated with (Appliance ID, Type of energy,
+ The extended token is a duple associated with (Appliance ID, Type of energy,
  User ID, Time-out).
 \end_layout
 
@@ -429,7 +431,7 @@ case (1) that a case where there are two users.
  place and uses it for once.
  Imagine that the idle power consumption is almost the same as active power.
  Then the last one will unfairly be responsible for all the wasted energy
- until other one comes to the service range because the last one's token
+ until other one comes to the service range because the last ones token
  will not be expired for a long time.
  By giving them different types of tokens, one token for the active power,
  the other token for the idle power, the system can relatively fairly distribute
@@ -456,7 +458,7 @@ Binary detection problem and token issuance
 \end_layout
 
 \begin_layout Standard
-: (TextBook) R.
+: (Textbook) R.
  N.
  McDonough and A.D.
  Whalen, Detection of Signals in Noise, 2nd edition, Academic Press, 1995
@@ -2462,7 +2464,7 @@ Although the token space is roughly static and is definable, the system's
 \end_layout
 
 \begin_layout Subsection
-Groundtruth/comparison
+Ground truth/comparison
 \end_layout
 
 \begin_layout Standard
@@ -2708,7 +2710,7 @@ Results/graphs
 \end_layout
 
 \begin_layout Standard
-Groundtruth/comparison
+Ground truth/comparison
 \end_layout
 
 \begin_layout Standard
@@ -2724,11 +2726,11 @@ Issues
 \end_layout
 
 \begin_layout Standard
-Why rssi is imperfect 
+Why RSSI is imperfect 
 \end_layout
 
 \begin_layout Standard
-How do we make it immuned W
+How do we make it immune W
 \end_layout
 
 \begin_layout Standard
