@@ -456,16 +456,13 @@ Binary detection problem and token issuance
 \end_layout
 
 \begin_layout Standard
-: (TextBook) R.N.
- McDonough and A.D.
- Whalen, Detection of Signals in Noise, 2nd edition, Academic Press, 1995
+: (TextBook) R.
 \end_layout
 
 \begin_layout Standard
-Token issue follows the classical binary detection problem[], however, the
- probability of the signal could hardly be obtained because of their time-varyin
-g, platform varying characteristics.
- 
+N.
+ McDonough and A.D.
+ Whalen, Detection of Signals in Noise, 2nd edition, Academic Press, 1995
 \end_layout
 
 \begin_layout Standard
