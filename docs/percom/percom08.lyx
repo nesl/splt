@@ -450,6 +450,97 @@ case (2) For the class III appliances, the system could issue tokens for
 System Design
 \end_layout
 
+\begin_layout Subsection
+Binary detection problem and token issuance
+\end_layout
+
+\begin_layout Standard
+: (TextBook) R.N.
+ McDonough and A.D.
+ Whalen, Detection of Signals in Noise, 2nd edition, Academic Press, 1995
+\end_layout
+
+\begin_layout Standard
+Token issue follows the classical binary detection problem[], however, the
+ probability of the signal could hardly be obtained because of their time-varyin
+g, platform varying characteristics.
+ 
+\end_layout
+
+\begin_layout Standard
+One can see the token issuance algorithm is similar to the binary detection
+ problem [].
+ Due to serious uncertainty of RSSI values associated with antenna orientation,
+ antenna characteristics, ambient attenuation characteristics, obstruction
+ of Line-of-Sight and etc., however, it is challenging to define a mathematically
+ tractable and reasonable binary detection model for it.
+ So, we designed the detection problem from some observations of human behavior
+ and RSSI characteristics.
+ Our observations are the following.
+\end_layout
+
+\begin_layout Standard
+(a) RSSI value between two motes varies over devices.
+\end_layout
+
+\begin_layout Standard
+(b) RSSI value between two motes increases as the distance decreases.
+\end_layout
+
+\begin_layout Standard
+(c) Once we two motes are the same, the characteristics doesn't change a
+ lot over time.
+\end_layout
+
+\begin_layout Standard
+(d) When an individual uses an appliance, he/she tends to be close when
+ he/she starts to use it.
+ 
+\end_layout
+
+\begin_layout Standard
+(e) When an individual stops using it, he/she tends to be farther away from
+ it otherwise explicitly turns them off.
+\end_layout
+
+\begin_layout Standard
+From (a),(b) and (c), we need to find calibrated service range in RSSI value
+ for each pair of tags and readers.
+ And for (d) and (e), we also set a hysteresis constant for expiring tokens.
+ 
+\end_layout
+
+\begin_layout Standard
+To detect whether people are within its range or not, we wanted to make
+ use of the fact (b).
+ 
+\end_layout
+
+\begin_layout Standard
+To confirm whether the RSSI based token issuance algorithm works, we measured
+ the number of tokens issued at each point of predefined grids.
+ Firstly, we made 30cm by 30cm grids over the house except the bathroom.
+ And then with the calibrated RSSI service range, we tried to issue a token
+ for 5 times at each point, then counted number of issuance.
+ Based on this numbers, we plot the contour maps of the token space.
+ And in the figure green, red and yellow color gives you the token space
+ of TV, bedroom lamp and coffee machine, respectively.
+ Because of the imperfection of RSSI values, we can see some outliers at
+ (),(),(), but mostly it gives us rough service range as well.
+ 
+\end_layout
+
+\begin_layout Standard
+Although the token space is roughly static and is definable, the system's
+ token algorithm is susceptible to a small noise when users are around the
+ boundary of the service range.
+ To avoid such case, we added hysteresis feature to the token issuance algorithm.
+ Instead of having the same threshold value for both of issuance and expiration
+ check routine (i.e.
+ issuance threshold = -12, expiration threshold = -17).
+ 
+\end_layout
+
 \begin_layout Standard
 The design of the Spotlight system is centered around 
 \end_layout
