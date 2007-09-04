@@ -408,6 +408,10 @@ System Design
 \end_layout
 
 \begin_layout Standard
+The design of the Spotlight system is centered around 
+\end_layout
+
+\begin_layout Standard
 \begin_inset Float table
 wide false
 sideways false
@@ -2206,7 +2210,7 @@ Token Issue Success, False Positive, False Negative rates
 \begin_inset Float figure
 wide false
 sideways false
-status open
+status collapsed
 
 \begin_layout Standard
 \begin_inset Graphics
