@@ -622,7 +622,7 @@ Overall, we are aiming at using rough RSSI based service range instead of
 \end_layout
 
 \begin_layout Standard
-By following rough calibration that we will describe in section 
+By following our calibration scheme that we will describe in section 
 \begin_inset LatexCommand ref
 reference "sec:Evaluation"
 
