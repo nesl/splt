@@ -321,10 +321,71 @@ We developed and deployed an application to estimate the consumption under
  The third class of appliances and if the latter consumption policy for
  the second class of appliances is followed, they too can be monitored under
  this application with minor modifications.
+ In the application, each user carries a RFID tag and each appliance is
+ instrumented with a RFID reader and a power meter.
+ The power meter records the energy consumption of the appliance and the
+ RFID reader detects when a user enters the service range of the appliance.
  
 \end_layout
 
-\begin_layout Subsubsection
+\begin_layout Subsection
+Contributions of the paper
+\end_layout
+
+\begin_layout Subsection
+Structure of the paper
+\end_layout
+
+\begin_layout Section
+\begin_inset LatexCommand label
+name "sec:System-Design"
+
+\end_inset
+
+System Design
+\end_layout
+
+\begin_layout Standard
+The design of the Spotlight system is centered around instrumentation of
+ participating appliances.
+ Each appliance is powered through a commercial-off-the-shelf power meter
+ [WattsUpPro] that measures the energy consumption for the appliance.
+ The power meter provides a serial interface for external logging with a
+ well documented serial protocol.
+ This serial interface connects to a MicaZ 
+\begin_inset LatexCommand cite
+key "micaz"
+
+\end_inset
+
+ 'appliance' mote that forms the sensing, processing and communication hub
+ for the appliance.
+ The MicaZ mote is equipped with a 2.4 GHz radio that is used for sensing
+ the physical vicinity of participating users as well as for communicating
+ with the Spotlight server.
+ Users carry MicaZ 'user' motes that send out periodic beacon messages advertisi
+ng their presence.
+ The appliance motes listen for presence beacons and record the radio receive
+ strength (RSSI) for any it receives.
+ 
+\end_layout
+
+\begin_layout Subsection
+\begin_inset LatexCommand label
+name "sub:Hardware-architecture"
+
+\end_inset
+
+Hardware architecture
+\end_layout
+
+\begin_layout Standard
+The power measurement device chosen for the current implementation is the
+ Watts Up? Pro.
+  
+\end_layout
+
+\begin_layout Subsection
 Token System
 \end_layout
 
@@ -471,63 +532,6 @@ case (2) For the class III appliances, the system could issue tokens for
  The extended token, therefore, could enable users to set a policy for them
  to be fair.
  
-\end_layout
-
-\begin_layout Subsection
-Contributions of the paper
-\end_layout
-
-\begin_layout Subsection
-Structure of the paper
-\end_layout
-
-\begin_layout Section
-\begin_inset LatexCommand label
-name "sec:System-Design"
-
-\end_inset
-
-System Design
-\end_layout
-
-\begin_layout Standard
-The design of the Spotlight system is centered around instrumentation of
- participating appliances.
- Each appliance is powered through a commercial-off-the-shelf power meter
- [WattsUpPro] that measures the energy consumption for the appliance.
- The power meter provides a serial interface for external logging with a
- well documented serial protocol.
- This serial interface connects to a MicaZ 
-\begin_inset LatexCommand cite
-key "micaz"
-
-\end_inset
-
- 'appliance' mote that forms the sensing, processing and communication hub
- for the appliance.
- The MicaZ mote is equipped with a 2.4 GHz radio that is used for sensing
- the physical vicinity of participating users as well as for communicating
- with the Spotlight server.
- Users carry MicaZ 'user' motes that send out periodic beacon messages advertisi
-ng their presence.
- The appliance motes listen for presence beacons and record the radio receive
- strength (RSSI) for any it receives.
- 
-\end_layout
-
-\begin_layout Subsection
-\begin_inset LatexCommand label
-name "sub:Hardware-architecture"
-
-\end_inset
-
-Hardware architecture
-\end_layout
-
-\begin_layout Standard
-The power measurement device chosen for the current implementation is the
- Watts Up? Pro.
-  
 \end_layout
 
 \begin_layout Subsection
