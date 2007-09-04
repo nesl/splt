@@ -2508,12 +2508,12 @@ reference "fig:Performance-of-various"
 \begin_inset Float figure
 wide true
 sideways false
-status open
+status collapsed
 
 \begin_layout Standard
 \align center
 \begin_inset Graphics
-	filename /Users/darknight/projects/splt/docs/percom/figures/fig35.eps
+	filename figures/fig35.eps
 	lyxscale 50
 	width 100text%
 
