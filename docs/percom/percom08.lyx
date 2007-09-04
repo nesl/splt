@@ -2378,7 +2378,7 @@ Although the token space is roughly static and is definable, the system's
 \end_layout
 
 \begin_layout Subsection
-Results/graphs
+Groundtruth/comparison
 \end_layout
 
 \begin_layout Standard
@@ -2390,7 +2390,7 @@ status collapsed
 \begin_layout Standard
 \align center
 \begin_inset Graphics
-	filename figures/fig3.eps
+	filename /Users/darknight/projects/splt/docs/percom/figures/fig3.eps
 	lyxscale 50
 	width 75text%
 
@@ -2427,7 +2427,7 @@ status collapsed
 \begin_layout Standard
 \align center
 \begin_inset Graphics
-	filename figures/fig35.eps
+	filename /Users/darknight/projects/splt/docs/percom/figures/fig35.eps
 	lyxscale 50
 	width 100text%
 
@@ -2476,7 +2476,7 @@ status collapsed
 \begin_layout Standard
 \align center
 \begin_inset Graphics
-	filename figures/fig5.eps
+	filename /Users/darknight/projects/splt/docs/percom/figures/fig5.eps
 	lyxscale 50
 	width 75text%
 
@@ -2512,7 +2512,7 @@ status collapsed
 
 
 \begin_inset Graphics
-	filename figures/fig6.eps
+	filename /Users/darknight/projects/splt/docs/percom/figures/fig6.eps
 	lyxscale 50
 	width 75text%
 
@@ -2544,7 +2544,7 @@ Total Useful/Wasted Power and Energy
 \end_layout
 
 \begin_layout Subsection
-Groundtruth/comparison
+Results/graphs
 \end_layout
 
 \begin_layout Section
