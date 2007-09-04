@@ -116,8 +116,8 @@ We present Spotlight, a novel application that monitors in real-time the
  consumption associated with the appliance as a cost for the service.
  Each participating appliance is specified a service range, a physical vicinity
  from the appliance within which the user benefits from the service.
- Using RSSI from user-wearable active RFID tags, an appliance is able to
- determine the users in its service range.
+ Using radio receive strength from user-wearable active RFID tags, an appliance
+ is able to determine the users in its service range.
  In order to make these measurements, each appliance is instrumented with
  a power meter and an active RFID tag reader.
  The current implementation of Spotlight uses a COTS power meter and MicaZ
@@ -460,7 +460,11 @@ Hardware architecture
 \begin_layout Standard
 The power measurement device chosen for the current implementation is the
  Watts Up? Pro.
- 
+ The design of the Spotlight system is centered around instrumentation of
+ appliances.
+ Each appliance is powered through a commercial-off-the-shelf power meter
+ [WattsUpPro] that measures the energy consumption for the appliance.
+ The power meter provides a serial interface 
 \end_layout
 
 \begin_layout Subsection
@@ -548,14 +552,6 @@ From (a),(b), we need to find calibrated service range in RSSI value for
 To detect whether people are within its range or not, we wanted to make
  use of the fact (b).
  
-\end_layout
-
-\begin_layout Standard
-The design of the Spotlight system is centered around instrumentation of
- appliances.
- Each appliance is powered through a commercial-off-the-shelf power meter
- [WattsUpPro] that measures the energy consumption for the appliance.
- The power meter provides a serial interface 
 \end_layout
 
 \begin_layout Standard
