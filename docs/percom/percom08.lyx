@@ -151,6 +151,20 @@ Motivation
 \end_layout
 
 \begin_layout Standard
+The traditional dimensions is measuring energy consumption are at a very
+ coarse-grained granularity.
+ The consumption is given in terms of household and over a period many days.
+ This allows for a only partial awareness on the part of the users about
+ their energy consumption especially in a big household or in a office or
+ lab setting.
+ In such settings, if measurement of energy consumption was made avail at
+ a finre granularity, it will help the users in pinpointing their specific
+ habbits and trends, modifying which would aid in significant variations
+ in energy measurement.
+ 
+\end_layout
+
+\begin_layout Standard
 United Nations Economic and Social Commission for Asia and the Pacific is
  concerned with sustainable energy consumption.
  Dr.
