@@ -188,29 +188,18 @@ All these programs are still aimed profiling at a household level of granularity
  We believe that such a profile would further aid the consumers in pinpointing
  other trends and consumption profiles to further improve their consumption
  pattern.
+ We introduce a system called Spotlight capable of estimating an individual's
+ personal energy consumption profile.
+ The system can be operated at a household level or on a larger scale allowing
+ users to set their own privacy settings.
  
 \end_layout
 
 \begin_layout Standard
-To the best of our knowledge, however, there are few attempts to profile
- individual's energy consumption pattern, and , therefore, it is hard for
- individuals to save their energy consumption in personal level on a daily
- basis.
- The reasons are two-folds.
- One : privacy concern Two : hard to provide the information.
- In this paper, we introduce the system called Spotlight that profiles individua
-ls energy consumption pattern leveraging existing platforms.
- Since the system can be operated locally/globally, users can keep the informati
-on on a personal computer.
- Therefore, privacy concern could be resolved by giving end users the right
- to disclose the information.
- On the other hand, it is still challenging to enable the system to profile
- individuals energy consumption patter because the system tends to be context
- unaware.
- For the second, David Jea et.
- al.
- presents a system that is aware of the context in access to public devices
- by leveraging various sensing modality.
+To measure the consumption profile for a user, we first classify the typical
+ appliances into different categories based on the type of service they
+ provide and then offer policies in monitoring those appliances.
+ 
 \end_layout
 
 \begin_layout Subsection
@@ -224,7 +213,7 @@ Based on our analysis of different appliances in used, we have the following
 \end_layout
 
 \begin_layout Enumerate
-Need physical presence to receive the service from the appliance.
+Physical presence is needed to receive the service from the appliance.
  Examples of appliances in this class include television, coffee machine,
  etc.
  Only persons within a vicinity of the appliance can benefit from it.
