@@ -567,6 +567,152 @@ Although the token space is roughly static and is definable, the system's
 Results/graphs
 \end_layout
 
+\begin_layout Standard
+\begin_inset Float figure
+wide true
+sideways false
+status open
+
+\begin_layout Standard
+\align center
+\begin_inset Graphics
+	filename figures/fig3.eps
+	lyxscale 50
+	width 75text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Caption
+
+\begin_layout Standard
+\begin_inset LatexCommand label
+name "fig:Appliance-power-and"
+
+\end_inset
+
+Appliance power and energy consumption per user
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\begin_inset Float figure
+wide true
+sideways false
+status open
+
+\begin_layout Standard
+\align center
+\begin_inset Graphics
+	filename figures/fig35.eps
+	lyxscale 50
+	width 75text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Caption
+
+\begin_layout Standard
+\begin_inset LatexCommand label
+name "fig:Performance-of-various"
+
+\end_inset
+
+Performance of various RSSI->Vicinity->Token mechanisms
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\begin_inset Float figure
+wide true
+sideways false
+status open
+
+\begin_layout Standard
+\align center
+\begin_inset Graphics
+	filename figures/fig5.eps
+	lyxscale 50
+	width 75text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Caption
+
+\begin_layout Standard
+Useful/Wasted Power and Energy for TV
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\begin_inset Float figure
+wide true
+sideways false
+status open
+
+\begin_layout Standard
+\align center
+\begin_inset Graphics
+	filename /Users/zainul/Desktop/splt/docs/percom/figures/fig6.eps
+	lyxscale 50
+	width 75text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Caption
+
+\begin_layout Standard
+\begin_inset LatexCommand label
+name "fig:Total-Useful/Wasted-Power"
+
+\end_inset
+
+Total Useful/Wasted Power and Energy
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
 \begin_layout Subsection
 Groundtruth/comparison
 \end_layout
