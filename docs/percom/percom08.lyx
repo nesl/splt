@@ -1258,7 +1258,7 @@ Unified and Calibrated RSSI service range
 \begin_inset Float table
 wide true
 sideways false
-status collapsed
+status open
 
 \begin_layout Standard
 \align center
@@ -1655,7 +1655,7 @@ User201
 \begin_layout Standard
 
 \size footnotesize
-Thresholding
+Threshold
 \end_layout
 
 \end_inset
@@ -1866,7 +1866,7 @@ FN
 \begin_layout Standard
 
 \size footnotesize
-Single
+Unified
 \end_layout
 
 \end_inset
