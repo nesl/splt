@@ -301,12 +301,106 @@ We developed and deployed an application to estimate the consumption under
 Token System
 \end_layout
 
-\begin_layout Subsubsection
-Token Issue
+\begin_layout Standard
+One fundamental question we have to answer to is that who is responsible
+ for energy consumption.
+ To answer to it, we bring a notion of a token and service range.
+ The service range implies that each appliance has its own service range
+ and individuals who are within the range are actually consuming its service
+ and are responsible for the energy or resource.
+ Even we have the notion, it might be problematic if one turns on an appliance,
+ forgets turning it off, and leaves the service range.
+ In that case, the system based upon occupancy might assume that the energy
+ is consumed by nobody since nobody is withing its sevice range.
+ The notion of the token could solve the problem and the idea is the following.
+ An appliance will give a token to an individual who is within its service
+ range.
+ Tokens are issued and expired by the following policy.
 \end_layout
 
 \begin_layout Subsubsection
-Token Expiry
+Token Issuance and Expiration
+\end_layout
+
+\begin_layout Itemize
+If someone is within the service range, the system will give a token.
+ 
+\end_layout
+
+\begin_layout Itemize
+If there is some one within its range and the other one has left its range,
+ the appliance will expire the token given before.
+ 
+\end_layout
+
+\begin_layout Itemize
+If there was only one withing its range and the one has left its range,
+ the appliance will NOT expire the token right away.
+ It will expire the token when someone has came its service range.
+ Of course, it will give another token to the individual who has came.
+\end_layout
+
+\begin_layout Standard
+So, the basic energy consumption policy is that
+\end_layout
+
+\begin_layout Itemize
+the system assumes every individual who has a token is responsible for the
+ energy consumed by an appliance.
+ And, therefore, by (b) if someone has left an appliance on, he/she is responsib
+le for the wasted energy until another one has come to the service range
+ of the appliance.
+ 
+\end_layout
+
+\begin_layout Itemize
+the system equally distributes the energy into individuals if more than
+ one person are within the service range of an appliance.
+ (iii) the system assumes that if nobody is responsible for energy then
+ it will equally distribute the wasted energy to the individuals who are
+ affiliated with the space, say home or office.
+\end_layout
+
+\begin_layout Subsubsection
+Further issues on Tokens
+\end_layout
+
+\begin_layout Standard
+Since the notion of the token is an abstraction for accounting energy consumptio
+n of individuals, one could extend it.
+ The extended token is a tuple associated with (Appliance ID, Type of energy,
+ User ID, Time-out).
+\end_layout
+
+\begin_layout Standard
+One can imagine some other cases the token system cannot fairly distribute
+ energy to users.
+ And they can be resolved by doing this.
+ 
+\end_layout
+
+\begin_layout Standard
+case (1) that a case where there are two users.
+ After one uses an appliance intensively, then the other one came to the
+ place and uses it for once.
+ Imagine that the idle power consumption is almost the same as active power.
+ Then the last one will unfairly be responsible for all the wasted energy
+ until other one comes to the service range because the last one's token
+ will not be expired for a long time.
+ By giving them different types of tokens, one token for the active power,
+ the other token for the idle power, the system can relatively fairly distribute
+ energy to users.
+ 
+\end_layout
+
+\begin_layout Standard
+case (2) For the class III appliances, the system could issue tokens for
+ affiliated users at the first time when an appliance starts working, and
+ by never expiring the tokens users will be responsible for energy consumed
+ by the appliances.
+ The extended token, therefore, could enable users to set a policy for them
+ to be fair.
+ 
 \end_layout
 
 \begin_layout Section
