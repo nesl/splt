@@ -514,6 +514,17 @@ To detect whether people are within its range or not, we wanted to make
 \end_layout
 
 \begin_layout Standard
+Although the token space is roughly static and is definable, the system's
+ token algorithm is susceptible to a small noise when users are around the
+ boundary of the service range.
+ To avoid such case, we added hysteresis feature to the token issuance algorithm.
+ Instead of having the same threshold value for both of issuance and expiration
+ check routine (i.e.
+ issuance threshold = -12, expiration threshold = -17).
+ 
+\end_layout
+
+\begin_layout Standard
 To confirm whether the RSSI based token issuance algorithm works, we measured
  the number of tokens issued at each point of predefined grids.
  Firstly, we made 30cm by 30cm grids over the house except the bathroom.
@@ -524,17 +535,6 @@ To confirm whether the RSSI based token issuance algorithm works, we measured
  of TV, bedroom lamp and coffee machine, respectively.
  Because of the imperfection of RSSI values, we can see some outliers at
  (),(),(), but mostly it gives us rough service range as well.
- 
-\end_layout
-
-\begin_layout Standard
-Although the token space is roughly static and is definable, the system's
- token algorithm is susceptible to a small noise when users are around the
- boundary of the service range.
- To avoid such case, we added hysteresis feature to the token issuance algorithm.
- Instead of having the same threshold value for both of issuance and expiration
- check routine (i.e.
- issuance threshold = -12, expiration threshold = -17).
  
 \end_layout
 
