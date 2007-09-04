@@ -202,15 +202,16 @@ All these programs are still aimed profiling the consumption at the granularity
 \begin_layout Standard
 After an initial calibration procedure, it operates with little or no interventi
 on from the user.
- Users are able to monitor their consumption pattern in real time.
- The application can detect instances of wasted energy where an appliance
- was operating but no one was benefiting from it and the person responsible
+ Users are able to monitor their consumption pattern in real time or observe
+ long term trend reports.
+ The application can detect instances of energy wastage where an appliance
+ could be operating unnecessarily and could also identify the person responsible
  for the wasted energy.
  The application also details how much of a user's energy consumption came
  from specific appliances and how much energy was consumed by different
  appliances.
  This information can be used by the users to make decisions on the efficiency
- of different appliances and about their personal habbits.
+ of different appliances and about their personal habits.
  
 \end_layout
 
@@ -641,7 +642,7 @@ There are two main issues that lead the token issuance problem hard.
  Therefore, in case we cannot fix antenna orientation, the system should
  suffer from variable RSSI.
  Not only the antenna orientation, but also other factors, such as antenna
- and radio circuit characteristics, ambient attenuation characterestics,
+ and radio circuit characteristics, ambient attenuation characteristics,
  obstruction of Line-of-Sight and etc., render RSSI uncertain.
 \end_layout
 
@@ -947,14 +948,14 @@ reference "fig:User-Defined-RSSI"
 
 \end_inset
 
-, we placed four power measurement units and micaz motes at the living room
+, we placed four power measurement units and MicaZ motes at the living room
  lamp, TV, coffee machine and bedroom lamp in a 1 bedroom and 1 bathroom
  house environment.
  There are two users carrying their active RFID tags.
- The other micaz mote is used for snooping and collecting power measurement
+ The other MicaZ mote is used for snooping and collecting power measurement
  of the appliances and RSSI information.
- One apple PowerBook G4 is used for local data processing, storing and tranferri
-ng.
+ One apple PowerBook G4 is used for local data processing, storing and transferr
+ing.
  For the post-deployment data analysis, we stored RSSI, token information,
  power measurement, and timestamp at the sensorbase.
  During the deployment, users carried on their typical daily life.
@@ -2676,7 +2677,7 @@ To confirm whether the RSSI based token issuance algorithm works, we measured
 
 \begin_layout Standard
 As in the figure [] the token space is roughly static and is definable.
- The calibrated token issuange algorithm could be, however, susceptible
+ The calibrated token issuance algorithm could be, however, susceptible
  to a small noise when users are around the boundaries of the service range.
  To avoid such case, we added hysteresis feature to the token issuance algorithm.
  Instead of having the same threshold value for both of issuance and expiration
@@ -2696,7 +2697,7 @@ In order to compare our experimental data with the ground truth, the household
  The cameras took a picture every 10 seconds and gave information about
  who was present in the service range of the appliances.
  Due to privacy reasons, these pictures are not included in the document.
- The pictures were manually tagged by a user in the household to retrive
+ The pictures were manually tagged by a user in the household to retrieve
  the ground truth for the occupancy data.
  The ground truth for both users for the television is given in figure 
 \begin_inset LatexCommand ref
@@ -2787,7 +2788,7 @@ Simple thresholding and calibrated techniques suffers significantly from
  as it can also cope with slight variations in the RSSI values of the tags.
  Since the hysteresis technique has been identified as the dominant technique,
  and the technique that comes closest to the ground truth, all sequential
- data will be charactertized using this technique.
+ data will be characterized using this technique.
  
 \end_layout
 
