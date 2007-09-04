@@ -467,6 +467,19 @@ case (2) For the class III appliances, the system could issue tokens for
 System Design
 \end_layout
 
+\begin_layout Standard
+The design of the Spotlight system is centered around instrumentation of
+ appliances.
+ Each appliance is powered through a commercial-off-the-shelf power meter
+ [WattsUpPro] that measures the energy consumption for the appliance.
+ The power meter provides a serial interface with a well documented serial
+ protocol.
+ The serial interface from the power meter is directly connected to a MicaZ
+ mote that forms the sensing, processing and communication hub for that
+ appliance.
+ The MicaZ mote is equipped with a 2.4 GHz radio that 
+\end_layout
+
 \begin_layout Subsection
 Hardware architecture
 \end_layout
@@ -474,11 +487,7 @@ Hardware architecture
 \begin_layout Standard
 The power measurement device chosen for the current implementation is the
  Watts Up? Pro.
- The design of the Spotlight system is centered around instrumentation of
- appliances.
- Each appliance is powered through a commercial-off-the-shelf power meter
- [WattsUpPro] that measures the energy consumption for the appliance.
- The power meter provides a serial interface 
+ 
 \end_layout
 
 \begin_layout Subsection
