@@ -754,14 +754,21 @@ Active RFID Tag Lifetimes for 1500mAh 'AA' alkaline batteries
 Evaluation
 \end_layout
 
+\begin_layout Standard
+In this section, we describe our experimental results in three aspects:
+ evaluation of RSSI token space algorithm, performance of energy profiling,
+ and analysis of users' energy consumption patterns.
+ 
+\end_layout
+
 \begin_layout Subsection
 Deployment setting
 \end_layout
 
 \begin_layout Standard
-For the evaluation, we placed four power measurement units and micaz motes
- at the living room lamp, TV, coffee machine and bedroom lamp in a small
- 1 bedroom and 1 bathroom house environment.
+To begin with, as in fig [], we placed four power measurement units and
+ micaz motes at the living room lamp, TV, coffee machine and bedroom lamp
+ in a small 1 bedroom and 1 bathroom house environment.
  There are two users carrying their active RFID tags.
  The other micaz mote is used for snooping and collecting power measurement
  of the appliances and RSSI information.
