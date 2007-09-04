@@ -411,7 +411,7 @@ System Design
 \begin_inset Float table
 wide false
 sideways false
-status collapsed
+status open
 
 \begin_layout Standard
 \align center
@@ -436,7 +436,7 @@ status collapsed
 
 \begin_layout Standard
 
-\size small
+\size footnotesize
 Avg Power (mW)
 \end_layout
 
@@ -447,7 +447,7 @@ Avg Power (mW)
 
 \begin_layout Standard
 
-\size small
+\size footnotesize
 Lifetime (days)
 \end_layout
 
@@ -460,7 +460,7 @@ Lifetime (days)
 
 \begin_layout Standard
 
-\size small
+\size footnotesize
 1Hz timer triggered, radio always ON
 \end_layout
 
@@ -471,7 +471,7 @@ Lifetime (days)
 
 \begin_layout Standard
 
-\size small
+\size footnotesize
 66.3
 \end_layout
 
@@ -482,7 +482,7 @@ Lifetime (days)
 
 \begin_layout Standard
 
-\size small
+\size footnotesize
 2.82
 \end_layout
 
@@ -495,7 +495,7 @@ Lifetime (days)
 
 \begin_layout Standard
 
-\size small
+\size footnotesize
 1Hz timer, radio OFF (when not TX)
 \end_layout
 
@@ -506,7 +506,7 @@ Lifetime (days)
 
 \begin_layout Standard
 
-\size small
+\size footnotesize
 6.9
 \end_layout
 
@@ -517,7 +517,7 @@ Lifetime (days)
 
 \begin_layout Standard
 
-\size small
+\size footnotesize
 27.23
 \end_layout
 
@@ -530,7 +530,7 @@ Lifetime (days)
 
 \begin_layout Standard
 
-\size small
+\size footnotesize
 Vibration triggered, radio OFF, all events
 \end_layout
 
@@ -541,7 +541,7 @@ Vibration triggered, radio OFF, all events
 
 \begin_layout Standard
 
-\size small
+\size footnotesize
 10.7
 \end_layout
 
@@ -552,7 +552,7 @@ Vibration triggered, radio OFF, all events
 
 \begin_layout Standard
 
-\size small
+\size footnotesize
 17.52
 \end_layout
 
@@ -565,7 +565,7 @@ Vibration triggered, radio OFF, all events
 
 \begin_layout Standard
 
-\size small
+\size footnotesize
 Vibration triggered, radio OFF, no events
 \end_layout
 
@@ -576,7 +576,7 @@ Vibration triggered, radio OFF, no events
 
 \begin_layout Standard
 
-\size small
+\size footnotesize
 6.6
 \end_layout
 
@@ -587,7 +587,7 @@ Vibration triggered, radio OFF, no events
 
 \begin_layout Standard
 
-\size small
+\size footnotesize
 28.52
 \end_layout
 
@@ -659,6 +659,8 @@ status collapsed
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 Single Threshold
 \end_layout
 
@@ -668,6 +670,8 @@ Single Threshold
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 Calibrated Threshold
 \end_layout
 
@@ -697,6 +701,8 @@ Calibrated Threshold
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 For both
 \end_layout
 
@@ -706,6 +712,8 @@ For both
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 User200
 \end_layout
 
@@ -715,6 +723,8 @@ User200
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 User201
 \end_layout
 
@@ -726,6 +736,8 @@ User201
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 TV
 \end_layout
 
@@ -735,6 +747,8 @@ TV
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 -20
 \end_layout
 
@@ -744,6 +758,8 @@ TV
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 -12
 \end_layout
 
@@ -753,6 +769,8 @@ TV
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 -14
 \end_layout
 
@@ -764,6 +782,8 @@ TV
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 LivingRoomLamp
 \end_layout
 
@@ -773,6 +793,8 @@ LivingRoomLamp
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 -26
 \end_layout
 
@@ -782,6 +804,8 @@ LivingRoomLamp
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 -23
 \end_layout
 
@@ -791,6 +815,8 @@ LivingRoomLamp
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 -22
 \end_layout
 
@@ -802,6 +828,8 @@ LivingRoomLamp
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 CoffeeMachine
 \end_layout
 
@@ -811,6 +839,8 @@ CoffeeMachine
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 -5
 \end_layout
 
@@ -820,6 +850,8 @@ CoffeeMachine
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 -10
 \end_layout
 
@@ -829,6 +861,8 @@ CoffeeMachine
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 -8
 \end_layout
 
@@ -840,6 +874,8 @@ CoffeeMachine
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 BedRoomLamp
 \end_layout
 
@@ -849,6 +885,8 @@ BedRoomLamp
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 -26
 \end_layout
 
@@ -858,6 +896,8 @@ BedRoomLamp
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 -16
 \end_layout
 
@@ -867,6 +907,8 @@ BedRoomLamp
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 -18
 \end_layout
 
@@ -901,7 +943,11 @@ Calibration parameter
 \begin_inset Float table
 wide true
 sideways false
-status collapsed
+status open
+
+\begin_layout Standard
+
+\end_layout
 
 \begin_layout Standard
 \begin_inset Tabular
@@ -940,6 +986,8 @@ status collapsed
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 TV
 \end_layout
 
@@ -994,6 +1042,8 @@ TV
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 LivingLamp
 \end_layout
 
@@ -1048,6 +1098,8 @@ LivingLamp
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 BedLamp
 \end_layout
 
@@ -1113,6 +1165,8 @@ BedLamp
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 User200
 \end_layout
 
@@ -1140,6 +1194,8 @@ User200
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 User201
 \end_layout
 
@@ -1167,6 +1223,8 @@ User201
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 User200
 \end_layout
 
@@ -1194,6 +1252,8 @@ User200
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 User201
 \end_layout
 
@@ -1221,6 +1281,8 @@ User201
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 User200
 \end_layout
 
@@ -1248,6 +1310,8 @@ User200
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 User201
 \end_layout
 
@@ -1286,6 +1350,8 @@ User201
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 C
 \end_layout
 
@@ -1295,6 +1361,8 @@ C
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 FP
 \end_layout
 
@@ -1304,6 +1372,8 @@ FP
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 FN
 \end_layout
 
@@ -1313,6 +1383,8 @@ FN
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 C
 \end_layout
 
@@ -1322,6 +1394,8 @@ C
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 FP
 \end_layout
 
@@ -1331,6 +1405,8 @@ FP
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 FN
 \end_layout
 
@@ -1340,6 +1416,8 @@ FN
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 C
 \end_layout
 
@@ -1349,6 +1427,8 @@ C
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 FP
 \end_layout
 
@@ -1358,6 +1438,8 @@ FP
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 FN
 \end_layout
 
@@ -1367,6 +1449,8 @@ FN
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 C
 \end_layout
 
@@ -1376,6 +1460,8 @@ C
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 FP
 \end_layout
 
@@ -1385,6 +1471,8 @@ FP
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 FN
 \end_layout
 
@@ -1394,6 +1482,8 @@ FN
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 C
 \end_layout
 
@@ -1403,6 +1493,8 @@ C
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 FP
 \end_layout
 
@@ -1412,6 +1504,8 @@ FP
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 FN
 \end_layout
 
@@ -1421,6 +1515,8 @@ FN
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 C
 \end_layout
 
@@ -1430,6 +1526,8 @@ C
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 FP
 \end_layout
 
@@ -1439,6 +1537,8 @@ FP
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 FN
 \end_layout
 
@@ -1450,6 +1550,8 @@ FN
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 Single Threshold
 \end_layout
 
@@ -1459,7 +1561,9 @@ Single Threshold
 \begin_inset Text
 
 \begin_layout Standard
-39.46%
+
+\size footnotesize
+39.46
 \end_layout
 
 \end_inset
@@ -1468,7 +1572,9 @@ Single Threshold
 \begin_inset Text
 
 \begin_layout Standard
-60%
+
+\size footnotesize
+60
 \end_layout
 
 \end_inset
@@ -1477,7 +1583,9 @@ Single Threshold
 \begin_inset Text
 
 \begin_layout Standard
-0.54%
+
+\size footnotesize
+0.54
 \end_layout
 
 \end_inset
@@ -1486,7 +1594,9 @@ Single Threshold
 \begin_inset Text
 
 \begin_layout Standard
-72.97%
+
+\size footnotesize
+72.97
 \end_layout
 
 \end_inset
@@ -1495,7 +1605,9 @@ Single Threshold
 \begin_inset Text
 
 \begin_layout Standard
-0%
+
+\size footnotesize
+0
 \end_layout
 
 \end_inset
@@ -1504,7 +1616,9 @@ Single Threshold
 \begin_inset Text
 
 \begin_layout Standard
-27.03%
+
+\size footnotesize
+27.03
 \end_layout
 
 \end_inset
@@ -1513,7 +1627,9 @@ Single Threshold
 \begin_inset Text
 
 \begin_layout Standard
-96.22%
+
+\size footnotesize
+96.22
 \end_layout
 
 \end_inset
@@ -1522,7 +1638,9 @@ Single Threshold
 \begin_inset Text
 
 \begin_layout Standard
-0%
+
+\size footnotesize
+0
 \end_layout
 
 \end_inset
@@ -1531,7 +1649,9 @@ Single Threshold
 \begin_inset Text
 
 \begin_layout Standard
-3.78%
+
+\size footnotesize
+3.78
 \end_layout
 
 \end_inset
@@ -1540,7 +1660,9 @@ Single Threshold
 \begin_inset Text
 
 \begin_layout Standard
-95.14%
+
+\size footnotesize
+95.14
 \end_layout
 
 \end_inset
@@ -1549,7 +1671,9 @@ Single Threshold
 \begin_inset Text
 
 \begin_layout Standard
-2.7%
+
+\size footnotesize
+2.7
 \end_layout
 
 \end_inset
@@ -1558,7 +1682,9 @@ Single Threshold
 \begin_inset Text
 
 \begin_layout Standard
-2.16%
+
+\size footnotesize
+2.16
 \end_layout
 
 \end_inset
@@ -1567,7 +1693,9 @@ Single Threshold
 \begin_inset Text
 
 \begin_layout Standard
-74.59%
+
+\size footnotesize
+74.59
 \end_layout
 
 \end_inset
@@ -1576,7 +1704,9 @@ Single Threshold
 \begin_inset Text
 
 \begin_layout Standard
-25.41%
+
+\size footnotesize
+25.41
 \end_layout
 
 \end_inset
@@ -1585,7 +1715,9 @@ Single Threshold
 \begin_inset Text
 
 \begin_layout Standard
-0%
+
+\size footnotesize
+0
 \end_layout
 
 \end_inset
@@ -1594,7 +1726,9 @@ Single Threshold
 \begin_inset Text
 
 \begin_layout Standard
-68.65%
+
+\size footnotesize
+68.65
 \end_layout
 
 \end_inset
@@ -1603,7 +1737,9 @@ Single Threshold
 \begin_inset Text
 
 \begin_layout Standard
-7.03%
+
+\size footnotesize
+7.03
 \end_layout
 
 \end_inset
@@ -1612,7 +1748,9 @@ Single Threshold
 \begin_inset Text
 
 \begin_layout Standard
-24.32%
+
+\size footnotesize
+24.32
 \end_layout
 
 \end_inset
@@ -1623,6 +1761,8 @@ Single Threshold
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 Calibrated Threshold
 \end_layout
 
@@ -1632,7 +1772,9 @@ Calibrated Threshold
 \begin_inset Text
 
 \begin_layout Standard
-58.92%
+
+\size footnotesize
+58.92
 \end_layout
 
 \end_inset
@@ -1641,7 +1783,9 @@ Calibrated Threshold
 \begin_inset Text
 
 \begin_layout Standard
-35.14%
+
+\size footnotesize
+35.14
 \end_layout
 
 \end_inset
@@ -1650,7 +1794,9 @@ Calibrated Threshold
 \begin_inset Text
 
 \begin_layout Standard
-5.94%
+
+\size footnotesize
+5.94
 \end_layout
 
 \end_inset
@@ -1659,7 +1805,9 @@ Calibrated Threshold
 \begin_inset Text
 
 \begin_layout Standard
-63.78%
+
+\size footnotesize
+63.78
 \end_layout
 
 \end_inset
@@ -1668,7 +1816,9 @@ Calibrated Threshold
 \begin_inset Text
 
 \begin_layout Standard
-3.78%
+
+\size footnotesize
+3.78
 \end_layout
 
 \end_inset
@@ -1677,7 +1827,9 @@ Calibrated Threshold
 \begin_inset Text
 
 \begin_layout Standard
-32.44%
+
+\size footnotesize
+32.44
 \end_layout
 
 \end_inset
@@ -1686,7 +1838,9 @@ Calibrated Threshold
 \begin_inset Text
 
 \begin_layout Standard
-94.59%
+
+\size footnotesize
+94.59
 \end_layout
 
 \end_inset
@@ -1695,7 +1849,9 @@ Calibrated Threshold
 \begin_inset Text
 
 \begin_layout Standard
-0%
+
+\size footnotesize
+0
 \end_layout
 
 \end_inset
@@ -1704,7 +1860,9 @@ Calibrated Threshold
 \begin_inset Text
 
 \begin_layout Standard
-5.41%
+
+\size footnotesize
+5.41
 \end_layout
 
 \end_inset
@@ -1713,7 +1871,9 @@ Calibrated Threshold
 \begin_inset Text
 
 \begin_layout Standard
-92.43%
+
+\size footnotesize
+92.43
 \end_layout
 
 \end_inset
@@ -1722,7 +1882,9 @@ Calibrated Threshold
 \begin_inset Text
 
 \begin_layout Standard
-1.62%
+
+\size footnotesize
+1.62
 \end_layout
 
 \end_inset
@@ -1731,7 +1893,9 @@ Calibrated Threshold
 \begin_inset Text
 
 \begin_layout Standard
-5.95%
+
+\size footnotesize
+5.95
 \end_layout
 
 \end_inset
@@ -1740,7 +1904,9 @@ Calibrated Threshold
 \begin_inset Text
 
 \begin_layout Standard
-98.38%
+
+\size footnotesize
+98.38
 \end_layout
 
 \end_inset
@@ -1749,7 +1915,9 @@ Calibrated Threshold
 \begin_inset Text
 
 \begin_layout Standard
-0.54%
+
+\size footnotesize
+0.54
 \end_layout
 
 \end_inset
@@ -1758,7 +1926,9 @@ Calibrated Threshold
 \begin_inset Text
 
 \begin_layout Standard
-1.08%
+
+\size footnotesize
+1.08
 \end_layout
 
 \end_inset
@@ -1767,7 +1937,9 @@ Calibrated Threshold
 \begin_inset Text
 
 \begin_layout Standard
-99.46%
+
+\size footnotesize
+99.46
 \end_layout
 
 \end_inset
@@ -1776,7 +1948,9 @@ Calibrated Threshold
 \begin_inset Text
 
 \begin_layout Standard
-0.54%
+
+\size footnotesize
+0.54
 \end_layout
 
 \end_inset
@@ -1785,7 +1959,9 @@ Calibrated Threshold
 \begin_inset Text
 
 \begin_layout Standard
-0%
+
+\size footnotesize
+0
 \end_layout
 
 \end_inset
@@ -1796,6 +1972,8 @@ Calibrated Threshold
 \begin_inset Text
 
 \begin_layout Standard
+
+\size footnotesize
 Hysteresis
 \end_layout
 
@@ -1805,7 +1983,9 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-88.11%
+
+\size footnotesize
+88.11
 \end_layout
 
 \end_inset
@@ -1814,7 +1994,9 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-9.73%
+
+\size footnotesize
+9.73
 \end_layout
 
 \end_inset
@@ -1823,7 +2005,9 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-2.16%
+
+\size footnotesize
+2.16
 \end_layout
 
 \end_inset
@@ -1832,7 +2016,9 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-90.27%
+
+\size footnotesize
+90.27
 \end_layout
 
 \end_inset
@@ -1841,7 +2027,9 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-0%
+
+\size footnotesize
+0
 \end_layout
 
 \end_inset
@@ -1850,7 +2038,9 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-9.73%
+
+\size footnotesize
+9.73
 \end_layout
 
 \end_inset
@@ -1859,7 +2049,9 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-95.68%
+
+\size footnotesize
+95.68
 \end_layout
 
 \end_inset
@@ -1868,7 +2060,9 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-0%
+
+\size footnotesize
+0
 \end_layout
 
 \end_inset
@@ -1877,7 +2071,9 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-4.32%
+
+\size footnotesize
+4.32
 \end_layout
 
 \end_inset
@@ -1886,7 +2082,9 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-95.14%
+
+\size footnotesize
+95.14
 \end_layout
 
 \end_inset
@@ -1895,7 +2093,9 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-2.16%
+
+\size footnotesize
+2.16
 \end_layout
 
 \end_inset
@@ -1904,7 +2104,9 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-2.7%
+
+\size footnotesize
+2.7
 \end_layout
 
 \end_inset
@@ -1913,7 +2115,9 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-98.38%
+
+\size footnotesize
+98.38
 \end_layout
 
 \end_inset
@@ -1922,7 +2126,9 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-0.54%
+
+\size footnotesize
+0.54
 \end_layout
 
 \end_inset
@@ -1931,7 +2137,9 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-1.08%
+
+\size footnotesize
+1.08
 \end_layout
 
 \end_inset
@@ -1940,7 +2148,9 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-99.46%
+
+\size footnotesize
+99.46
 \end_layout
 
 \end_inset
@@ -1949,7 +2159,9 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-0.54%
+
+\size footnotesize
+0.54
 \end_layout
 
 \end_inset
@@ -1958,7 +2170,9 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-0%
+
+\size footnotesize
+0
 \end_layout
 
 \end_inset
@@ -2434,10 +2648,6 @@ bibfiles "percom08"
 
 \end_inset
 
-
-\end_layout
-
-\begin_layout Standard
 
 \end_layout
 
