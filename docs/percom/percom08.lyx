@@ -543,7 +543,7 @@ Further issues on Tokens
 \begin_layout Standard
 Since the notion of the token is an abstraction for accounting energy consumptio
 n of individuals, one could extend it.
- The extended token is a duple associated with (Appliance ID, Type of energy,
+ The extended token is a tuple associated with (Appliance ID, Type of energy,
  User ID, Time-out).
 \end_layout
 
@@ -3009,8 +3009,8 @@ name "sec:Conclusion"
 
 \begin_layout Standard
 In conclusion, we presented a new system that profiles energy consumption
- pattern of individuals based on raw RSSI measurement among active RFID
- tags and readers.
+ pattern of individuals based on raw RSSI readings among active RFID tags
+ and readers.
  Our detection scheme gives reasonably successful detection rate as in the
  table 
 \begin_inset LatexCommand ref
@@ -3022,7 +3022,7 @@ reference "tab:Token-Issue-Success,"
  While analyzing energy consumption pattern of users, we found the system
  can profile two interesting aspects of energy profiles: first, total energy
  consumption, which gives us how much energy is consumed by an individual
- whether it's useful or not, and second total wasted energy, which implies
+ whether it's useful or not, and second, total wasted energy, which implies
  the energy wasted by an individual unintentionally.
  By notifying the total amount of energy users consume, on one hand, the
  system can encourage users to reduce their energy consumption.
@@ -3038,8 +3038,9 @@ reference "tab:Token-Issue-Success,"
 \begin_layout Standard
 For the future works, we can further the detection algorithm by correlating
  multiple RSSI readings among appliances.
- Could extend tokens and policy more flexible so that users could figure
- out.
+ Along with that, more complex deployment among collocated appliances and
+ more users can reveal more interesting observations regarding energy optimizing
+ concerns.
  
 \end_layout
 
