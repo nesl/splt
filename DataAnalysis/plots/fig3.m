@@ -51,8 +51,8 @@ energy2tot = cumsum(power2tot) / (60 * 60 * 1000);
 subplot(3, 2, 1), h = area([power1tv power2tv]);
 %axis([0 length(htoken1tv) 0 150]);
 grid on;
-set(h(1),'FaceColor',[0.86 0.22 0.07])
-set(h(2),'FaceColor',[1 0.6 0.0])
+set(h(1),'FaceColor',[0.3 0.3 0.3])
+set(h(2),'FaceColor',[0.8 0.8 0.8])
 set(gca,'Layer','top');
 title('(a) TV Power Consumption');
 legend('User200', 'User201');
@@ -61,8 +61,8 @@ ylabel('Power (W)');
 subplot(3, 2, 2), h=area([power1coffee power2coffee]);
 %axis([0 length(htoken1tv) 0 150]);
 grid on;
-set(h(1),'FaceColor',[0.86 0.22 0.07])
-set(h(2),'FaceColor',[1 0.6 0.0])
+set(h(1),'FaceColor',[0.3 0.3 0.3])
+set(h(2),'FaceColor',[0.8 0.8 0.8])
 set(gca,'Layer','top');
 title('(b) Coffee Maker Power Consumption');
 legend('User200', 'User201');
@@ -71,8 +71,10 @@ ylabel('Power (W)');
 subplot(3, 2, 3), h=area([power1lamp power2lamp]);
 %axis([0 length(htoken1tv) 0 150]);
 grid on;
-set(h(1),'FaceColor',[0.86 0.22 0.07])
-set(h(2),'FaceColor',[1 0.6 0.0])
+%set(h(1),'FaceColor',[0.86 0.22 0.07])
+%set(h(2),'FaceColor',[1 0.6 0.0])
+set(h(1),'FaceColor',[0.3 0.3 0.3])
+set(h(2),'FaceColor',[0.8 0.8 0.8])
 set(gca,'Layer','top');
 title('(c) Living Room Lamp Power Consumption');
 legend('User200', 'User201');
@@ -81,8 +83,8 @@ ylabel('Power (W)');
 subplot(3, 2, 4), h=area([power1lamp2 power2lamp2]);
 %axis([0 length(htoken1tv) 0 150]);
 grid on;
-set(h(1),'FaceColor',[0.86 0.22 0.07])
-set(h(2),'FaceColor',[1 0.6 0.0])
+set(h(1),'FaceColor',[0.3 0.3 0.3])
+set(h(2),'FaceColor',[0.8 0.8 0.8])
 set(gca,'Layer','top');
 title('(d) Bedroom Lamp Power Consumption');
 legend('User200', 'User201');
@@ -91,33 +93,36 @@ ylabel('Power (W)');
 subplot(3, 2, 5), h=area([power1tot power2tot]);
 %axis([0 length(htoken1tv) 0 150]);
 grid on;
-set(h(1),'FaceColor',[0.86 0.22 0.07])
-set(h(2),'FaceColor',[1 0.6 0.0])
+set(h(1),'FaceColor',[0.3 0.3 0.3])
+set(h(2),'FaceColor',[0.8 0.8 0.8])
 set(gca,'Layer','top');
 title('(e) Total Power Consumption');
 xlabel('Time (secs)');
 legend('User200', 'User201');
 ylabel('Power (W)');
 
+%{
 subplot(3, 2, 6), h=area([energy1tot energy2tot]);
 %axis([0 length(htoken1tv) 0 150]);
 grid on;
-set(h(1),'FaceColor',[0.86 0.22 0.07])
-set(h(2),'FaceColor',[1 0.6 0.0])
+set(h(1),'FaceColor',[0.3 0.3 0.3])
+set(h(2),'FaceColor',[0.8 0.8 0.8])
 set(gca,'Layer','top');
 title('(f) Total Energy Consumption');
 xlabel('Time (secs)');
 legend('User200', 'User201');
 ylabel('Energy (KWh)');
-
-%{
-subplot(3, 2, 6), plot(energy1tot, 'r');
-hold on;
-plot(energy2tot, 'y')
-%axis([0 length(htoken1tv) 0 150]);
-grid on;
-title('Total Energy Consumption');
 %}
+
+subplot(3, 2, 6), plot(energy1tot, 'g');
+hold on;
+plot(energy2tot, 'b')
+%axis([0 length(htoken1tv) 0 max()]);
+grid on;
+title('(f) Total Energy Consumption');
+xlabel('Time (secs)');
+legend('User200', 'User201');
+ylabel('Energy (KWh)');
 
 %% Plot the results
 %{

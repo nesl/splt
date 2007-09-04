@@ -132,7 +132,6 @@ legend('Useful', 'Wasted');
 ylabel('Energy (KWh)');
 xlabel('Time (secs)');
 
-
 %{
 subplot(2, 2, 3), h=area([energy1tot_useful energy1tot_wasted]);
 grid on;
