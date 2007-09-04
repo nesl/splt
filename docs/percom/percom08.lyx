@@ -898,9 +898,15 @@ Deployment setting
 \end_layout
 
 \begin_layout Standard
-To begin with, as in fig [], we placed four power measurement units and
- micaz motes at the living room lamp, TV, coffee machine and bedroom lamp
- in a small 1 bedroom and 1 bathroom house environment.
+To begin with, as in fig 
+\begin_inset LatexCommand ref
+reference "fig:User-Defined-RSSI"
+
+\end_inset
+
+, we placed four power measurement units and micaz motes at the living room
+ lamp, TV, coffee machine and bedroom lamp in a 1 bedroom and 1 bathroom
+ house environment.
  There are two users carrying their active RFID tags.
  The other micaz mote is used for snooping and collecting power measurement
  of the appliances and RSSI information.
