@@ -720,7 +720,7 @@ Conclusion
 \begin_inset Float table
 wide false
 sideways false
-status collapsed
+status open
 
 \begin_layout Standard
 \align center
@@ -744,6 +744,8 @@ status collapsed
 \begin_inset Text
 
 \begin_layout Standard
+
+\size small
 Avg Power (mW)
 \end_layout
 
@@ -753,6 +755,8 @@ Avg Power (mW)
 \begin_inset Text
 
 \begin_layout Standard
+
+\size small
 Lifetime (days)
 \end_layout
 
@@ -764,6 +768,8 @@ Lifetime (days)
 \begin_inset Text
 
 \begin_layout Standard
+
+\size small
 1Hz timer triggered, radio always ON
 \end_layout
 
@@ -773,6 +779,8 @@ Lifetime (days)
 \begin_inset Text
 
 \begin_layout Standard
+
+\size small
 66.3
 \end_layout
 
@@ -782,6 +790,8 @@ Lifetime (days)
 \begin_inset Text
 
 \begin_layout Standard
+
+\size small
 2.82
 \end_layout
 
@@ -793,6 +803,8 @@ Lifetime (days)
 \begin_inset Text
 
 \begin_layout Standard
+
+\size small
 1Hz timer, radio OFF (when not TX)
 \end_layout
 
@@ -802,6 +814,8 @@ Lifetime (days)
 \begin_inset Text
 
 \begin_layout Standard
+
+\size small
 6.9
 \end_layout
 
@@ -811,6 +825,8 @@ Lifetime (days)
 \begin_inset Text
 
 \begin_layout Standard
+
+\size small
 27.23
 \end_layout
 
@@ -822,6 +838,8 @@ Lifetime (days)
 \begin_inset Text
 
 \begin_layout Standard
+
+\size small
 Vibration triggered, radio OFF, all events
 \end_layout
 
@@ -831,6 +849,8 @@ Vibration triggered, radio OFF, all events
 \begin_inset Text
 
 \begin_layout Standard
+
+\size small
 10.7
 \end_layout
 
@@ -840,6 +860,8 @@ Vibration triggered, radio OFF, all events
 \begin_inset Text
 
 \begin_layout Standard
+
+\size small
 17.52
 \end_layout
 
@@ -851,6 +873,8 @@ Vibration triggered, radio OFF, all events
 \begin_inset Text
 
 \begin_layout Standard
+
+\size small
 Vibration triggered, radio OFF, no events
 \end_layout
 
@@ -860,6 +884,8 @@ Vibration triggered, radio OFF, no events
 \begin_inset Text
 
 \begin_layout Standard
+
+\size small
 6.6
 \end_layout
 
@@ -869,6 +895,8 @@ Vibration triggered, radio OFF, no events
 \begin_inset Text
 
 \begin_layout Standard
+
+\size small
 28.52
 \end_layout
 
