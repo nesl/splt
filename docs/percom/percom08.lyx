@@ -66,7 +66,7 @@
 \begin_body
 
 \begin_layout Title
-Spotlight: Focusing on the Individual
+Spotlight: Focusing on Energy Consumption of Individuals
 \end_layout
 
 \begin_layout Author
@@ -482,8 +482,14 @@ The design of the Spotlight system is centered around instrumentation of
  [WattsUpPro] that measures the energy consumption for the appliance.
  The power meter provides a serial interface for external logging with a
  well documented serial protocol.
- This serial interface connects to a MicaZ [Crossbow MicaZ] 'appliance'
- mote that forms the sensing, processing and communication hub for the appliance.
+ This serial interface connects to a MicaZ 
+\begin_inset LatexCommand cite
+key "micaz"
+
+\end_inset
+
+ 'appliance' mote that forms the sensing, processing and communication hub
+ for the appliance.
  The MicaZ mote is equipped with a 2.4 GHz radio that is used for sensing
  the physical vicinity of participating users as well as for communicating
  with the Spotlight server.
@@ -548,27 +554,15 @@ Assuming that the RSSI token space is uniform and signals and noises are
 \end_layout
 
 \begin_layout Standard
-Since RSSI decreases as the distance increases, we could define a physical
- service range as a RSSI based service range.
- Due to platform dependent radio characteristics, however, a single RSSI
- service range of an appliance for every users cannot capture their variance.
- Therefore, we put another option for each appliance to have a set of RSSI
- based service range for each user.
- 
-\end_layout
-
-\begin_layout Standard
 Although the token space is roughly static and is definable in physical
- domain as RSSI, the system's token algorithm is susceptible to a small
- noise when users are around the boundary of the service range.
+ domain, the system's token algorithm is susceptible to a small noise when
+ users are around the boundary of the service range.
  To avoid such case, we wanted to add hysteresis feature to the token issuance
  algorithm.
  Instead of having the same threshold value for both of issuance and expiration
  check routine (i.e.
  issuance threshold = -12, expiration threshold = -17).
- Another reason we set the hysteresis is also because users tend to get
- closer when they start to using an appliance except they can have a remote
- controller.
+ 
 \end_layout
 
 \begin_layout Standard
@@ -595,30 +589,6 @@ Calibrated Threshold : An appliance has a set of RSSI based service range
 \begin_layout Enumerate
 Hysteresis Threshold : The same as the calibrated threshold, but set the
  expiration threshold as (calibrated threshold-hysteresis constant).
- 
-\end_layout
-
-\begin_layout Standard
-Overall, we are aiming at using rough RSSI based service range instead of
- using more rigorous models described in [],[],[].
- And the reasons are mainly two-folds: (1) there are few fairly robust RSSI
- based localization techniques with multi-path, antenna variation and etc.,
- (2) even we could know exact position of users, users should define the
- service range of each appliance based upon location information.
- This may be a burden to users since they have to measure distance which
- could be errornous.
- 
-\end_layout
-
-\begin_layout Standard
-By following our calibration scheme that we will describe in section 
-\begin_inset LatexCommand ref
-reference "sec:Evaluation"
-
-\end_inset
-
-, users can simply define the RSSI based service range by walking along
- the boundary of user specified service range.
  
 \end_layout
 
