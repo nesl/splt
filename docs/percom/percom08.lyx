@@ -3038,9 +3038,11 @@ reference "tab:Token-Issue-Success,"
 \begin_layout Standard
 For the future works, we can further the detection algorithm by correlating
  multiple RSSI readings among appliances.
- Along with that, more complex deployment among collocated appliances and
- more users can reveal more interesting observations regarding energy optimizing
- concerns.
+ Along with that, more complex deployment setting among collocated appliances
+ and more users can reveal more interesting observations regarding energy
+ optimizing concerns.
+ For the system to be more useful, the system will have more user-friendly
+ interfaces.
  
 \end_layout
 
