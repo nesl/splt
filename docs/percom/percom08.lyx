@@ -2658,7 +2658,7 @@ reference "fig:Useful/Wasted-Power-and"
 
 \end_inset
 
-highlights the amount of useful and wasted energy consumed by the television.
+ highlights the amount of useful and wasted energy consumed by the television.
  The energy consumed is useful if one of the users was in the vicinity and
  hence benefiting from the consumption.
  The energy is wasted if no user was present in the vicinity and the energy
@@ -2696,7 +2696,7 @@ reference "fig:Useful/Wasted-Power-and"
 \begin_inset Float figure
 wide true
 sideways false
-status open
+status collapsed
 
 \begin_layout Standard
 \align center
@@ -2731,6 +2731,34 @@ name "fig:Useful/Wasted-Power-and"
 \end_inset
 
 
+\end_layout
+
+\begin_layout Standard
+Figure 
+\begin_inset LatexCommand ref
+reference "fig:Total-Useful/Wasted-Power"
+
+\end_inset
+
+ shows the total power consumption and energy consumption of the two users
+ and highlights the amount of useful and wasteful energy consumed.
+ Figure 
+\begin_inset LatexCommand ref
+reference "fig:Total-Useful/Wasted-Power"
+
+\end_inset
+
+(a) and (b) show the amount of power consumed by the two users with the
+ two shades highlighting the amount of useful and wasteful energy.
+ Similarly, 
+\begin_inset LatexCommand ref
+reference "fig:Total-Useful/Wasted-Power"
+
+\end_inset
+
+(c) and (d) show the amount of energy consumed with the two lines highlighting
+ the amount of useful and wasteful energy consumed.
+ 
 \end_layout
 
 \begin_layout Standard
