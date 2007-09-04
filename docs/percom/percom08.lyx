@@ -39,6 +39,7 @@
 \font_sf_scale 100
 \font_tt_scale 100
 \graphics default
+\float_placement h
 \paperfontsize default
 \spacing single
 \papersize default
@@ -116,7 +117,7 @@ We present Spotlight, a novel application that monitors in real-time the
  Each participating appliance is specified a service range, a physical vicinity
  from the appliance within which the user benefits from the service.
  Using RSSI with user-wearable active RFID tags, an appliance is able to
- determine the users in its service range.
+ determine users in its service range.
  In order to enable these measurements, each appliance is instrumented with
  a COTS power meter and a MicaZ mote as an active RFID tag reader.
 \end_layout
@@ -124,8 +125,8 @@ We present Spotlight, a novel application that monitors in real-time the
 \begin_layout Abstract
 The Spotlight system was deployed and tested in an experimental setup with
  a various appliances and users.
- Using RSSI as a measure to A virtual environment system has also been developed
- to test more complex scenarios of usage.
+ A virtual environment system was also developed to test more complex scenarios
+ of usage.
  We evaluate various schemes of accounting energy consumption based on an
  individual's movement profile and the appliances' power profile.
  Our results show interesting individual behavior that could be interpreted
