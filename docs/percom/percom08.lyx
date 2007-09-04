@@ -108,8 +108,8 @@ name "sec:Abstract"
 
 \end_inset
 
-We present Spotlight, a novel application that monitors in real-time the
- electrical energy consumption at the individual level.
+We present Spotlight, a novel application that monitors the electrical energy
+ consumption at the individual level.
  Obtaining reports of energy consumption at this fine granularity allows
  identifying new areas for energy saving and acting upon it in real-time.
  Spotlight views appliances as rendering a service to a user and the energy
@@ -349,7 +349,13 @@ System Design
 The design of the Spotlight system is centered around instrumentation of
  participating appliances.
  Each appliance is powered through a commercial-off-the-shelf power meter
- [WattsUpPro] that measures the energy consumption for the appliance.
+ 
+\begin_inset LatexCommand cite
+key "wattsup"
+
+\end_inset
+
+ that measures the energy consumption for the appliance.
  The power meter provides a serial interface for external logging with a
  well documented serial protocol.
  This serial interface connects to a MicaZ 
