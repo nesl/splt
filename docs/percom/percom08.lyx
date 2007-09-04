@@ -1992,13 +1992,13 @@ Token Issue Success, False Positive, False Negative rates
 \begin_inset Float figure
 wide false
 sideways false
-status open
+status collapsed
 
 \begin_layout Standard
 \begin_inset Graphics
-	filename /Users/Administrator/splt/trunk/docs/percom/Fig1.png
+	filename Fig1.png
+	lyxscale 50
 	width 100col%
-	height 100col%
 
 \end_inset
 
