@@ -131,9 +131,9 @@ The Spotlight system is deployed and tested in an experimental setup with
  of usage.
  We evaluate various schemes of accounting energy consumption based on an
  individual's movement profile and the appliances' power profile.
- Our results show how the system interesting individual behavior that could
- be interpreted for various energy optimizations.
- We also discuss the chall
+ Our preliminary results show how the system could detect wasted energy
+ and we discuss interesting individual behavior that could be interpreted
+ for various energy optimizations.
 \end_layout
 
 \begin_layout Section
@@ -375,7 +375,7 @@ status open
 \begin_layout Standard
 \align center
 \begin_inset Graphics
-	filename Fig1.png
+	filename figures/Fig1.png
 	lyxscale 50
 	width 75col%
 
