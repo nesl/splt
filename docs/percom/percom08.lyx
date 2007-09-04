@@ -108,8 +108,9 @@ name "sec:Abstract"
 \end_inset
 
 We present Spotlight, a novel application that monitors in real-time the
- electrical energy consumption of an individual in an instrumented home
- or office setting.
+ electrical energy consumption of individuals in an indoor setting.
+ Obtaining reports of energy consumption at this fine granularity allows
+ identifying new areas for energy saving and acting upon it in immediately.
  Spotlight views appliances as rendering a service to a user and the energy
  consumption associated with the appliance as a cost for the service.
  Each appliance is specified a service range, a physical vicinity from the
@@ -123,10 +124,10 @@ We present Spotlight, a novel application that monitors in real-time the
 \end_layout
 
 \begin_layout Abstract
-The Spotlight system was deployed over several days in an office as well
- as a home setting with a diverse set of appliances and multiple users.
- A virtual environment system has also been developed to test more complex
- scenarios of usage.
+The Spotlight system was deployed and tested in an experimental setup with
+ a various appliances and users.
+ Using RSSI as a measure to A virtual environment system has also been developed
+ to test more complex scenarios of usage.
  We evaluate various schemes of accounting energy consumption based on an
  individual's movement profile and the appliances' power profile.
  Our results show interesting individual behavior that could be interpreted
