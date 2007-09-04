@@ -763,7 +763,22 @@ Evaluation
 \end_layout
 
 \begin_layout Subsection
-Deployment
+Deployment setting
+\end_layout
+
+\begin_layout Standard
+For the evaluation, we placed four power measurement units and micaz motes
+ at the living room lamp, TV, coffee machine and bedroom lamp in a small
+ 1 bedroom and 1 bathroom house environment.
+ There are two users carrying their active RFID tags.
+ One other micaz mote is used for snooping and collecting power measurement
+ of the appliances and RSSI information as well.
+ One apple PowerBook G4 is used for local data processing, storing and tranferri
+ng.
+ For the post-deployment data analysis, we stored RSSI, token information,
+ power measurement, and timestamp at the sensorbase.
+ During the deployment, users carried on their typical daily life.
+ 
 \end_layout
 
 \begin_layout Standard
