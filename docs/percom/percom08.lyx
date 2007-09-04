@@ -151,20 +151,6 @@ Motivation
 \end_layout
 
 \begin_layout Standard
-The traditional dimensions is measuring energy consumption are at a very
- coarse-grained granularity.
- The consumption is given in terms of household and over a period many days.
- This allows for a only partial awareness on the part of the users about
- their energy consumption especially in a big household or in a office or
- lab setting.
- In such settings, if measurement of energy consumption was made avail at
- a finre granularity, it will help the users in pinpointing their specific
- habbits and trends, modifying which would aid in significant variations
- in energy measurement.
- 
-\end_layout
-
-\begin_layout Standard
 United Nations Economic and Social Commission for Asia and the Pacific is
  concerned with sustainable energy consumption.
  Dr.
@@ -468,19 +454,6 @@ System Design
 \end_layout
 
 \begin_layout Standard
-The design of the Spotlight system is centered around instrumentation of
- appliances.
- Each appliance is powered through a commercial-off-the-shelf power meter
- [WattsUpPro] that measures the energy consumption for the appliance.
- The power meter provides a serial interface with a well documented serial
- protocol.
- The serial interface from the power meter is directly connected to a MicaZ
- mote that forms the sensing, processing and communication hub for that
- appliance.
- The MicaZ mote is equipped with a 2.4 GHz radio that 
-\end_layout
-
-\begin_layout Standard
 Citing 
 \begin_inset LatexCommand cite
 key "RSSI_yale"
@@ -497,7 +470,11 @@ Hardware architecture
 \begin_layout Standard
 The power measurement device chosen for the current implementation is the
  Watts Up? Pro.
- 
+ The design of the Spotlight system is centered around instrumentation of
+ appliances.
+ Each appliance is powered through a commercial-off-the-shelf power meter
+ [WattsUpPro] that measures the energy consumption for the appliance.
+ The power meter provides a serial interface 
 \end_layout
 
 \begin_layout Subsection
@@ -553,8 +530,8 @@ Although the token space is roughly static and is definable, the system's
 \end_layout
 
 \begin_layout Standard
-For the comparison in section 4, in sum, we propose three primitive detection
- techniques as follows.
+For the comparison in section 4, in sum, we propose three detection techniques
+ as follows.
 \end_layout
 
 \begin_layout Enumerate
@@ -569,8 +546,8 @@ Calibrated Threshold : An appliance has a set of RSSI based service range
 \end_layout
 
 \begin_layout Enumerate
-Hysteresis Threshold : The same as the calibrated threshold, but add hysteresis
- constant to the expiration policy.
+Hysteresis Threshold : The same as the calibrated threshold, but set the
+ expiration threshold as (calibrated threshold-hysteresis constant).
  
 \end_layout
 
@@ -850,7 +827,7 @@ status collapsed
 \begin_layout Standard
 
 \size footnotesize
-Single Threshold
+Unified Threshold
 \end_layout
 
 \end_inset
@@ -1115,7 +1092,12 @@ BedRoomLamp
 \begin_inset Caption
 
 \begin_layout Standard
-Calibration parameter
+\begin_inset LatexCommand label
+name "tab:Unified-and-Calibrated"
+
+\end_inset
+
+Unified and Calibrated RSSI service range
 \end_layout
 
 \end_inset
@@ -1133,10 +1115,6 @@ Calibration parameter
 wide true
 sideways false
 status collapsed
-
-\begin_layout Standard
-
-\end_layout
 
 \begin_layout Standard
 \align center
@@ -2381,6 +2359,11 @@ Hysteresis
 \begin_inset Caption
 
 \begin_layout Standard
+\begin_inset LatexCommand label
+name "tab:Token-Issue-Success,"
+
+\end_inset
+
 Token Issue Success, False Positive, False Negative rates
 \end_layout
 
@@ -2416,6 +2399,11 @@ status collapsed
 \begin_inset Caption
 
 \begin_layout Standard
+\begin_inset LatexCommand label
+name "fig:User-Defined-RSSI"
+
+\end_inset
+
 User Defined RSSI token space
 \end_layout
 
@@ -2479,6 +2467,11 @@ status collapsed
 \begin_inset Caption
 
 \begin_layout Standard
+\begin_inset LatexCommand label
+name "fig:Measured-RSSI-Token"
+
+\end_inset
+
 Measured RSSI Token Space
 \end_layout
 
@@ -2573,7 +2566,7 @@ reference "fig:Performance-of-various"
 \begin_inset Float figure
 wide true
 sideways false
-status collapsed
+status open
 
 \begin_layout Standard
 \align center
