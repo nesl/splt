@@ -482,6 +482,11 @@ case (2) For the class III appliances, the system could issue tokens for
 \end_layout
 
 \begin_layout Section
+\begin_inset LatexCommand label
+name "sec:System-Design"
+
+\end_inset
+
 System Design
 \end_layout
 
@@ -499,6 +504,11 @@ The design of the Spotlight system is centered around instrumentation of
 \end_layout
 
 \begin_layout Subsection
+\begin_inset LatexCommand label
+name "sub:Hardware-architecture"
+
+\end_inset
+
 Hardware architecture
 \end_layout
 
@@ -509,6 +519,11 @@ The power measurement device chosen for the current implementation is the
 \end_layout
 
 \begin_layout Subsection
+\begin_inset LatexCommand label
+name "sub:Binary-detection-problem"
+
+\end_inset
+
 Binary detection problem and token issuance problem
 \end_layout
 
@@ -524,7 +539,7 @@ There are two main issues that lead the token issuance problem hard.
  suffer from variable RSSI.
  Not only the antenna orientation, but also other factors, such as antenna
  and radio circuit characteristics, ambient attenuation characterestics,
- obstructino of Line-of-Sight and etc., render RSSI uncertain.
+ obstruction of Line-of-Sight and etc., render RSSI uncertain.
 \end_layout
 
 \begin_layout Standard
@@ -542,9 +557,9 @@ Assuming that the RSSI token space is uniform and signals and noises are
 \end_layout
 
 \begin_layout Standard
-Although the token space is roughly static and is definable, the system's
- token algorithm is susceptible to a small noise when users are around the
- boundary of the service range.
+Although the token space is roughly static and is definable in physical
+ domain, the system's token algorithm is susceptible to a small noise when
+ users are around the boundary of the service range.
  To avoid such case, we wanted to add hysteresis feature to the token issuance
  algorithm.
  Instead of having the same threshold value for both of issuance and expiration
@@ -554,8 +569,13 @@ Although the token space is roughly static and is definable, the system's
 \end_layout
 
 \begin_layout Standard
-For the comparison in section 4, in sum, we propose three detection techniques
- as follows.
+For the comparison purpose in section 
+\begin_inset LatexCommand ref
+reference "sec:Evaluation"
+
+\end_inset
+
+, in sum, we propose three detection techniques as follows.
 \end_layout
 
 \begin_layout Enumerate
@@ -792,6 +812,11 @@ Active RFID Tag Lifetimes for 1500mAh 'AA' alkaline batteries
 \end_layout
 
 \begin_layout Section
+\begin_inset LatexCommand label
+name "sec:Evaluation"
+
+\end_inset
+
 Evaluation
 \end_layout
 
