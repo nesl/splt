@@ -129,8 +129,8 @@ The Spotlight system is deployed and tested in an experimental setup with
  various appliances and users.
  A virtual environment system was also developed to test more complex scenarios
  of usage.
- We evaluate various schemes of accounting energy consumption based on an
- individual's movement profile and the appliances' power profile.
+ We evaluate multiple schemes of accounting energy consumption based on
+ an individual's movement profile and the appliances' power profile.
  Our preliminary results show how the system could detect wasted energy
  and we discuss interesting individual behavior that could be interpreted
  for various energy optimizations.
@@ -370,7 +370,7 @@ If more than one users hold a token to an appliance, the energy consumption
 \begin_inset Float figure
 wide false
 sideways false
-status open
+status collapsed
 
 \begin_layout Standard
 \align center
@@ -527,7 +527,11 @@ To detect whether people are within its range or not, we wanted to make
 \end_layout
 
 \begin_layout Standard
-The design of the Spotlight system is centered around 
+The design of the Spotlight system is centered around instrumentation of
+ appliances.
+ Each appliance is powered through a commercial-off-the-shelf power meter
+ [WattsUpPro] that measures the energy consumption for the appliance.
+ The power meter provides a serial interface 
 \end_layout
 
 \begin_layout Standard
@@ -2634,7 +2638,7 @@ status collapsed
 \begin_layout Standard
 \align center
 \begin_inset Graphics
-	filename /Users/darknight/projects/splt/docs/percom/figures/fig3.eps
+	filename figures/fig3.eps
 	lyxscale 50
 	width 75text%
 
@@ -2715,7 +2719,7 @@ status collapsed
 \begin_layout Standard
 \align center
 \begin_inset Graphics
-	filename /Users/darknight/projects/splt/docs/percom/figures/fig5.eps
+	filename figures/fig5.eps
 	lyxscale 50
 	width 75text%
 
@@ -2788,7 +2792,7 @@ status collapsed
 
 
 \begin_inset Graphics
-	filename /Users/darknight/projects/splt/docs/percom/figures/fig6.eps
+	filename figures/fig6.eps
 	lyxscale 50
 	width 75text%
 
