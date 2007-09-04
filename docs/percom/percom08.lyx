@@ -117,10 +117,8 @@ We present Spotlight, a novel application that monitors in real-time the
  from the appliance within which the user benefits from the service.
  Using RSSI with user-wearable active RFID tags, an appliance is able to
  determine the users in its service range.
- In order to Each appliance is thus instrumented with a power meter and
- an active RFID reader.
- The current implementation of Spotlight uses a COTS power meter and MicaZ
- motes as active RFID tags and readers.
+ In order to enable these measurements, each appliance is instrumented with
+ a COTS power meter and a MicaZ mote as an active RFID tag reader.
 \end_layout
 
 \begin_layout Abstract
