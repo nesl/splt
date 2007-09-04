@@ -163,33 +163,40 @@ Energy production and consumption comes with a significant cost.
  claim that energy consumption pattern per household can provide a good
  way to determine socio-economic level of society as well as a solution
  for saving energy.
- Different agencies in the Europrean Union have initiated programs [][]
- to make the consumers more aware of their consumption profile.
- The ___ program [] provides the power consumption of the entire household
- in realtime to the They provide the consumers with information on the average
- power consumption of different appliances and provide suggestions in replacing
- certain appliances to improve the consumption.
- 
-\end_layout
-
-\begin_layout Standard
-The traditional dimensions is measuring energy consumption are at a very
+ The traditional dimensions is measuring energy consumption are at a very
  coarse-grained granularity.
- The consumption is given in terms of household and over a period many days.
+ The consumption is given in terms of household and over a period of many
+ days.
  This allows for a only partial awareness on the part of the users about
  their energy consumption especially in a big household or in a office or
  lab setting.
  In such settings, if measurement of energy consumption was made avail at
- a finre granularity, it will help the users in pinpointing their specific
- habbits and trends, modifying which would aid in significant variations
- in energy measurement.
+ a finer granularity, it will help the users in pinpointing their specific
+ habbits and trends, modifying which would aid in significant improvements
+ in energy consumption.
+ Different agencies in the Europrean Union have initiated programs [][]
+ to make the consumers more aware of their consumption profile.
+ The ___ program [] provides the power consumption of the entire household
+ in realtime to the users, information on the average power consumption
+ of different appliances and provide suggestions in replacing certain appliances
+ to improve the consumption.
+ These programs are designed to make the users more aware of their consumption
+ profile and aid them in improving their consumption trend.
  
 \end_layout
 
 \begin_layout Standard
-For their sake, people are aware of that they need to somehow consume energy
- in a better way.
- To the best of our knowledge, however, there are few attempts to profile
+All these programs are still aimed profiling at a household level of granularity.
+ To the best of our knowledge, there has been no attempts at profiling an
+ individual's energy consumption pattern.
+ We believe that such a profile would further aid the consumers in pinpointing
+ other trends and consumption profiles to further improve their consumption
+ pattern.
+ 
+\end_layout
+
+\begin_layout Standard
+To the best of our knowledge, however, there are few attempts to profile
  individual's energy consumption pattern, and , therefore, it is hard for
  individuals to save their energy consumption in personal level on a daily
  basis.
