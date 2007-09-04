@@ -467,7 +467,7 @@ Binary detection problem and token issuance
 \begin_layout Standard
 One can see the token issuance algorithm is similar to the binary detection
  problem [].
- Due to serious uncertainty of RSSI values associated with antenna orientation,
+ Due to serious uncertainty of RSSI associated with antenna orientation,
  antenna characteristics, ambient attenuation characteristics, obstruction
  of Line-of-Sight and etc., however, it is challenging to define a mathematically
  tractable and reasonable binary detection model for it.
