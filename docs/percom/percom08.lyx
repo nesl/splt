@@ -151,18 +151,43 @@ Motivation
 \end_layout
 
 \begin_layout Standard
-United Nations Economic and Social Commission for Asia and the Pacific is
- concerned with sustainable energy consumption.
+Energy production and consumption comes with a significant cost.
+ Recently, more government agencies and companies are becoming concern with
+ the cost of energy consumption.
+ The cost is also affecting many households with significant consumption.
+ United Nations Economic and Social Commission for Asia and the Pacific
+ is concerned with sustainable energy consumption.
  Dr.
  Song et.
  al.
- claims that energy consumption pattern per household can provide a good
+ claim that energy consumption pattern per household can provide a good
  way to determine socio-economic level of society as well as a solution
  for saving energy.
- In EU, there are many attempts including [], [], to provide energy consumers
- a better way to save energy by informing average power consumption of specific
- appliances over a year and suggests them to change their appliances.
- For their sake, people are aware of that they need to somehow consume energy
+ Different agencies in the Europrean Union have initiated programs [][]
+ to make the consumers more aware of their consumption profile.
+ The ___ program [] provides the power consumption of the entire household
+ in realtime to the They provide the consumers with information on the average
+ power consumption of different appliances and provide suggestions in replacing
+ certain appliances to improve the consumption.
+ 
+\end_layout
+
+\begin_layout Standard
+The traditional dimensions is measuring energy consumption are at a very
+ coarse-grained granularity.
+ The consumption is given in terms of household and over a period many days.
+ This allows for a only partial awareness on the part of the users about
+ their energy consumption especially in a big household or in a office or
+ lab setting.
+ In such settings, if measurement of energy consumption was made avail at
+ a finre granularity, it will help the users in pinpointing their specific
+ habbits and trends, modifying which would aid in significant variations
+ in energy measurement.
+ 
+\end_layout
+
+\begin_layout Standard
+For their sake, people are aware of that they need to somehow consume energy
  in a better way.
  To the best of our knowledge, however, there are few attempts to profile
  individual's energy consumption pattern, and , therefore, it is hard for
