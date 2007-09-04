@@ -407,6 +407,10 @@ case (2) For the class III appliances, the system could issue tokens for
 System Design
 \end_layout
 
+\begin_layout Standard
+The design of the Spotlight system is centered around 
+\end_layout
+
 \begin_layout Section
 Evaluation
 \end_layout
@@ -424,7 +428,7 @@ Groundtruth/comparison
 \end_layout
 
 \begin_layout Section
-Related works
+Related Work
 \end_layout
 
 \begin_layout Section
