@@ -216,9 +216,9 @@ Based on our analysis of different appliances in used, we have the following
 Physical presence is needed to receive the service from the appliance.
  Examples of appliances in this class include television, coffee machine,
  etc.
- Only persons within a vicinity of the appliance can benefit from it.
- This class includes appliances which may benefit more than one user at
- the same time.
+ Only persons within the vicinity of the appliance can benefit from it.
+ This class includes appliances which may provide services to more than
+ one user at the same time.
  
 \end_layout
 
@@ -297,14 +297,21 @@ There is one case that we cannot handle with this scheme.
  actually watching it.
  If other persons are around and the television is turned on, the consumption
  will be split evenly among everyone.
- This is a case of pairing problem which is under research on a separate
- project in our lab.
+ This is a case of the pairing problem which is under research on a separate
+ project in our lab [David Jea].
  Presently, we fail to account for this case and will over estimate the
  consumption of the user.
  
 \end_layout
 
-\begin_layout Section
+\begin_layout Standard
+After classifying appliances into the different classes, we can construct
+ an application that will monitor the energy consumption of the different
+ classes of appliances.
+ 
+\end_layout
+
+\begin_layout Subsection
 Application Description
 \end_layout
 
@@ -317,7 +324,7 @@ We developed and deployed an application to estimate the consumption under
  
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Subsubsection
 Token System
 \end_layout
 
@@ -392,7 +399,7 @@ status collapsed
 \begin_layout Standard
 \align center
 \begin_inset Graphics
-	filename figures/Fig1.png
+	filename /Users/darknight/projects/splt/docs/percom/figures/Fig1.png
 	lyxscale 50
 	width 75col%
 
@@ -464,6 +471,14 @@ case (2) For the class III appliances, the system could issue tokens for
  The extended token, therefore, could enable users to set a policy for them
  to be fair.
  
+\end_layout
+
+\begin_layout Subsection
+Contributions of the paper
+\end_layout
+
+\begin_layout Subsection
+Structure of the paper
 \end_layout
 
 \begin_layout Section
