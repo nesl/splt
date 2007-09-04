@@ -313,6 +313,30 @@ Token Expiry
 System Design
 \end_layout
 
+\begin_layout Section
+Evaluation
+\end_layout
+
+\begin_layout Subsection
+Deployment
+\end_layout
+
+\begin_layout Subsection
+Results/graphs
+\end_layout
+
+\begin_layout Subsection
+Groundtruth/comparison
+\end_layout
+
+\begin_layout Section
+Related works
+\end_layout
+
+\begin_layout Section
+Conclusion
+\end_layout
+
 \begin_layout Standard
 \begin_inset Float table
 wide false
