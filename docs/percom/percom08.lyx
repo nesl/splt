@@ -334,7 +334,16 @@ ng tokens issued to users outside the service range, they expire.
 \end_layout
 
 \begin_layout Standard
-Figure XX highlights this policy.
+Figure 
+\begin_inset LatexCommand ref
+reference "fig:Token-Issue"
+
+\end_inset
+
+ highlights this policy.
+ The shaded area denotes the service range of the appliance.
+ If a token is issued when a user enters the range, that is a valid outcome
+ of the system.
  Based on the token issue and expiry policy, energy consumption for users
  is accounted in the following manner.
  
@@ -350,6 +359,47 @@ The user with a token for an appliance is responsible for the energy consumed
 If more than one users hold a token to an appliance, the energy consumption
  is equally divided amoungst them.
  
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Standard
+\align center
+\begin_inset Graphics
+	filename /Users/darknight/projects/splt/docs/percom/Fig1.png
+	lyxscale 50
+	width 75col%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Caption
+
+\begin_layout Standard
+Token Issue
+\begin_inset LatexCommand label
+name "fig:Token-Issue"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Subsubsection
@@ -2188,41 +2238,6 @@ Hysteresis
 
 \begin_layout Standard
 Token Issue Success, False Positive, False Negative rates
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Float figure
-wide false
-sideways false
-status open
-
-\begin_layout Standard
-\align center
-\begin_inset Graphics
-	filename Fig1.png
-	lyxscale 50
-	width 75col%
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Caption
-
-\begin_layout Standard
-Token Issue
 \end_layout
 
 \end_inset
