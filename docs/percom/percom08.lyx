@@ -525,24 +525,13 @@ Assuming that the RSSI token space is uniform and signals and noises are
  So, we designed the detection problem from some observations of human behavior
  and RSSI characteristics.
  There are many attempts to make use of RSSI to localize mobile nodes.
- [],[], and [] gives us rough approximation of the relationship between
- distance and RSSI.
- And they are
+ [],[], and [] give rough approximation of the relationship between distance
+ and RSSI.
+ 
 \end_layout
 
 \begin_layout Standard
-(a) RSSI varies over devices.
-\end_layout
-
-\begin_layout Standard
-(b) RSSI increases as the distance decreases.
-\end_layout
-
-\begin_layout Standard
-RSSI between two nodes at a fixed position is time independent.
- Therefore, once we calibrate the parameters, we could have rough estimation
- of range information based upon RSSI.
- Although the token space is roughly static and is definable, the system's
+Although the token space is roughly static and is definable, the system's
  token algorithm is susceptible to a small noise when users are around the
  boundary of the service range.
  To avoid such case, we added hysteresis feature to the token issuance algorithm.
@@ -554,26 +543,24 @@ RSSI between two nodes at a fixed position is time independent.
 \end_layout
 
 \begin_layout Standard
-(d) When an individual uses an appliance, he/she tends to be close when
- he/she starts to use it.
- 
+For the comparison in section 4, in sum, we propose three primitive detection
+ techniques as follows.
 \end_layout
 
-\begin_layout Standard
-(e) When an individual stops using it, he/she tends to be farther away from
- it otherwise explicitly turns them off.
+\begin_layout Enumerate
+Unified Threshold : An appliance has one RSSI based service range and issues/exp
+ires a token whenever a user's RSSI is greater/less than the service range.
 \end_layout
 
-\begin_layout Standard
-From (a),(b), we need to find calibrated service range in RSSI value for
- each pair of tags and readers.
- And for (d) and (e), we also set a hysteresis constant for expiring tokens.
- 
+\begin_layout Enumerate
+Calibrated Threshold : An appliance has a set of RSSI based service range
+ for each RFID tag and issues/expires a token if a user's RSSI is greater/less
+ than the tag specific service range.
 \end_layout
 
-\begin_layout Standard
-To detect whether people are within its range or not, we wanted to make
- use of the fact (b).
+\begin_layout Enumerate
+Hysteresis Threshold : The same as the calibrated threshold, but add hysteresis
+ constant to the expiration policy.
  
 \end_layout
 
