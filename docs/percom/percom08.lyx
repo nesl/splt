@@ -108,7 +108,7 @@ name "sec:Abstract"
 
 \end_inset
 
-We present Spotlight, a novel application that monitors the electrical energy
+We present Spotlight, a novel application that monitors electrical energy
  consumption at the individual level.
  Obtaining reports of energy consumption at this fine granularity allows
  identifying new areas for energy saving and acting upon it in real-time.
@@ -148,11 +148,11 @@ name "sec:Introduction"
 
 \begin_layout Standard
 Energy production and consumption comes with a significant cost.
- Recently, more government agencies and companies are becoming concern with
- the cost of energy consumption.
+ Recently, more government agencies and companies are becoming concerned
+ with the cost of energy consumption.
  The cost is also affecting many households with significant consumption.
- United Nations Economic and Social Commission for Asia and the Pacific
- is concerned with sustainable energy consumption [].
+ The UN Economic and Social Commission for Asia and the Pacific is concerned
+ with sustainable energy consumption [].
  Dr.
  Song et.
  al.
@@ -163,24 +163,24 @@ Energy production and consumption comes with a significant cost.
  granularity.
  The consumption is given in terms of household and over a period of many
  days.
- This allows for a only partial awareness on the part of the users about
+ This allows for only a partial awareness on the part of the users about
  their energy consumption especially in a big household or in a office or
  lab setting.
- In such settings, if measurement of energy consumption was made avail at
- a finer granularity, it will help the users in pinpointing their specific
- habbits and trends, modifying which would aid in significant improvements
- in energy consumption.
+ In such settings, if measurement of energy consumption was made available
+ at a finer granularity, it would help users in pinpointing specific habits
+ or trends, modifying which would aid in significant improvements in energy
+ consumption.
  
 \end_layout
 
 \begin_layout Standard
 Different agencies in the Europrean Union have initiated programs [][] to
- make the consumers more aware of their consumption profile.
+ make consumers more aware of their consumption profile.
  The ___ program [] provides the power consumption of the entire household
  in realtime to the users, information on the average power consumption
- of different appliances and provide suggestions in replacing certain appliances
- to improve the consumption.
- These programs are designed to make the users more aware of their consumption
+ of different appliances and provides suggestions in replacing certain appliance
+s to improve energy efficiency.
+ These programs are designed to make the users aware of their consumption
  profile and aid them in improving their consumption trend.
  
 \end_layout
@@ -188,21 +188,20 @@ Different agencies in the Europrean Union have initiated programs [][] to
 \begin_layout Standard
 All these programs are still aimed profiling the consumption at the granularity
  of a household.
- To the best of our knowledge, there has been no attempts to profile an
- individual's energy consumption pattern.
- We believe that profiling at this granularity would further aid the consumers
- in pinpointing their consumption patterns and profiles to further improve
- energy consumption.
- We introduce a system called Spotlight capable of estimating an individual's
- personal energy consumption profile.
+ To the best of our knowledge, there have been no attempts at profiling
+ an individual's energy consumption pattern.
+ We believe that profiling at this granularity would further aid in pinpointing
+ consumption patterns to further improve energy efficiency.
+ We introduce a system called Spotlight that is capable of estimating an
+ individual's personal energy consumption profile.
  The system can be operated at a household level or on a larger scale allowing
  users to set their own privacy settings.
  
 \end_layout
 
 \begin_layout Standard
-After the initial deployment of the system, it operates with little intervention
- from the user.
+After an initial calibration procedure, it operates with little or no interventi
+on from the user.
  Users are able to monitor their consumption pattern in real time.
  The application can detect instances of wasted energy where an appliance
  was operating but no one was benefiting from it and the person responsible
@@ -435,16 +434,27 @@ key "micaz"
 
 \end_inset
 
- 'appliance' mote that forms the sensing, processing and communication hub
- for the appliance.
- The MicaZ mote is equipped with a 2.4 GHz radio that is used for sensing
+ 'appliance' mote that forms the sensing and communication hub for the appliance.
+ The power meter is configured to sense and report the power consumption
+ at a 1 Hz sampling rate.
+ Upon receiving power measurements from its UART, the appliance mote forwards
+ these messages to the Spotlight server.
+\end_layout
+
+\begin_layout Standard
+The MicaZ mote is equipped with a 2.4 GHz radio that is used for sensing
  the physical vicinity of participating users as well as for communicating
  with the Spotlight server.
  Users carry MicaZ 'user' motes that send out periodic beacon messages advertisi
 ng their presence.
  The appliance motes listen for presence beacons and record the radio receive
- strength (RSSI) for any it receives.
- 
+ strength (RSSI) for any messages it receives.
+ These RSSI values are forwarded to the Spotlight server.
+\end_layout
+
+\begin_layout Standard
+The Spotlight server is a system that receives beacon strengths and power
+ measurements 
 \end_layout
 
 \begin_layout Subsection
