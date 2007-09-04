@@ -116,7 +116,7 @@ ylabel('Energy (KWh)');
 
 subplot(3, 2, 6), plot(energy1tot, 'g');
 hold on;
-plot(energy2tot, 'b')
+plot(energy2tot, 'b--')
 %axis([0 length(htoken1tv) 0 max()]);
 grid on;
 title('(f) Total Energy Consumption');
