@@ -373,7 +373,7 @@ status open
 \begin_layout Standard
 \align center
 \begin_inset Graphics
-	filename /Users/darknight/projects/splt/docs/percom/Fig1.png
+	filename Fig1.png
 	lyxscale 50
 	width 75col%
 
@@ -2480,7 +2480,7 @@ status collapsed
 \begin_layout Standard
 \align center
 \begin_inset Graphics
-	filename /Users/darknight/projects/splt/docs/percom/figures/fig3.eps
+	filename figures/fig3.eps
 	lyxscale 50
 	width 75text%
 
@@ -2517,7 +2517,7 @@ status collapsed
 \begin_layout Standard
 \align center
 \begin_inset Graphics
-	filename /Users/darknight/projects/splt/docs/percom/figures/fig35.eps
+	filename figures/fig35.eps
 	lyxscale 50
 	width 100text%
 
@@ -2566,7 +2566,7 @@ status collapsed
 \begin_layout Standard
 \align center
 \begin_inset Graphics
-	filename /Users/darknight/projects/splt/docs/percom/figures/fig5.eps
+	filename figures/fig5.eps
 	lyxscale 50
 	width 75text%
 
@@ -2602,7 +2602,7 @@ status collapsed
 
 
 \begin_inset Graphics
-	filename /Users/darknight/projects/splt/docs/percom/figures/fig6.eps
+	filename figures/fig6.eps
 	lyxscale 50
 	width 75text%
 
