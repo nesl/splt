@@ -631,11 +631,19 @@ name "fig:Performance-of-various"
 
 \end_inset
 
-Performance of various RSSI->
+Performance of various RSSI
+\begin_inset Formula $\rightarrow$
+\end_inset
+
+
 \begin_inset Formula $ $
 \end_inset
 
-Vicinity->Token mechanisms
+Vicinity
+\begin_inset Formula $\rightarrow$
+\end_inset
+
+Token mechanisms
 \end_layout
 
 \end_inset
@@ -685,6 +693,10 @@ status open
 
 \begin_layout Standard
 \align center
+\begin_inset Formula $ $
+\end_inset
+
+
 \begin_inset Graphics
 	filename figures/fig6.eps
 	lyxscale 50
