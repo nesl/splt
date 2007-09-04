@@ -2468,52 +2468,52 @@ Ground truth/comparison
 \end_layout
 
 \begin_layout Standard
+In order to compare our experimental data with the ground truth, the household
+ of the deployment was also instrumented with two cameras monitoring the
+ service area of the television, living room lamp and bedroom lamp.
+ The cameras took a picture every 10 seconds and gave information about
+ who was present in the service range of the appliances.
+ Due to privacy reasons, these pictures are not included in the document.
+ The pictures were manually tagged by a user in the household to retrive
+ the ground truth for the occupancy data.
+ The ground truth for both users for the television is given in figure 
+\begin_inset LatexCommand ref
+reference "fig:Performance-of-various"
+
+\end_inset
+
+(i) and (j).
+ A 1 indicates that the user was present in the service range of the television
+ and a 0 indicates that the user was not present.
+ Figure 
+\begin_inset LatexCommand ref
+reference "fig:Performance-of-various"
+
+\end_inset
+
+ (a) and (b) give the RSSI values of the two users as reported by the RFID
+ reader on the television.
+ Figure 
+\begin_inset LatexCommand ref
+reference "fig:Performance-of-various"
+
+\end_inset
+
+ (c) through (h) give the issue and expiry of tokens based on the RSSI values
+ using the Simple threshold, calibrated threshold and hysteresis techniques.
+ 
+\end_layout
+
+\begin_layout Standard
 \begin_inset Float figure
 wide true
 sideways false
-status collapsed
+status open
 
 \begin_layout Standard
 \align center
 \begin_inset Graphics
-	filename figures/fig3.eps
-	lyxscale 50
-	width 75text%
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Caption
-
-\begin_layout Standard
-\begin_inset LatexCommand label
-name "fig:Appliance-power-and"
-
-\end_inset
-
-Appliance power and energy consumption per user
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\end_inset
-
-
-\begin_inset Float figure
-wide true
-sideways false
-status collapsed
-
-\begin_layout Standard
-\align center
-\begin_inset Graphics
-	filename figures/fig35.eps
+	filename /Users/darknight/projects/splt/docs/percom/figures/fig35.eps
 	lyxscale 50
 	width 100text%
 
@@ -2544,6 +2544,58 @@ Vicinity
 \end_inset
 
 Token mechanisms
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Simple thresholding and calibrated techniques suffers significantly from
+ slight variations in the RSSI values of the RFID tags.
+ The calibrated technique performs better as it has been calibrated for
+ the particulars of the RFID tag.
+ The hysteresis technique is most resilient to the variations in RSSI values
+ as it can also cope with slight variations in the RSSI values of the tags.
+ Since the hysteresis technique has been identified as the dominant technique,
+ all sequential data will be charactertized using this technique.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide true
+sideways false
+status collapsed
+
+\begin_layout Standard
+\align center
+\begin_inset Graphics
+	filename figures/fig3.eps
+	lyxscale 50
+	width 75text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Caption
+
+\begin_layout Standard
+\begin_inset LatexCommand label
+name "fig:Appliance-power-and"
+
+\end_inset
+
+Appliance power and energy consumption per user
 \end_layout
 
 \end_inset
