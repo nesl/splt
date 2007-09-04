@@ -2942,6 +2942,24 @@ Conclusion
 \end_layout
 
 \begin_layout Standard
+In conclusion, we presented a new system that profiles energy consumption
+ pattern of individuals based on raw RSSI measurement among active RFID
+ tags and readers.
+ Our detection scheme gives fairly reasonable successful detection rate
+ as in the table 
+\begin_inset LatexCommand ref
+reference "tab:Token-Issue-Success,"
+
+\end_inset
+
+.
+ While analyzing We are interested in two aspects of energy profiles: first,
+ total energy consumption, which gives us how much energy is consumed by
+ an individual whether it's useful or not, and second total wasted energy,
+ which implies the energy wasted by an individual unintentionally.
+\end_layout
+
+\begin_layout Standard
 ================================
 \end_layout
 
