@@ -10,8 +10,8 @@ htoken1coffee = hyst(:,3);
 htoken1lamp2 = hyst(:,4);
 
 htoken2tv = hyst(:,5);
-htoken21lamp = hyst(:,6);
-hoken2coffee = hyst(:,7);
+htoken2lamp = hyst(:,6);
+htoken2coffee = hyst(:,7);
 htoken2lamp2 = hyst(:,8);
 
 %% Put Vicinity using Hysteresis in respective arrays
@@ -131,6 +131,7 @@ set(gca,'Layer','top');
 legend('Useful', 'Wasted');
 ylabel('Energy (KWh)');
 xlabel('Time (secs)');
+
 
 %{
 subplot(2, 2, 3), h=area([energy1tot_useful energy1tot_wasted]);
