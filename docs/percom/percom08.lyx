@@ -577,14 +577,14 @@ Assuming that the RSSI token space is uniform and signals and noises are
  a mathematically tractable and reasonable binary detection model for it.
  So, we designed the detection problem from some observations of human behavior
  and RSSI characteristics.
- There are many attempts to make use of RSSI to localize mobile nodes.
- [],[], and [] give rough approximation of the relationship between distance
- and RSSI.
  
 \end_layout
 
 \begin_layout Standard
-Although the token space is roughly static and is definable in physical
+There are many attempts to make use of RSSI to localize mobile nodes.
+ [],[], and [] give rough approximation of the relationship between distance
+ and RSSI.
+ Although the token space is roughly static and is definable in physical
  domain, the system's token algorithm is susceptible to a small noise when
  users are around the boundary of the service range.
  To avoid such case, we wanted to add hysteresis feature to the token issuance
