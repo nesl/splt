@@ -330,6 +330,8 @@ We developed and deployed an application to estimate the consumption under
  If multiple users are present in the range, the charge is divided equally.
  The last person to leave the range will continue to be charged for the
  consumption of that appliance until another person enters the service range.
+ We provide the ability for the users to observe their consumption in real-time
+ through our Spotlight server.
  
 \end_layout
 
@@ -339,6 +341,37 @@ Contributions of the paper
 
 \begin_layout Subsection
 Structure of the paper
+\end_layout
+
+\begin_layout Standard
+The rest of the paper is structured as following.
+ Section 
+\begin_inset LatexCommand ref
+reference "sec:System-Design"
+
+\end_inset
+
+ details the design and implementation of our system.
+ In section 
+\begin_inset LatexCommand ref
+reference "sec:Evaluation"
+
+\end_inset
+
+ we evaluate our system against the ground truth and for performance.
+ We offer some related work in section 
+\begin_inset LatexCommand ref
+reference "sec:Related-works"
+
+\end_inset
+
+ and finally conclude in section 
+\begin_inset LatexCommand ref
+reference "sec:Conclusion"
+
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Section
@@ -2949,11 +2982,23 @@ Total Useful/Wasted Power and Energy
 \end_layout
 
 \begin_layout Section
-Related works
+Related works 
+\begin_inset LatexCommand label
+name "sec:Related-works"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Section
 Conclusion
+\begin_inset LatexCommand label
+name "sec:Conclusion"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
