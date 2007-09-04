@@ -488,15 +488,21 @@ System Design
 
 \begin_layout Standard
 The design of the Spotlight system is centered around instrumentation of
- appliances.
+ participating appliances.
  Each appliance is powered through a commercial-off-the-shelf power meter
  [WattsUpPro] that measures the energy consumption for the appliance.
- The power meter provides a serial interface with a well documented serial
- protocol.
- The serial interface from the power meter is directly connected to a MicaZ
- mote that forms the sensing, processing and communication hub for that
- appliance.
- The MicaZ mote is equipped with a 2.4 GHz radio that
+ The power meter provides a serial interface for external logging with a
+ well documented serial protocol.
+ This serial interface connects to a MicaZ [Crossbow MicaZ] 'appliance'
+ mote that forms the sensing, processing and communication hub for the appliance.
+ The MicaZ mote is equipped with a 2.4 GHz radio that is used for sensing
+ the physical vicinity of participating users as well as for communicating
+ with the Spotlight server.
+ Users carry MicaZ 'user' motes that send out periodic beacon messages advertisi
+ng their presence.
+ The appliance motes listen for presence beacons and record the radio receive
+ strength (RSSI) for any it receives.
+ 
 \end_layout
 
 \begin_layout Subsection
@@ -794,7 +800,13 @@ name "tab:Active-RFID-Tag"
 
 \end_inset
 
-Active RFID Tag Lifetimes for 1500mAh 'AA' alkaline batteries
+Active RFID Tag Lifetimes for 1500mAh 'AA' alkaline batteries 
+\begin_inset LatexCommand cite
+key "panasonic"
+
+\end_inset
+
+
 \end_layout
 
 \end_inset
@@ -2611,7 +2623,7 @@ reference "fig:Performance-of-various"
 \begin_inset Float figure
 wide true
 sideways false
-status open
+status collapsed
 
 \begin_layout Standard
 \align center
@@ -2716,6 +2728,7 @@ reference "fig:Appliance-power-and"
 
 \begin_layout Standard
 \begin_inset Float figure
+placement t
 wide true
 sideways false
 status collapsed
@@ -2797,6 +2810,7 @@ reference "fig:Useful/Wasted-Power-and"
 
 \begin_layout Standard
 \begin_inset Float figure
+placement t
 wide true
 sideways false
 status collapsed
@@ -2866,6 +2880,7 @@ reference "fig:Total-Useful/Wasted-Power"
 
 \begin_layout Standard
 \begin_inset Float figure
+placement t
 wide true
 sideways false
 status collapsed
@@ -2905,7 +2920,7 @@ Total Useful/Wasted Power and Energy
 
 \end_inset
 
-
+ 
 \end_layout
 
 \begin_layout Section
