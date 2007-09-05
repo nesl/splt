@@ -446,8 +446,8 @@ key "micaz"
 The MICAz mote is equipped with a 2.4 GHz radio that is used for sensing
  the physical vicinity of participating users as well as for communicating
  with the Spotlight server.
- Users carry MICAz 'user' motes that send out periodic beacon messages advertisi
-ng their presence.
+ Users carry MICAz 'tag' motes that send out periodic beacon messages advertisin
+g their presence.
  The appliance motes listen for presence beacons and record the radio receive
  strength (RSSI) for any messages it receives.
  These RSSI values are also forwarded to the Spotlight server.
@@ -474,8 +474,16 @@ key "sensorbase.org"
 
 \begin_layout Standard
 The software subsystems built into the appliance mote consist of the SOS
- operating system with custom application modules that implement the serial
- protocol for the 
+ operating system 
+\begin_inset LatexCommand cite
+key "sos05mobisys"
+
+\end_inset
+
+ with custom kernel and application modules that implement the serial protocol
+ for the power meter and the active RFID reader.
+ The tag motes run a stock version of the SOS kernel with a custom module
+ for the vicinity beacons.
 \end_layout
 
 \begin_layout Subsection
@@ -927,13 +935,7 @@ name "tab:Active-RFID-Tag"
 
 \end_inset
 
-Active RFID Tag Lifetimes for 1500mAh 'AA' alkaline batteries 
-\begin_inset LatexCommand cite
-key "panasonic"
-
-\end_inset
-
-
+Active RFID Tag Lifetimes 
 \end_layout
 
 \end_inset
@@ -952,7 +954,26 @@ reference "tab:Active-RFID-Tag"
 \end_inset
 
  shows that the lifetime of the tag with a standard distribution of SOS
- 
+ that sends out beacons once every second lasts less than 3 days on standard
+ 1500mAh 'AA' alkaline batteries 
+\begin_inset LatexCommand cite
+key "panasonic"
+
+\end_inset
+
+.
+ Exploiting the fact that the tag is a transmit-only device, the radio iss
+ turned off when not in use, resulting in a substantial improvement to 27
+ days.
+ Additionally, realizing that beacons are only required when there is some
+ change in a user's location, an accelerometer sensor board is added to
+ the tag mote, with a sensing sampling rate of 10 Hz.
+ This vibration sensing mechanism adds some overhead to the tag's power
+ consumption that leads to a lower lifetime when considering a lot of movement.
+ However, in the best case, this leads to a slightly higher lifetime.
+ Additional gain could be obtained by shutting down the entire mote while
+ performing the vibration sensing in a low power preprocessing stage.
+ This is being studied closely for a future version of Spotlight.
 \end_layout
 
 \begin_layout Section
@@ -2980,15 +3001,15 @@ reference "fig:Useful/Wasted-Power-and"
 
 \end_inset
 
-(a) and (b) show the RSSI values for the two users as collected by the RFID
- reader on the television.
+ (a) and (b) show the RSSI values for the two users as collected by the
+ RFID reader on the television.
  Using the hysteresis technique, figure 
 \begin_inset LatexCommand ref
 reference "fig:Useful/Wasted-Power-and"
 
 \end_inset
 
-(c) and (d) show the token issuance and expiry for the two users.
+ (c) and (d) show the token issuance and expiry for the two users.
  Based on the vicinity information from the RSSI values and the token informatio
 n, figure 
 \begin_inset LatexCommand ref
@@ -3058,7 +3079,7 @@ reference "fig:Total-Useful/Wasted-Power"
 
 \end_inset
 
-(a) and (b) show the amount of power consumed by the two users with the
+ (a) and (b) show the amount of power consumed by the two users with the
  two shades highlighting the amount of useful and wasteful energy.
  Similarly, 
 \begin_inset LatexCommand ref
@@ -3076,7 +3097,7 @@ reference "fig:Total-Useful/Wasted-Power"
 placement t
 wide true
 sideways false
-status open
+status collapsed
 
 \begin_layout Standard
 \align center
