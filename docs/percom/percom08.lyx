@@ -719,32 +719,32 @@ key "binary_detection"
 \end_layout
 
 \begin_layout Standard
-There are many attempts to make use of RSSI to localize mobile nodes.
+There have been many attempts to use RSSI to localize mobile nodes.
  
 \begin_inset LatexCommand cite
 key "RSSI_local,RSSI_local2"
 
 \end_inset
 
- give fair approximation of the relationship between distance and RSSI.
- And, in the similar sense, the token space is roughly static and is definable
+ give fair approximation of the relationship between distance and RSSI values.
+ In the similar sense, the token space is roughly static and is definable
  in the physical domain, the token issuance algorithm is susceptible to
- a small noise when users are around the boundary of the service range.
- To avoid such case, we wanted to add hysteresis feature to the token issuance
- algorithm.
- Instead of having the same threshold value for both of issuance and expiration
- check routine.
+ a small noise when users are near the boundary of the service range.
+ To avoid such cases, we added a hysteresis feature to the token issuance
+ algorithm instead of having the same threshold value for both of issuance
+ and expiration check routine.
  
 \end_layout
 
 \begin_layout Standard
-For the comparison purpose in section 
+We propose the following three detection techniques and compare them in
+ section 
 \begin_inset LatexCommand ref
 reference "sec:Evaluation"
 
 \end_inset
 
-, in sum, we propose three detection techniques as follows.
+.
 \end_layout
 
 \begin_layout Enumerate
@@ -960,8 +960,8 @@ Active RFID Tag Lifetimes
 
 \end_inset
 
-The design of the user wearable tag needs some careful consideration to
- improve the lifetime.
+The design of the user wearable tag needs careful consideration to improve
+ its lifetime.
  Table 
 \begin_inset LatexCommand ref
 reference "tab:Active-RFID-Tag"
@@ -977,12 +977,12 @@ key "panasonic"
 \end_inset
 
 .
- Exploiting the fact that the tag is a transmit-only device, the radio iss
- turned off when not in use, resulting in a substantial improvement to 27
- days.
+ Exploiting the fact that the tag is a transmit-only device, the radio can
+ be turned off when not in use, resulting in a substantial improvement to
+ 27 days.
  Additionally, realizing that beacons are only required when there is some
  change in a user's location, an accelerometer sensor board is added to
- the tag mote, with a sensing sampling rate of 10 Hz.
+ the tag mote, with a sampling rate of 10 Hz.
  This vibration sensing mechanism adds some overhead to the tag's power
  consumption that leads to a lower lifetime when considering a lot of movement.
  However, in the best case, this leads to a slightly higher lifetime.
@@ -1328,7 +1328,7 @@ Unified and Calibrated RSSI service range
 \end_layout
 
 \begin_layout Standard
-To begin with, as in fig 
+As given in fig 
 \begin_inset LatexCommand ref
 reference "fig:User-Defined-RSSI"
 
