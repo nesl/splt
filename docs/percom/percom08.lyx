@@ -126,8 +126,6 @@ We present Spotlight, a novel application that monitors electrical energy
 \begin_layout Abstract
 The Spotlight system is deployed and tested in an experimental setup with
  various appliances and users.
- A virtual environment system was also developed to test more complex scenarios
- of usage.
  We evaluate multiple schemes of accounting energy consumption based on
  an individual's movement profile and the appliances' power profile.
  Our preliminary results show how the system could detect wasted energy
@@ -3060,7 +3058,7 @@ reference "fig:Measured-RSSI-Token"
 \end_layout
 
 \begin_layout Section
-Related works 
+Related work 
 \begin_inset LatexCommand label
 name "sec:Related-works"
 
