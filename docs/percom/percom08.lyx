@@ -765,8 +765,8 @@ status collapsed
 \begin_inset Text
 
 \begin_layout Standard
-
 Avg Power (mW)
+\end_layout
 
 \end_inset
 </cell>
@@ -774,8 +774,8 @@ Avg Power (mW)
 \begin_inset Text
 
 \begin_layout Standard
-
 Lifetime (days)
+\end_layout
 
 \end_inset
 </cell>
@@ -785,8 +785,8 @@ Lifetime (days)
 \begin_inset Text
 
 \begin_layout Standard
-
 1Hz timer triggered, radio always ON
+\end_layout
 
 \end_inset
 </cell>
@@ -794,8 +794,8 @@ Lifetime (days)
 \begin_inset Text
 
 \begin_layout Standard
-
 66.3
+\end_layout
 
 \end_inset
 </cell>
@@ -803,8 +803,8 @@ Lifetime (days)
 \begin_inset Text
 
 \begin_layout Standard
-
 2.82
+\end_layout
 
 \end_inset
 </cell>
@@ -814,8 +814,8 @@ Lifetime (days)
 \begin_inset Text
 
 \begin_layout Standard
-
 1Hz timer, radio OFF (when not TX)
+\end_layout
 
 \end_inset
 </cell>
@@ -823,8 +823,8 @@ Lifetime (days)
 \begin_inset Text
 
 \begin_layout Standard
-
 6.9
+\end_layout
 
 \end_inset
 </cell>
@@ -832,8 +832,8 @@ Lifetime (days)
 \begin_inset Text
 
 \begin_layout Standard
-
 27.23
+\end_layout
 
 \end_inset
 </cell>
@@ -843,8 +843,8 @@ Lifetime (days)
 \begin_inset Text
 
 \begin_layout Standard
-
 Vibration triggered, radio OFF, all events
+\end_layout
 
 \end_inset
 </cell>
@@ -852,8 +852,8 @@ Vibration triggered, radio OFF, all events
 \begin_inset Text
 
 \begin_layout Standard
-
 10.7
+\end_layout
 
 \end_inset
 </cell>
@@ -861,8 +861,8 @@ Vibration triggered, radio OFF, all events
 \begin_inset Text
 
 \begin_layout Standard
-
 17.52
+\end_layout
 
 \end_inset
 </cell>
@@ -872,8 +872,8 @@ Vibration triggered, radio OFF, all events
 \begin_inset Text
 
 \begin_layout Standard
-
 Vibration triggered, radio OFF, no events
+\end_layout
 
 \end_inset
 </cell>
@@ -881,8 +881,8 @@ Vibration triggered, radio OFF, no events
 \begin_inset Text
 
 \begin_layout Standard
-
 6.6
+\end_layout
 
 \end_inset
 </cell>
@@ -890,8 +890,8 @@ Vibration triggered, radio OFF, no events
 \begin_inset Text
 
 \begin_layout Standard
-
 28.52
+\end_layout
 
 \end_inset
 </cell>
@@ -979,6 +979,317 @@ Deployment setting
 \end_layout
 
 \begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Standard
+\align center
+\begin_inset Graphics
+	filename UserSpecified.png
+	lyxscale 50
+	width 75col%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Caption
+
+\begin_layout Standard
+\begin_inset LatexCommand label
+name "fig:User-Defined-RSSI"
+
+\end_inset
+
+User Defined RSSI token space
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+wide false
+sideways false
+status collapsed
+
+\begin_layout Standard
+\begin_inset Tabular
+<lyxtabular version="3" rows="6" columns="4">
+<features>
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" rightline="true" width="0">
+<row topline="true" bottomline="true">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+Unified Threshold
+\end_layout
+
+\end_inset
+</cell>
+<cell multicolumn="1" alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+Calibrated Threshold
+\end_layout
+
+\end_inset
+</cell>
+<cell multicolumn="2" alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row topline="true">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+For both
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+User200
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+User201
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row topline="true">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+TV
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+-20
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+-12
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+-14
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row topline="true">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+LivingRoomLamp
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+-26
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+-23
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+-22
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row topline="true">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+CoffeeMachine
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+-5
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+-10
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+-8
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row topline="true" bottomline="true">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+BedRoomLamp
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+-26
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+-16
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+-18
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Caption
+
+\begin_layout Standard
+\begin_inset LatexCommand label
+name "tab:Unified-and-Calibrated"
+
+\end_inset
+
+Unified and Calibrated RSSI service range
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
 To begin with, as in fig 
 \begin_inset LatexCommand ref
 reference "fig:User-Defined-RSSI"
@@ -1039,277 +1350,6 @@ d threshold does.
 
 \begin_layout Standard
 \begin_inset Float table
-wide false
-sideways false
-status collapsed
-
-\begin_layout Standard
-\begin_inset Tabular
-<lyxtabular version="3" rows="6" columns="4">
-<features>
-<column alignment="center" valignment="top" leftline="true" width="0">
-<column alignment="center" valignment="top" leftline="true" width="0">
-<column alignment="center" valignment="top" leftline="true" width="0">
-<column alignment="center" valignment="top" leftline="true" rightline="true" width="0">
-<row topline="true" bottomline="true">
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Standard
-
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Standard
-
-Unified Threshold
-
-\end_inset
-</cell>
-<cell multicolumn="1" alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Standard
-
-Calibrated Threshold
-
-\end_inset
-</cell>
-<cell multicolumn="2" alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Standard
-
-\end_layout
-
-\end_inset
-</cell>
-</row>
-<row topline="true">
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Standard
-
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Standard
-
-For both
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Standard
-
-User200
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Standard
-
-User201
-
-\end_inset
-</cell>
-</row>
-<row topline="true">
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Standard
-
-TV
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Standard
-
--20
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Standard
-
--12
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Standard
-
--14
-
-\end_inset
-</cell>
-</row>
-<row topline="true">
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Standard
-
-LivingRoomLamp
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Standard
-
--26
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Standard
-
--23
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Standard
-
--22
-
-\end_inset
-</cell>
-</row>
-<row topline="true">
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Standard
-
-CoffeeMachine
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Standard
-
--5
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Standard
-
--10
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Standard
-
--8
-
-\end_inset
-</cell>
-</row>
-<row topline="true" bottomline="true">
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Standard
-
-BedRoomLamp
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Standard
-
--26
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Standard
-
--16
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Standard
-
--18
-
-\end_inset
-</cell>
-</row>
-</lyxtabular>
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Caption
-
-\begin_layout Standard
-\begin_inset LatexCommand label
-name "tab:Unified-and-Calibrated"
-
-\end_inset
-
-Unified and Calibrated RSSI service range
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Float table
 wide true
 sideways false
 status collapsed
@@ -1352,8 +1392,8 @@ status collapsed
 \begin_inset Text
 
 \begin_layout Standard
-
 TV
+\end_layout
 
 \end_inset
 </cell>
@@ -1406,8 +1446,8 @@ TV
 \begin_inset Text
 
 \begin_layout Standard
-
 LivingLamp
+\end_layout
 
 \end_inset
 </cell>
@@ -1460,8 +1500,8 @@ LivingLamp
 \begin_inset Text
 
 \begin_layout Standard
-
 BedLamp
+\end_layout
 
 \end_inset
 </cell>
@@ -1525,8 +1565,8 @@ BedLamp
 \begin_inset Text
 
 \begin_layout Standard
-
 User200
+\end_layout
 
 \end_inset
 </cell>
@@ -1552,8 +1592,8 @@ User200
 \begin_inset Text
 
 \begin_layout Standard
-
 User201
+\end_layout
 
 \end_inset
 </cell>
@@ -1579,8 +1619,8 @@ User201
 \begin_inset Text
 
 \begin_layout Standard
-
 User200
+\end_layout
 
 \end_inset
 </cell>
@@ -1606,8 +1646,8 @@ User200
 \begin_inset Text
 
 \begin_layout Standard
-
 User201
+\end_layout
 
 \end_inset
 </cell>
@@ -1633,8 +1673,8 @@ User201
 \begin_inset Text
 
 \begin_layout Standard
-
 User200
+\end_layout
 
 \end_inset
 </cell>
@@ -1660,8 +1700,8 @@ User200
 \begin_inset Text
 
 \begin_layout Standard
-
 User201
+\end_layout
 
 \end_inset
 </cell>
@@ -1689,8 +1729,8 @@ User201
 \begin_inset Text
 
 \begin_layout Standard
-
 Threshold
+\end_layout
 
 \end_inset
 </cell>
@@ -1698,8 +1738,8 @@ Threshold
 \begin_inset Text
 
 \begin_layout Standard
-
 C
+\end_layout
 
 \end_inset
 </cell>
@@ -1707,8 +1747,8 @@ C
 \begin_inset Text
 
 \begin_layout Standard
-
 FP
+\end_layout
 
 \end_inset
 </cell>
@@ -1716,8 +1756,8 @@ FP
 \begin_inset Text
 
 \begin_layout Standard
-
 FN
+\end_layout
 
 \end_inset
 </cell>
@@ -1725,8 +1765,8 @@ FN
 \begin_inset Text
 
 \begin_layout Standard
-
 C
+\end_layout
 
 \end_inset
 </cell>
@@ -1734,8 +1774,8 @@ C
 \begin_inset Text
 
 \begin_layout Standard
-
 FP
+\end_layout
 
 \end_inset
 </cell>
@@ -1743,8 +1783,8 @@ FP
 \begin_inset Text
 
 \begin_layout Standard
-
 FN
+\end_layout
 
 \end_inset
 </cell>
@@ -1752,8 +1792,8 @@ FN
 \begin_inset Text
 
 \begin_layout Standard
-
 C
+\end_layout
 
 \end_inset
 </cell>
@@ -1761,8 +1801,8 @@ C
 \begin_inset Text
 
 \begin_layout Standard
-
 FP
+\end_layout
 
 \end_inset
 </cell>
@@ -1770,8 +1810,8 @@ FP
 \begin_inset Text
 
 \begin_layout Standard
-
 FN
+\end_layout
 
 \end_inset
 </cell>
@@ -1779,8 +1819,8 @@ FN
 \begin_inset Text
 
 \begin_layout Standard
-
 C
+\end_layout
 
 \end_inset
 </cell>
@@ -1788,8 +1828,8 @@ C
 \begin_inset Text
 
 \begin_layout Standard
-
 FP
+\end_layout
 
 \end_inset
 </cell>
@@ -1797,8 +1837,8 @@ FP
 \begin_inset Text
 
 \begin_layout Standard
-
 FN
+\end_layout
 
 \end_inset
 </cell>
@@ -1806,8 +1846,8 @@ FN
 \begin_inset Text
 
 \begin_layout Standard
-
 C
+\end_layout
 
 \end_inset
 </cell>
@@ -1815,8 +1855,8 @@ C
 \begin_inset Text
 
 \begin_layout Standard
-
 FP
+\end_layout
 
 \end_inset
 </cell>
@@ -1824,8 +1864,8 @@ FP
 \begin_inset Text
 
 \begin_layout Standard
-
 FN
+\end_layout
 
 \end_inset
 </cell>
@@ -1833,8 +1873,8 @@ FN
 \begin_inset Text
 
 \begin_layout Standard
-
 C
+\end_layout
 
 \end_inset
 </cell>
@@ -1842,8 +1882,8 @@ C
 \begin_inset Text
 
 \begin_layout Standard
-
 FP
+\end_layout
 
 \end_inset
 </cell>
@@ -1851,8 +1891,8 @@ FP
 \begin_inset Text
 
 \begin_layout Standard
-
 FN
+\end_layout
 
 \end_inset
 </cell>
@@ -1862,8 +1902,8 @@ FN
 \begin_inset Text
 
 \begin_layout Standard
-
 Unified
+\end_layout
 
 \end_inset
 </cell>
@@ -1871,8 +1911,8 @@ Unified
 \begin_inset Text
 
 \begin_layout Standard
-
 39.5
+\end_layout
 
 \end_inset
 </cell>
@@ -1880,8 +1920,8 @@ Unified
 \begin_inset Text
 
 \begin_layout Standard
-
 60
+\end_layout
 
 \end_inset
 </cell>
@@ -1889,8 +1929,8 @@ Unified
 \begin_inset Text
 
 \begin_layout Standard
-
 0.5
+\end_layout
 
 \end_inset
 </cell>
@@ -1898,8 +1938,8 @@ Unified
 \begin_inset Text
 
 \begin_layout Standard
-
 73
+\end_layout
 
 \end_inset
 </cell>
@@ -1907,8 +1947,8 @@ Unified
 \begin_inset Text
 
 \begin_layout Standard
-
 0
+\end_layout
 
 \end_inset
 </cell>
@@ -1916,8 +1956,8 @@ Unified
 \begin_inset Text
 
 \begin_layout Standard
-
 27
+\end_layout
 
 \end_inset
 </cell>
@@ -1925,8 +1965,8 @@ Unified
 \begin_inset Text
 
 \begin_layout Standard
-
 96.2
+\end_layout
 
 \end_inset
 </cell>
@@ -1934,8 +1974,8 @@ Unified
 \begin_inset Text
 
 \begin_layout Standard
-
 0
+\end_layout
 
 \end_inset
 </cell>
@@ -1943,8 +1983,8 @@ Unified
 \begin_inset Text
 
 \begin_layout Standard
-
 3.8
+\end_layout
 
 \end_inset
 </cell>
@@ -1952,8 +1992,8 @@ Unified
 \begin_inset Text
 
 \begin_layout Standard
-
 95.1
+\end_layout
 
 \end_inset
 </cell>
@@ -1961,8 +2001,8 @@ Unified
 \begin_inset Text
 
 \begin_layout Standard
-
 2.7
+\end_layout
 
 \end_inset
 </cell>
@@ -1970,8 +2010,8 @@ Unified
 \begin_inset Text
 
 \begin_layout Standard
-
 2.2
+\end_layout
 
 \end_inset
 </cell>
@@ -1979,8 +2019,8 @@ Unified
 \begin_inset Text
 
 \begin_layout Standard
-
 74.6
+\end_layout
 
 \end_inset
 </cell>
@@ -1988,8 +2028,8 @@ Unified
 \begin_inset Text
 
 \begin_layout Standard
-
 25.4
+\end_layout
 
 \end_inset
 </cell>
@@ -1997,8 +2037,8 @@ Unified
 \begin_inset Text
 
 \begin_layout Standard
-
 0
+\end_layout
 
 \end_inset
 </cell>
@@ -2006,8 +2046,8 @@ Unified
 \begin_inset Text
 
 \begin_layout Standard
-
 68.7
+\end_layout
 
 \end_inset
 </cell>
@@ -2015,8 +2055,8 @@ Unified
 \begin_inset Text
 
 \begin_layout Standard
-
 7.0
+\end_layout
 
 \end_inset
 </cell>
@@ -2024,8 +2064,8 @@ Unified
 \begin_inset Text
 
 \begin_layout Standard
-
 24.3
+\end_layout
 
 \end_inset
 </cell>
@@ -2035,8 +2075,8 @@ Unified
 \begin_inset Text
 
 \begin_layout Standard
-
 Calibrated 
+\end_layout
 
 \end_inset
 </cell>
@@ -2044,8 +2084,8 @@ Calibrated
 \begin_inset Text
 
 \begin_layout Standard
-
 58.9
+\end_layout
 
 \end_inset
 </cell>
@@ -2053,8 +2093,8 @@ Calibrated
 \begin_inset Text
 
 \begin_layout Standard
-
 35.1
+\end_layout
 
 \end_inset
 </cell>
@@ -2062,8 +2102,8 @@ Calibrated
 \begin_inset Text
 
 \begin_layout Standard
-
 6
+\end_layout
 
 \end_inset
 </cell>
@@ -2071,8 +2111,8 @@ Calibrated
 \begin_inset Text
 
 \begin_layout Standard
-
 63.8
+\end_layout
 
 \end_inset
 </cell>
@@ -2080,8 +2120,8 @@ Calibrated
 \begin_inset Text
 
 \begin_layout Standard
-
 3.8
+\end_layout
 
 \end_inset
 </cell>
@@ -2089,8 +2129,8 @@ Calibrated
 \begin_inset Text
 
 \begin_layout Standard
-
 32.4
+\end_layout
 
 \end_inset
 </cell>
@@ -2098,8 +2138,8 @@ Calibrated
 \begin_inset Text
 
 \begin_layout Standard
-
 94.6
+\end_layout
 
 \end_inset
 </cell>
@@ -2107,8 +2147,8 @@ Calibrated
 \begin_inset Text
 
 \begin_layout Standard
-
 0
+\end_layout
 
 \end_inset
 </cell>
@@ -2116,8 +2156,8 @@ Calibrated
 \begin_inset Text
 
 \begin_layout Standard
-
 5.4
+\end_layout
 
 \end_inset
 </cell>
@@ -2125,8 +2165,8 @@ Calibrated
 \begin_inset Text
 
 \begin_layout Standard
-
 92.4
+\end_layout
 
 \end_inset
 </cell>
@@ -2134,8 +2174,8 @@ Calibrated
 \begin_inset Text
 
 \begin_layout Standard
-
 1.6
+\end_layout
 
 \end_inset
 </cell>
@@ -2143,8 +2183,8 @@ Calibrated
 \begin_inset Text
 
 \begin_layout Standard
-
 6
+\end_layout
 
 \end_inset
 </cell>
@@ -2152,8 +2192,8 @@ Calibrated
 \begin_inset Text
 
 \begin_layout Standard
-
 98.4
+\end_layout
 
 \end_inset
 </cell>
@@ -2161,8 +2201,8 @@ Calibrated
 \begin_inset Text
 
 \begin_layout Standard
-
 0.5
+\end_layout
 
 \end_inset
 </cell>
@@ -2170,8 +2210,8 @@ Calibrated
 \begin_inset Text
 
 \begin_layout Standard
-
 1.1
+\end_layout
 
 \end_inset
 </cell>
@@ -2179,8 +2219,8 @@ Calibrated
 \begin_inset Text
 
 \begin_layout Standard
-
 99.5
+\end_layout
 
 \end_inset
 </cell>
@@ -2188,8 +2228,8 @@ Calibrated
 \begin_inset Text
 
 \begin_layout Standard
-
 0.5
+\end_layout
 
 \end_inset
 </cell>
@@ -2197,8 +2237,8 @@ Calibrated
 \begin_inset Text
 
 \begin_layout Standard
-
 0
+\end_layout
 
 \end_inset
 </cell>
@@ -2208,8 +2248,8 @@ Calibrated
 \begin_inset Text
 
 \begin_layout Standard
-
 Hysteresis
+\end_layout
 
 \end_inset
 </cell>
@@ -2217,8 +2257,8 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-
 88.1
+\end_layout
 
 \end_inset
 </cell>
@@ -2226,8 +2266,8 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-
 9.7
+\end_layout
 
 \end_inset
 </cell>
@@ -2235,8 +2275,8 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-
 2.2
+\end_layout
 
 \end_inset
 </cell>
@@ -2244,8 +2284,8 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-
 90.3
+\end_layout
 
 \end_inset
 </cell>
@@ -2253,8 +2293,8 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-
 0
+\end_layout
 
 \end_inset
 </cell>
@@ -2262,8 +2302,8 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-
 9.7
+\end_layout
 
 \end_inset
 </cell>
@@ -2271,8 +2311,8 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-
 95.7
+\end_layout
 
 \end_inset
 </cell>
@@ -2280,8 +2320,8 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-
 0
+\end_layout
 
 \end_inset
 </cell>
@@ -2289,8 +2329,8 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-
 4.3
+\end_layout
 
 \end_inset
 </cell>
@@ -2298,8 +2338,8 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-
 95.1
+\end_layout
 
 \end_inset
 </cell>
@@ -2307,8 +2347,8 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-
 2.2
+\end_layout
 
 \end_inset
 </cell>
@@ -2316,8 +2356,8 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-
 2.7
+\end_layout
 
 \end_inset
 </cell>
@@ -2325,8 +2365,8 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-
 98.4
+\end_layout
 
 \end_inset
 </cell>
@@ -2334,8 +2374,8 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-
 0.5
+\end_layout
 
 \end_inset
 </cell>
@@ -2343,8 +2383,8 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-
 1.1
+\end_layout
 
 \end_inset
 </cell>
@@ -2352,8 +2392,8 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-
 99.5
+\end_layout
 
 \end_inset
 </cell>
@@ -2361,8 +2401,8 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-
 0.5
+\end_layout
 
 \end_inset
 </cell>
@@ -2370,8 +2410,8 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-
 0
+\end_layout
 
 \end_inset
 </cell>
@@ -2393,46 +2433,6 @@ name "tab:Token-Issue-Success,"
 \end_inset
 
 Token Issue Success, False Positive, False Negative rates
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Float figure
-wide false
-sideways false
-status collapsed
-
-\begin_layout Standard
-\align center
-\begin_inset Graphics
-	filename UserSpecified.png
-	lyxscale 50
-	width 75col%
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Caption
-
-\begin_layout Standard
-\begin_inset LatexCommand label
-name "fig:User-Defined-RSSI"
-
-\end_inset
-
-User Defined RSSI token space
 \end_layout
 
 \end_inset
@@ -2688,6 +2688,42 @@ Results/graphs
 \end_layout
 
 \begin_layout Standard
+\begin_inset Float figure
+wide true
+sideways false
+status collapsed
+
+\begin_layout Standard
+\align center
+\begin_inset Graphics
+	filename figures/fig3.eps
+	lyxscale 50
+	width 75text%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Caption
+
+\begin_layout Standard
+\begin_inset LatexCommand label
+name "fig:Appliance-power-and"
+
+\end_inset
+
+Appliance power and energy consumption per user
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
 We outline some results and observations made by analyzing the found data
  from our deployment.
  Figure 
@@ -2727,7 +2763,6 @@ reference "fig:Appliance-power-and"
 
 \begin_layout Standard
 \begin_inset Float figure
-placement t
 wide true
 sideways false
 status collapsed
@@ -2735,7 +2770,7 @@ status collapsed
 \begin_layout Standard
 \align center
 \begin_inset Graphics
-	filename figures/fig3.eps
+	filename figures/fig5.eps
 	lyxscale 50
 	width 75text%
 
@@ -2748,12 +2783,13 @@ status collapsed
 \begin_inset Caption
 
 \begin_layout Standard
+Useful/Wasted Power and Energy for TV
 \begin_inset LatexCommand label
-name "fig:Appliance-power-and"
+name "fig:Useful/Wasted-Power-and"
 
 \end_inset
 
-Appliance power and energy consumption per user
+
 \end_layout
 
 \end_inset
@@ -2809,7 +2845,6 @@ reference "fig:Useful/Wasted-Power-and"
 
 \begin_layout Standard
 \begin_inset Float figure
-placement t
 wide true
 sideways false
 status collapsed
@@ -2817,7 +2852,7 @@ status collapsed
 \begin_layout Standard
 \align center
 \begin_inset Graphics
-	filename figures/fig5.eps
+	filename figures/fig6.eps
 	lyxscale 50
 	width 75text%
 
@@ -2830,13 +2865,12 @@ status collapsed
 \begin_inset Caption
 
 \begin_layout Standard
-Useful/Wasted Power and Energy for TV
 \begin_inset LatexCommand label
-name "fig:Useful/Wasted-Power-and"
+name "fig:Total-Useful/Wasted-Power"
 
 \end_inset
 
-
+Useful and wasted consumption for all appliances
 \end_layout
 
 \end_inset
@@ -2874,47 +2908,6 @@ reference "fig:Total-Useful/Wasted-Power"
 
 (c) and (d) show the amount of energy consumed with the two lines highlighting
  the amount of useful and wasteful energy consumed.
- 
-\end_layout
-
-\begin_layout Standard
-\begin_inset Float figure
-placement t
-wide true
-sideways false
-status collapsed
-
-\begin_layout Standard
-\align center
-\begin_inset Graphics
-	filename figures/fig6.eps
-	lyxscale 50
-	width 75text%
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Caption
-
-\begin_layout Standard
-\begin_inset LatexCommand label
-name "fig:Total-Useful/Wasted-Power"
-
-\end_inset
-
-Useful and wasted consumption for all appliances
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\end_inset
-
  
 \end_layout
 
