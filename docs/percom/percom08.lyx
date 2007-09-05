@@ -573,11 +573,11 @@ name "fig:Token-Issue"
 
 \end_inset
 
-To account for energy consumption, we introduce the notion of token and
+To account for energy consumption, we introduce the notion of tokens and
  service range.
- As per the first classification of appliances, when a user is present within
- the service range of an appliance, the user is benefiting from it and the
- energy consumption of the appliance is accounted against that user.
+ For Class I appliances, when a user is present within the service range
+ of an appliance, the user is assumed to benefit from it and the energy
+ consumption of the appliance is accounted against that user.
  Further, to account for the scenario where a user may leave the vicinity
  of the appliance while it is still turned on, we introduce the notion of
  tokens.
@@ -699,7 +699,7 @@ key "RSSI_yale"
 
 \end_inset
 
- showed from their empirical study on RSSI variability on ZigBee radio that
+ show from their empirical study on RSSI variability on ZigBee radio that
  the antenna orientation is a critical factor of its variability.
  Therefore, if we cannot fix the antenna orientation, the system would suffer
  from variable RSSI.
