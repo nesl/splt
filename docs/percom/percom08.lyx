@@ -429,7 +429,7 @@ key "wattsup"
  that measures the energy consumption for the appliance.
  The power meter provides a serial interface for external logging with a
  well documented serial protocol.
- This serial interface connects to a MicaZ 
+ This serial interface connects to a MICAz 
 \begin_inset LatexCommand cite
 key "micaz"
 
@@ -443,10 +443,10 @@ key "micaz"
 \end_layout
 
 \begin_layout Standard
-The MicaZ mote is equipped with a 2.4 GHz radio that is used for sensing
+The MICAz mote is equipped with a 2.4 GHz radio that is used for sensing
  the physical vicinity of participating users as well as for communicating
  with the Spotlight server.
- Users carry MicaZ 'user' motes that send out periodic beacon messages advertisi
+ Users carry MICAz 'user' motes that send out periodic beacon messages advertisi
 ng their presence.
  The appliance motes listen for presence beacons and record the radio receive
  strength (RSSI) for any messages it receives.
@@ -455,22 +455,11 @@ ng their presence.
 
 \begin_layout Standard
 The Spotlight server is a system that receives beacon strengths and power
- measurements 
-\end_layout
-
-\begin_layout Subsection
-\begin_inset LatexCommand label
-name "sub:Hardware-architecture"
-
-\end_inset
-
-Hardware architecture
-\end_layout
-
-\begin_layout Standard
-The power measurement device chosen for the current implementation is the
- Watts Up? Pro.
-  
+ measurements from the various appliance motes and processes them together
+ to identify user vicinity and eventually per user appliance energy consumption.
+ The Spotlight server is connected to the appliance motes through a 'base
+ station' MICAz mote attached to the server.
+ The 
 \end_layout
 
 \begin_layout Subsection
@@ -948,11 +937,11 @@ reference "fig:User-Defined-RSSI"
 
 \end_inset
 
-, we placed four power measurement units and MicaZ motes at the living room
+, we placed four power measurement units and MICAz motes at the living room
  lamp, TV, coffee machine and bedroom lamp in a 1 bedroom and 1 bathroom
  house environment.
  There are two users carrying their active RFID tags.
- The other MicaZ mote is used for snooping and collecting power measurement
+ The other MICAz mote is used for snooping and collecting power measurement
  of the appliances and RSSI information.
  One apple PowerBook G4 is used for local data processing, storing and transferr
 ing.
@@ -1279,7 +1268,7 @@ Unified and Calibrated RSSI service range
 \begin_inset Float table
 wide true
 sideways false
-status open
+status collapsed
 
 \begin_layout Standard
 \align center
