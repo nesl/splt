@@ -173,12 +173,30 @@ Energy production and consumption comes with a significant cost.
 \end_layout
 
 \begin_layout Standard
-Different agencies in the Europrean Union have initiated programs [][] to
- make consumers more aware of their consumption profile.
- The ___ program [] provides the power consumption of the entire household
- in realtime to the users, information on the average power consumption
- of different appliances and suggestions on replacing certain appliances
- to improve energy efficiency.
+Different agencies in the Europrean Union have initiated programs 
+\begin_inset LatexCommand cite
+key "Derintelligente"
+
+\end_inset
+
+ to make consumers more aware of their consumption profile.
+ The Der Intelligente Stromz
+\begin_inset ERT
+status open
+
+\begin_layout Standard
+
+
+\backslash
+"{a}
+\end_layout
+
+\end_inset
+
+hler program provides the power consumption of the entire household in realtime
+ to the users, information on the average power consumption of different
+ appliances and suggestions on replacing certain appliances to improve energy
+ efficiency.
  These programs are designed to make the users aware of their consumption
  profile and aid them in improving their consumption trend.
  
