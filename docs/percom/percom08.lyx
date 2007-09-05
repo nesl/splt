@@ -2596,7 +2596,7 @@ reference "fig:User-Defined-RSSI"
 \end_layout
 
 \begin_layout Standard
-As in the figure 
+As in figure 
 \begin_inset LatexCommand ref
 reference "fig:Measured-RSSI-Token"
 
@@ -2604,10 +2604,11 @@ reference "fig:Measured-RSSI-Token"
 
 , the token space is roughly static and is definable.
  The calibrated token issuance algorithm could be, however, susceptible
- to a small noise when users are around the boundaries of the service range.
- To avoid such case, we added hysteresis feature to the token issuance algorithm.
- Instead of having the same threshold value for both of issuance and expiration
- check routine (i.e.
+ to small noises when users are near the boundaries of the service range.
+ To avoid such cases, we added hysteresis feature to the token issuance
+ algorithm.
+ Instead of having the same threshold value for issuing and expiring tokens,
+ different threshold were used (i.e.
  issuance threshold = -12, expiration threshold = -17).
  
 \end_layout
