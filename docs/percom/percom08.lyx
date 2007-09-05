@@ -634,8 +634,14 @@ There are two main issues that lead the token issuance problem hard.
  devices.
  Lymberopoulos et.
  al.
- [] showed from their empirical study on RSSI variability in ZigBee radio
- that antenna orientation is a critical factor of its variability.
+ 
+\begin_inset LatexCommand cite
+key "RSSI_yale"
+
+\end_inset
+
+ showed from their empirical study on RSSI variability in ZigBee radio that
+ antenna orientation is a critical factor of its variability.
  Therefore, in case we cannot fix antenna orientation, the system should
  suffer from variable RSSI.
  Not only the antenna orientation, but also other factors, such as antenna
@@ -646,7 +652,13 @@ There are two main issues that lead the token issuance problem hard.
 \begin_layout Standard
 Assuming that the RSSI token space is uniform and signals and noises are
  well defined, one can see the token issuance algorithm is similar to the
- binary detection problem [].
+ binary detection problem 
+\begin_inset LatexCommand cite
+key "binary_detection"
+
+\end_inset
+
+.
  Due to serious uncertainty of RSSI, however, it is challenging to define
  a mathematically tractable and reasonable binary detection model for it.
  So, we designed the detection problem from some observations of human behavior
@@ -656,16 +668,20 @@ Assuming that the RSSI token space is uniform and signals and noises are
 
 \begin_layout Standard
 There are many attempts to make use of RSSI to localize mobile nodes.
- [],[], and [] give rough approximation of the relationship between distance
- and RSSI.
+ 
+\begin_inset LatexCommand cite
+key "RSSI_local,RSSI_local2"
+
+\end_inset
+
+ give rough approximation of the relationship between distance and RSSI.
  Although the token space is roughly static and is definable in physical
  domain, the system's token algorithm is susceptible to a small noise when
  users are around the boundary of the service range.
  To avoid such case, we wanted to add hysteresis feature to the token issuance
  algorithm.
  Instead of having the same threshold value for both of issuance and expiration
- check routine (i.e.
- issuance threshold = -12, expiration threshold = -17).
+ check routine.
  
 \end_layout
 
