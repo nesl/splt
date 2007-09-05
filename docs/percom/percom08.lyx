@@ -982,17 +982,47 @@ reference "fig:User-Defined-RSSI"
 
 \end_inset
 
-, we placed four power measurement units and MICAz motes at the living room
+, we placed four power measurement units and MicaZ motes at the living room
  lamp, TV, coffee machine and bedroom lamp in a 1 bedroom and 1 bathroom
  house environment.
  There are two users carrying their active RFID tags.
- The other MICAz mote is used for snooping and collecting power measurement
+ The other MicaZ mote is used for snooping and collecting power measurement
  of the appliances and RSSI information.
  One apple PowerBook G4 is used for local data processing, storing and transferr
 ing.
  For the post-deployment data analysis, we stored RSSI, token information,
  power measurement, and timestamp at the sensorbase.
  During the deployment, users carried on their typical daily life.
+ 
+\end_layout
+
+\begin_layout Standard
+At the first step, we set the user defined service range as in figure 
+\begin_inset LatexCommand ref
+reference "fig:User-Defined-RSSI"
+
+\end_inset
+
+.
+ Along with the boundaries of the service range, we measured RSSI for among
+ all the appliances and tags.
+ For the unified threshold technique, we set the RSSI service range as in
+ the table 
+\begin_inset LatexCommand ref
+reference "tab:Unified-and-Calibrated"
+
+\end_inset
+
+ so that both of users can be fairly detected.
+ And for the calibrated threshold, we measeared RSSI value at several points
+ along the boundaries of the service range, then averaged the values and
+ rounded as shown in the table 
+\begin_inset LatexCommand ref
+reference "tab:Unified-and-Calibrated"
+
+\end_inset
+
+.
  
 \end_layout
 
@@ -2700,17 +2730,30 @@ To confirm whether the RSSI based token issuance algorithm works, we measured
  And then with the calibrated RSSI service range, we tried to issue tokens
  for 5 times at each point, then counted number of issuance.
  Based on this numbers, we plot the contour maps of the token space.
- And in the figure green, red and yellow color gives you the token space
- of TV, bedroom lamp and coffee machine, respectively.
+ And in the figure yellow, red, green and blue colors give you the token
+ space of the TV, the bedroom lamp, the living room lamp and the coffee
+ machine, respectively.
  Because of the imperfection of RSSI values, we can see some outliers at
- (),(),(), and see some none uniform contours in fig [].
+ (),(),(), and see some none uniform contours in figure 
+\begin_inset LatexCommand ref
+reference "fig:Measured-RSSI-Token"
+
+\end_inset
+
+.
  But, at the same time, it roughly gives us the real RSSI service range
  of the appliances.
  
 \end_layout
 
 \begin_layout Standard
-As in the figure [] the token space is roughly static and is definable.
+As in the figure 
+\begin_inset LatexCommand ref
+reference "fig:Measured-RSSI-Token"
+
+\end_inset
+
+, the token space is roughly static and is definable.
  The calibrated token issuance algorithm could be, however, susceptible
  to a small noise when users are around the boundaries of the service range.
  To avoid such case, we added hysteresis feature to the token issuance algorithm.
