@@ -319,6 +319,12 @@ In order to measure the consumption profile for a user, we first classify
 
 \begin_layout Subsubsection
 Appliance Classification
+\begin_inset LatexCommand label
+name "sub:Appliance-Classification"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -652,12 +658,16 @@ Case I.
 
 \begin_layout Enumerate
 Case II.
- For the class III appliances, the system could issue tokens for affiliated
- users at the first time when an appliance starts working, and by never
- expiring the tokens users will be responsible for energy consumed by the
- appliances.
- The extended token, therefore, could enable users to set a policy for them
- to be fair.
+ For the class III appliances as discussed in section 
+\begin_inset LatexCommand ref
+reference "sub:Appliance-Classification"
+
+\end_inset
+
+, the system could issue tokens for affiliated users when the appliance
+ starts working, and never expire the tokens.
+ Using the extended tokens users can be properly profiled for the class
+ III appliances also.
  
 \end_layout
 
