@@ -3146,6 +3146,32 @@ name "sec:Related-works"
 
 \end_layout
 
+\begin_layout Standard
+Wireless sensor networks society starts enabling to profile finer grained
+ information than previous users, diet sensing[], carbon footprinting[],
+ and citisniff project[] are good examples for that.
+ 
+\end_layout
+
+\begin_layout Standard
+There also are enabling technologies for WSNs to be instrumented and lasts
+ for a long time.
+ In 
+\begin_inset LatexCommand cite
+key "MEMS_scavenging"
+
+\end_inset
+
+, Leland et.
+ al.
+ developed a energy scavenging MEMs device for household electrical monitoring
+ that can enable mote class devices to lasts for a long time while it's
+ monitoring energy consumed by an appliance.
+ The device doesn't need to strip any wires of appliances to monitor and
+ scavenge energy.
+ 
+\end_layout
+
 \begin_layout Section
 Discussion
 \begin_inset LatexCommand label
