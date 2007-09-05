@@ -602,27 +602,28 @@ Further issues on Tokens
 \end_layout
 
 \begin_layout Standard
-Since the notion of the token is an abstraction for accounting energy consumptio
-n of individuals, one could extend it.
+The notion of the token is an abstraction for accounting energy consumption
+ of individuals, one could extend it.
  The extended token is a tuple associated with (Appliance ID, Type of energy,
  User ID, Time-out).
 \end_layout
 
 \begin_layout Standard
-One can imagine some other cases the token system cannot fairly distribute
- energy to users.
- And they can be resolved by doing this.
+With this extended token, the system can be more configurable and can avoid
+ some unfair energy distributions.
+ Those cases are as follows.
  
 \end_layout
 
 \begin_layout Standard
-case (1) that a case where there are two users.
+Case 1.
+ There are two users.
  After one uses an appliance intensively, then the other one came to the
  place and uses it for once.
- Imagine that the idle power consumption is almost the same as active power.
- Then the last one will unfairly be responsible for all the wasted energy
- until other one comes to the service range because the last ones token
- will not be expired for a long time.
+ If the idle power consumption is almost the same as active power, then
+ the last one will unfairly be responsible for all the wasted energy until
+ other one comes to the service range because the last ones token will not
+ be expired for a long time.
  By giving them different types of tokens, one token for the active power,
  the other token for the idle power, the system can relatively fairly distribute
  energy to users.
@@ -630,10 +631,11 @@ case (1) that a case where there are two users.
 \end_layout
 
 \begin_layout Standard
-case (2) For the class III appliances, the system could issue tokens for
- affiliated users at the first time when an appliance starts working, and
- by never expiring the tokens users will be responsible for energy consumed
- by the appliances.
+Case 2.
+ For the class III appliances, the system could issue tokens for affiliated
+ users at the first time when an appliance starts working, and by never
+ expiring the tokens users will be responsible for energy consumed by the
+ appliances.
  The extended token, therefore, could enable users to set a policy for them
  to be fair.
  
