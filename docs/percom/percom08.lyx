@@ -214,10 +214,6 @@ on from the user.
  
 \end_layout
 
-\begin_layout Subsection
-Application Description
-\end_layout
-
 \begin_layout Standard
 We developed and deployed an application to estimate the consumption under
  the first classification of appliances.
@@ -236,14 +232,6 @@ We developed and deployed an application to estimate the consumption under
  We provide the ability for the users to observe their consumption in real-time
  through our Spotlight server.
  
-\end_layout
-
-\begin_layout Subsection
-Contributions of the paper
-\end_layout
-
-\begin_layout Subsection
-Structure of the paper
 \end_layout
 
 \begin_layout Standard
@@ -422,7 +410,7 @@ After classifying appliances into the different classes, we can construct
 \end_layout
 
 \begin_layout Subsection
-Hardware/Software System Architecture
+System Architecture
 \end_layout
 
 \begin_layout Standard
@@ -505,6 +493,43 @@ Token System
 \end_layout
 
 \begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Standard
+\align center
+\begin_inset Graphics
+	filename figures/Fig1.png
+	lyxscale 50
+	width 75col%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Caption
+
+\begin_layout Standard
+Token Issue
+\begin_inset LatexCommand label
+name "fig:Token-Issue"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
 To account for energy consumption, we introduce the notion of token and
  service range.
  As per the first classification of appliances, when a user is present within
@@ -564,47 +589,6 @@ The user with a token for an appliance is responsible for the energy consumed
 If more than one users hold a token to an appliance, the energy consumption
  is equally divided amongst them.
  
-\end_layout
-
-\begin_layout Standard
-\begin_inset Float figure
-wide false
-sideways false
-status collapsed
-
-\begin_layout Standard
-\align center
-\begin_inset Graphics
-	filename figures/Fig1.png
-	lyxscale 50
-	width 75col%
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Caption
-
-\begin_layout Standard
-Token Issue
-\begin_inset LatexCommand label
-name "fig:Token-Issue"
-
-\end_inset
-
-
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\end_inset
-
-
 \end_layout
 
 \begin_layout Subsubsection
