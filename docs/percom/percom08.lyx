@@ -253,16 +253,13 @@ Class II: Physical presence is not required to benefit from the appliance.
 \end_layout
 
 \begin_layout Enumerate
-Finally, there are certain appliances that cannot be characterized into
- either of the two classifications.
+Class III: Always-on appliances.
  These appliances provide a service regardless of the duration of time a
  user is interacting with it.
- Examples of appliances in this class include refrigerator, alarm clocks,
+ Examples of appliances in this class include the refrigerator, alarm clocks,
  etc.
- Regardless of the amount of times a person accesses these appliances, they
- are still providing a service to the user.
- The refrigerator by keeping the food cold and the alarm clock by maintaining
- the time.
+ Regardless of the amount of times a person accesses these appliances by
+ being in the vicinity, they are still providing a service to the user.
  
 \end_layout
 
@@ -271,10 +268,9 @@ Accounting for energy consumption
 \end_layout
 
 \begin_layout Standard
-Most appliances can unambiguously be characterized into one of the three
- classes.
- Each class of appliances has a different policy for accounting for energy
- consumption.
+In order to unambiguously account for energy consumption for each of the
+ preceding class of appliances, has a different policy for accounting for
+ energy consumption.
  
 \end_layout
 
@@ -424,8 +420,8 @@ System Design
 \begin_layout Standard
 The design of the Spotlight system is centered around instrumentation of
  participating appliances.
- Each appliance is powered through a commercial-off-the-shelf power meter
- 
+ In the current protoype version Each appliance is powered through a commercial-
+off-the-shelf power meter 
 \begin_inset LatexCommand cite
 key "wattsup"
 
