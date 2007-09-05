@@ -450,7 +450,7 @@ The MICAz mote is equipped with a 2.4 GHz radio that is used for sensing
 ng their presence.
  The appliance motes listen for presence beacons and record the radio receive
  strength (RSSI) for any messages it receives.
- These RSSI values are forwarded to the Spotlight server.
+ These RSSI values are also forwarded to the Spotlight server.
 \end_layout
 
 \begin_layout Standard
@@ -458,7 +458,7 @@ The Spotlight server is a system that receives beacon strengths and power
  measurements from the various appliance motes and processes them together
  to identify user vicinity and eventually per user appliance energy consumption.
  The Spotlight server is connected to the appliance motes through a 'base
- station' MICAz mote attached to the server.
+ station' MICAz mote attached to the server's serial port.
  The Spotlight server uses the SensorBase 
 \begin_inset LatexCommand cite
 key "sensorbase.org"
@@ -467,7 +467,15 @@ key "sensorbase.org"
 
  package to record, maintain and retrieve the measurements from the appliance
  motes.
-  
+ The SensorBase package not only provides a consistent interface to access
+ the data but also gives fine grained privacy features that enable Spotlight
+ users to protect their sensitive information.
+\end_layout
+
+\begin_layout Standard
+The software subsystems built into the appliance mote consist of the SOS
+ operating system with custom application modules that implement the serial
+ protocol for the 
 \end_layout
 
 \begin_layout Subsection
@@ -625,7 +633,7 @@ name "sub:Binary-detection-problem"
 
 \end_inset
 
-Binary detection problem and token issuance problem
+Binary detection and the token issuance problem
 \end_layout
 
 \begin_layout Standard
@@ -935,7 +943,16 @@ key "panasonic"
 
 \end_inset
 
+The design of the user wearable tag needs some careful consideration to
+ improve the lifetime.
+ Table 
+\begin_inset LatexCommand ref
+reference "tab:Active-RFID-Tag"
 
+\end_inset
+
+ shows that the lifetime of the tag with a standard distribution of SOS
+ 
 \end_layout
 
 \begin_layout Section
@@ -3008,14 +3025,10 @@ reference "fig:Total-Useful/Wasted-Power"
 placement t
 wide true
 sideways false
-status collapsed
+status open
 
 \begin_layout Standard
 \align center
-\begin_inset Formula $ $
-\end_inset
-
-
 \begin_inset Graphics
 	filename figures/fig6.eps
 	lyxscale 50
@@ -3035,7 +3048,7 @@ name "fig:Total-Useful/Wasted-Power"
 
 \end_inset
 
-Total Useful/Wasted Power and Energy
+Useful and wasted consumption for all appliances
 \end_layout
 
 \end_inset
