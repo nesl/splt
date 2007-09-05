@@ -3168,9 +3168,9 @@ key "berkeley-dr"
  LEDs to indicate the current price scenario.
  The Berkeley system is deemed fairly close to our measurement of electrical
  energy, but is coarser grained.
- Their system is ?active? in its use of a feedback mechanism, whereas our
- system is designed to be a ?passive? profiling tool for an individual or
- a household.
+ Their system is autonomous in its use of a feedback mechanism, whereas
+ our system is designed to be a user-intertwined profiling tool for an individua
+l or a household.
  The Berkeley system requires communication with the utility provider and
  the provider has access to the energy consumption profile at all times.
  This may lead to privacy concerns.
