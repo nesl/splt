@@ -151,13 +151,19 @@ Energy production and consumption comes with a significant cost.
  with the cost of energy consumption.
  The cost is also affecting many households with significant consumption.
  The UN Economic and Social Commission for Asia and the Pacific is concerned
- with sustainable energy consumption [].
+ with sustainable energy consumption.
  Dr.
  Song et.
  al.
- claim that energy consumption pattern per household can provide a good
- way to determine socio-economic level of society as well as a solution
- for saving energy.
+ 
+\begin_inset LatexCommand cite
+key "UNESCAP"
+
+\end_inset
+
+claim that energy consumption pattern per household can provide a good way
+ to determine socio-economic level of society as well as a solution for
+ saving energy.
  The traditional dimensions measure the consumption at a very coarse-grained
  granularity.
  The consumption is given in terms of household and over a period of many
@@ -626,8 +632,8 @@ With this extended token, the system can be more configurable and can avoid
  
 \end_layout
 
-\begin_layout Standard
-Case 1.
+\begin_layout Enumerate
+Case I.
  There are two users.
  After one uses an appliance intensively, then the other one came to the
  place and uses it for once.
@@ -641,8 +647,8 @@ Case 1.
  
 \end_layout
 
-\begin_layout Standard
-Case 2.
+\begin_layout Enumerate
+Case II.
  For the class III appliances, the system could issue tokens for affiliated
  users at the first time when an appliance starts working, and by never
  expiring the tokens users will be responsible for energy consumed by the
