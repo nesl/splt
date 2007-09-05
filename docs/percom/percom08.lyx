@@ -3168,8 +3168,8 @@ key "MEMS_scavenging"
  that can enable mote class devices to lasts for a long time while it's
  monitoring energy consumed by an appliance.
  The device doesn't need to strip any wires of appliances to monitor and
- scavenge energy.
- 
+ scavenge energy and is well fit to our system.
+  
 \end_layout
 
 \begin_layout Section
