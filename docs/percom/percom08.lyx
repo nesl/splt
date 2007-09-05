@@ -3287,15 +3287,24 @@ Limitation on RSSI as a localization mechanism
 \begin_layout Standard
 RSSI is not a very precise and reliable measurement for deriving vicinity
  information.
- As shown in figure 
+ As discussed in section 
+\begin_inset LatexCommand ref
+reference "sub:Binary-detection-problem"
+
+\end_inset
+
+, it has inherent uncertainty associated with antenna characteristics and
+ time varying ambient conditions.
+ Figure 
 \begin_inset LatexCommand ref
 reference "fig:Measured-RSSI-Token"
 
 \end_inset
 
-, RSSI is a far cry from the desired service range for the appliances.
- RSSI requires further processing on data such as calibration and hysteresis
- to derive more coherent and valid information from it.
+ shows that RSSI is a far cry from the desired service range for the appliances.
+ Although heuristics such as calibration and hysteresis gave us relatively
+ reliable detection rate, we anticipate error rate could increase as number
+ of collocated appliances and users.
  
 \end_layout
 
