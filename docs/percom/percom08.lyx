@@ -716,10 +716,10 @@ key "RSSI_local,RSSI_local2"
 
 \end_inset
 
- give rough approximation of the relationship between distance and RSSI.
- Although the token space is roughly static and is definable in physical
- domain, the system's token algorithm is susceptible to a small noise when
- users are around the boundary of the service range.
+ give fair approximation of the relationship between distance and RSSI.
+ And, in the similar sense, the token space is roughly static and is definable
+ in the physical domain, the token issuance algorithm is susceptible to
+ a small noise when users are around the boundary of the service range.
  To avoid such case, we wanted to add hysteresis feature to the token issuance
  algorithm.
  Instead of having the same threshold value for both of issuance and expiration
@@ -1325,8 +1325,8 @@ reference "fig:User-Defined-RSSI"
 \end_inset
 
 , we placed four power measurement units and MicaZ motes at the living room
- lamp, TV, coffee machine and bedroom lamp in a 1 bedroom and 1 bathroom
- house environment.
+ lamp, TV, coffee machine and bedroom lamp in 1 bedroom and 1 bathroom apartment
+ environment.
  There are two users carrying their active RFID tags.
  The other MicaZ mote is used for snooping and collecting power measurement
  of the appliances and RSSI information.
@@ -2553,7 +2553,7 @@ Evaluation of RSSI based token space
 \begin_layout Standard
 To confirm whether the RSSI based token issuance algorithm works, we measured
  the number of tokens issued at each point of predefined grids.
- First the users define a rough service range for their appliances.
+ Firstly, the users define a rough service range for their appliances.
  Then users traverse along the boundaries with their RFID tags and the system
  averages RSSI for the initial calibration.
  After setting up the RSSI based service range, we made 30cm by 30cm grids
@@ -2561,11 +2561,16 @@ To confirm whether the RSSI based token issuance algorithm works, we measured
  And then with the calibrated RSSI service range, we tried to issue tokens
  for 5 times at each point, then counted number of issuance.
  Based on this numbers, we plot the contour maps of the token space.
- And in the figure yellow, red, green and blue colors give you the token
- space of the TV, the bedroom lamp, the living room lamp and the coffee
- machine, respectively.
- Because of the imperfection of RSSI values, we can see some outliers at
- (),(),(), and see some none uniform contours in figure 
+ And in figure 
+\begin_inset LatexCommand ref
+reference "fig:User-Defined-RSSI"
+
+\end_inset
+
+ yellow, red, green and blue colors give you the token space of the TV,
+ the bedroom lamp, the living room lamp and the coffee machine, respectively.
+ Because of the imperfection of RSSI values, we can see some outliers, and
+ see some none uniform contours in figure 
 \begin_inset LatexCommand ref
 reference "fig:Measured-RSSI-Token"
 
