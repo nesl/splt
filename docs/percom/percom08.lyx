@@ -169,8 +169,7 @@ claim that energy consumption pattern per household can provide a good way
  The consumption is given in terms of household and over a period of many
  days.
  This allows for only a partial awareness on the part of the users about
- their energy consumption especially in a big household or in a office or
- lab setting.
+ their energy consumption.
  In such settings, if measurement of energy consumption was made available
  at a finer granularity, it would help users in pinpointing specific habits
  or trends, modifying which would aid in significant improvements in energy
@@ -188,7 +187,7 @@ key "Derintelligente"
  to make consumers more aware of their consumption profile.
  The Der Intelligente Stromz
 \begin_inset ERT
-status open
+status collapsed
 
 \begin_layout Standard
 
@@ -266,7 +265,7 @@ reference "sec:System-Design"
 
 \end_inset
 
- details the design and implementation of our system.
+ details the design and prototype implementation of our system.
  In section 
 \begin_inset LatexCommand ref
 reference "sec:Evaluation"
@@ -274,14 +273,16 @@ reference "sec:Evaluation"
 \end_inset
 
  we evaluate our system against the ground truth and for performance.
- We discuss some limitations and observations in section 
+ We discuss some limitations of our approach and some observations in Section
+ 
 \begin_inset LatexCommand ref
 reference "sec:Discussion"
 
 \end_inset
 
 .
- We offer some related work in section 
+ Though no prior work targets energy profiling at an individual level, we
+ note some projects of similar nature in Section 
 \begin_inset LatexCommand ref
 reference "sec:Related-works"
 
@@ -408,7 +409,7 @@ reference "sub:Token-System"
 \end_inset
 
  can be modified to issue indefinite tokens to all users of the appliances
- and the consumption will be split equally among them.
+ and the consumption is essentially split equally among them.
  
 \end_layout
 
@@ -427,14 +428,20 @@ There are certain cases of energy consumption which cannot be properly disambigu
 ated using the mechanism of physical vicinity for Class I devices.
  It is possible that a user is present in the vicinity of the appliance
  but not actually receiving any service from it.
- For example, a person maybe present in the vicinity of a television but
+ For example, a person may be present in the vicinity of a television but
  not actually watching it (there would be someone else in the room watching
  it).
- Presently, our system will claim that the person is actually benefiting
- from it as the person is inside the service range.
- This is a case of the pairing problem which is under research on a separate
- project in our lab [David Jea].
- We fail to account for this case and will over estimate the consumption
+ Presently, our system assumes the user is actually benefiting from it as
+ she is inside the service range.
+ This is a case of the pairing problem noted recently by Jea, et al.
+ 
+\begin_inset LatexCommand cite
+key "pairing_problem"
+
+\end_inset
+
+.
+ Spotlight fails to account for this case and will overestimate the consumption
  of the user.
  
 \end_layout
@@ -453,17 +460,19 @@ System Architecture
 \begin_layout Standard
 The design of the Spotlight system is centered around instrumentation of
  participating appliances.
- In the current protoype version Each appliance is powered through a commercial-
-off-the-shelf power meter 
+ In the current prototype version each appliance is powered through a commercial
+-off-the-shelf power meter 
 \begin_inset LatexCommand cite
 key "wattsup"
 
 \end_inset
 
  that measures the energy consumption for the appliance.
- The power meter provides a serial interface for external logging with a
- well documented serial protocol.
- This serial interface connects to a MICAz 
+ (In future revisions of Spotlight, we aim to build a compact power sensing
+ platform that would be embedded within the appliance).
+ This power meter provides a serial interface for external logging with
+ a well documented serial protocol.
+ The serial interface connects to a MICAz 
 \begin_inset LatexCommand cite
 key "micaz"
 
@@ -2593,7 +2602,7 @@ reference "fig:Measured-RSSI-Token"
 \end_layout
 
 \begin_layout Standard
-As in figure 
+As in the figure 
 \begin_inset LatexCommand ref
 reference "fig:Measured-RSSI-Token"
 
@@ -2988,13 +2997,13 @@ reference "sub:Limitations-of-the"
  vicinity of the appliance, they will expire.
  If the appliance had been left on and the wasted energy was been accounted
  against the previous user, it will now be accounted against the new user.
- The new user maybe oblivious to the existance of the appliance and will
+ The new user maybe oblivious to the existence of the appliance and will
  be accounted for it energy consumption unfairly.
  One resolve maybe to allow for a grace period for the user to exit the
  vicinity of the appliance.
  The token should only be issued if the user remains in the vicinity for
- a prelongated period of time.
- However, this is just a generaliazation that may not always work.
+ a prolonged period of time.
+ However, this is just a generalization that may not always work.
  One school of thought may dictate that if a user finds an appliance running
  with no users, the user must be responsible to turn it off.
  
@@ -3012,7 +3021,7 @@ There are different schools of thought on the notion that even though many
  user, U2.
  User U1 might be uncomfortable with having her/his energy consumption profiled
  based on the appliances present in the household of user U2.
- User U2 might not be as energy consious as user U1 is and hence U1 might
+ User U2 might not be as energy conscious as user U1 is and hence U1 might
  be discouraged from visiting U2.
  One school of thought dictates that since U1 is unaware of the efficiency
  of the appliances in U2's household, U1 should not be accounted for their
@@ -3129,7 +3138,7 @@ key "citysniff"
 
 \begin_layout Standard
 The MEMS community has also developed new technology to monitor the energy
- consumption of appliances less intruisively.
+ consumption of appliances less intrusively.
  Leland et.
  al.
  
