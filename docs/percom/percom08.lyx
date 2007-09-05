@@ -3051,7 +3051,7 @@ reference "fig:Measured-RSSI-Token"
  shows that RSSI is a far cry from the desired service range for the appliances.
  Although heuristics such as calibration and hysteresis gave us relatively
  reliable detection rate, we anticipate error rate could increase as number
- of collocated appliances and users.
+ of collocated appliances and users increases.
  
 \end_layout
 
