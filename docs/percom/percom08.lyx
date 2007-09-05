@@ -2586,8 +2586,8 @@ reference "fig:User-Defined-RSSI"
 
 \end_inset
 
- yellow, red, green and blue colors give you the token space of the TV,
- the bedroom lamp, the living room lamp and the coffee machine, respectively.
+ the four shaded regions give the token spaces of the TV, the bedroom lamp,
+ the living room lamp and the coffee machine, respectively.
  Due to the imperfection of RSSI values, we see some outliers, and see some
  no uniform contours in the figure.
  At the same time, it roughly gives us the real RSSI service range of the
