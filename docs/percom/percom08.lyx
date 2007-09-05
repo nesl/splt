@@ -214,137 +214,6 @@ on from the user.
  
 \end_layout
 
-\begin_layout Standard
-To measure the consumption profile for a user, we first classify the typical
- appliances into different categories based on the type of service they
- provide and then offer policies to monitor and measure the energy consumption
- of those appliances.
- 
-\end_layout
-
-\begin_layout Subsection
-Classification of Appliances
-\end_layout
-
-\begin_layout Standard
-Based on our analysis of different appliances in use, we classify them in
- terms of the way they provide service: 
-\end_layout
-
-\begin_layout Enumerate
-Class I: Physical presence is needed to receive the service from the appliance.
- Only persons within the vicinity of the appliance can benefit from it,
- user's outside the service range do not receive service.
- Most appliances in common use fall into this class.
- Examples of appliances in this class include the television, coffee machine,
- etc.
- This class includes 'shared use' appliances which may provide services
- to more than one user at the same time.
- 
-\end_layout
-
-\begin_layout Enumerate
-Class II: Physical presence is not required to benefit from the appliance.
- Persons are able to receive service from these appliances without being
- present in the vicinity of the appliance.
- Typically this is done by logging into the appliance remotely.
- Examples of appliances in this class include servers, networked printers,
- etc.
-\end_layout
-
-\begin_layout Enumerate
-Class III: Always-on appliances.
- These appliances provide a service regardless of the duration of time a
- user is interacting with it.
- Examples of appliances in this class include the refrigerator, alarm clocks,
- etc.
- Regardless of the amount of times a person accesses these appliances by
- being in the vicinity, they are still providing a service to the user.
- 
-\end_layout
-
-\begin_layout Subsection
-Accounting for energy consumption
-\end_layout
-
-\begin_layout Standard
-In order to unambiguously account for energy consumption for each of the
- preceding class of appliances, Spotlight defines different mechanism for
- each class: 
-\end_layout
-
-\begin_layout Enumerate
-For Class I appliances, consumption is determined by physical vicinity of
- the user to the appliance.
- The key contribution of our work is in measuring the consumption for these
- set of appliances.
-\end_layout
-
-\begin_layout Enumerate
-Class II appliances are much harder to account for and have not been considered
- within the current version of Spotlight.
- We imagine that a mechanism other than physical vicinity could be used
- as a proxy.
- For example, accounting for energy in a networked printer can be determined
- by analyzing access logs.
- However, enabling this would require a per appliance implementation based
- on the type of logging if any it presents.
- Another mechanism to account for consumption of Class II devices could
- be simply to 'charge' the owner or operator of the appliance for the energy
- consumption.
- There usually exists a relationship between a user and the owner of the
- appliance allowing the user its service benefit.
- This relationship may take an economic or personal form.
- 
-\end_layout
-
-\begin_layout Enumerate
-The appliances in Class III can be handled by an extension of Class I appliances.
- The token system as introduced in section can be modified to issue indefinite
- tokens to all users of the appliances and the consumption will be split
- equally among them.
- 
-\end_layout
-
-\begin_layout Subsection
-Limitations of the policies
-\begin_inset LatexCommand label
-name "sub:Limitations-of-the"
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-There are certain cases of energy consumption which we are unable to properly
- account for.
- Policy one can be stated as being around and being benefited.
- Policy two can be stated as not being around and being benefited.
- One policy case we cannot properly account for is being around and not
- being benefited.
- It is possible that a person is present in the vicinity of the appliance
- but not actually receiving any services from it.
- For example, a person maybe present in the vicinity of a television but
- not actually watching it.
- If the television is turned on, the person will be charged for it but the
- person is not actually benefiting from it.
- Presently, our system will claim that the person is actually benefiting
- from it as the person is inside the service range.
- This is a case of the pairing problem which is under research on a separate
- project in our lab [David Jea].
- We fail to account for this case and will over estimate the consumption
- of the user.
- 
-\end_layout
-
-\begin_layout Standard
-After classifying appliances into the different classes, we can construct
- an application that will monitor the energy consumption of the different
- classes of appliances.
- 
-\end_layout
-
 \begin_layout Subsection
 Application Description
 \end_layout
@@ -414,7 +283,146 @@ name "sec:System-Design"
 
 \end_inset
 
-System Design
+Spotlight System Design
+\end_layout
+
+\begin_layout Subsection
+Energy Accounting
+\end_layout
+
+\begin_layout Standard
+In order to measure the consumption profile for a user, we first classify
+ the typical appliances into different categories based on the type of service
+ they provide and then offer policies to monitor and measure the energy
+ consumption of those appliances.
+ 
+\end_layout
+
+\begin_layout Subsubsection
+Appliance Classification
+\end_layout
+
+\begin_layout Standard
+Based on our analysis of different appliances in use, we classify them in
+ terms of the way they provide service: 
+\end_layout
+
+\begin_layout Enumerate
+Class I: Physical presence is needed to receive the service from the appliance.
+ Only persons within the vicinity of the appliance can benefit from it,
+ user's outside the service range do not receive service.
+ Most appliances in common use fall into this class.
+ Examples of appliances in this class include the television, coffee machine,
+ etc.
+ This class includes 'shared use' appliances which may provide services
+ to more than one user at the same time.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Class II: Physical presence is not required to benefit from the appliance.
+ Persons are able to receive service from these appliances without being
+ present in the vicinity of the appliance.
+ Typically this is done by logging into the appliance remotely.
+ Examples of appliances in this class include servers, networked printers,
+ etc.
+\end_layout
+
+\begin_layout Enumerate
+Class III: Always-on appliances.
+ These appliances provide a service regardless of the duration of time a
+ user is interacting with it.
+ Examples of appliances in this class include the refrigerator, alarm clocks,
+ etc.
+ Regardless of the amount of times a person accesses these appliances by
+ being in the vicinity, they are still providing a service to the user.
+ 
+\end_layout
+
+\begin_layout Subsubsection
+Accounting for energy consumption
+\end_layout
+
+\begin_layout Standard
+In order to unambiguously account for energy consumption for each of the
+ preceding class of appliances, Spotlight defines different mechanism for
+ each class: 
+\end_layout
+
+\begin_layout Enumerate
+For Class I appliances, consumption is determined by physical vicinity of
+ the user to the appliance.
+ The key contribution of our work is in measuring the consumption for these
+ set of appliances.
+\end_layout
+
+\begin_layout Enumerate
+Class II appliances are much harder to account for and have not been considered
+ within the current version of Spotlight.
+ We imagine that a mechanism other than physical vicinity could be used
+ as a proxy.
+ For example, accounting for energy in a networked printer can be determined
+ by analyzing access logs.
+ However, enabling this would require a per appliance implementation based
+ on the type of logging if any it presents.
+ Another mechanism to account for consumption of Class II devices could
+ be simply to 'charge' the owner or operator of the appliance for the energy
+ consumption.
+ There usually exists a relationship between a user and the owner of the
+ appliance allowing the user its service benefit.
+ This relationship may take an economic or personal form.
+ 
+\end_layout
+
+\begin_layout Enumerate
+The appliances in Class III can be handled as an extension of Class I appliances.
+ The token system as introduced in Section 
+\begin_inset LatexCommand ref
+reference "sub:Token-System"
+
+\end_inset
+
+ can be modified to issue indefinite tokens to all users of the appliances
+ and the consumption will be split equally among them.
+ 
+\end_layout
+
+\begin_layout Subsubsection
+Limitations of using physical vicinity
+\begin_inset LatexCommand label
+name "sub:Limitations-of-the"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+There are certain cases of energy consumption which cannot be properly disambigu
+ated using the mechanism of physical vicinity for Class I devices.
+ It is possible that a user is present in the vicinity of the appliance
+ but not actually receiving any service from it.
+ For example, a person maybe present in the vicinity of a television but
+ not actually watching it (there would be someone else in the room watching
+ it).
+ Presently, our system will claim that the person is actually benefiting
+ from it as the person is inside the service range.
+ This is a case of the pairing problem which is under research on a separate
+ project in our lab [David Jea].
+ We fail to account for this case and will over estimate the consumption
+ of the user.
+ 
+\end_layout
+
+\begin_layout Standard
+After classifying appliances into the different classes, we can construct
+ an application that will monitor the energy consumption of the different
+ classes of appliances.
+ 
+\end_layout
+
+\begin_layout Subsection
+Hardware/Software System Architecture
 \end_layout
 
 \begin_layout Standard
@@ -742,7 +750,7 @@ name "sub:User-Tag-Design"
 
 \end_inset
 
-User Tag Design
+User tag design
 \end_layout
 
 \begin_layout Standard
