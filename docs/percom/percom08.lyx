@@ -1057,7 +1057,7 @@ reference "sec:System-Design"
 
 , the hysteresis threshold also makes use of the same threshold as the calibrate
 d threshold does.
-  
+ 
 \end_layout
 
 \begin_layout Standard
@@ -3257,8 +3257,8 @@ reference "tab:Token-Issue-Success,"
 \end_layout
 
 \begin_layout Standard
-For the future works, we can further the detection algorithm by correlating
- multiple RSSI readings among appliances.
+For the future works, we can further the detection techniques by correlating
+ multiple RSSI readings among appliances with their relative positions.
  Along with that, more complex deployment setting among collocated appliances
  and more users can reveal more interesting observations regarding energy
  optimizing concerns.
