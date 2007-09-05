@@ -3200,6 +3200,33 @@ reference "sub:Limitations-of-the"
 \end_layout
 
 \begin_layout Subsection
+Subgroups
+\end_layout
+
+\begin_layout Standard
+There are different schools of thought on the notion that even though many
+ people might be present in the service range of an appliance, only a subgroup
+ of them should be charged for it.
+ This argument is highlighted when a user, U1 visits the household of another
+ user, U2.
+ User U1 might be uncomfortable with having her/his energy consumption profiled
+ based on the appliances present in the household of user U2.
+ User U2 might not be as energy consious as user U1 is and hence U1 might
+ be discouraged from visiting U2.
+ One school of thought dictates that since U1 is unaware of the efficiency
+ of the appliances in U2's household, U1 should not be accounted for their
+ energy consumption.
+ Another thought process claims that visiting another user's household is
+ part of a user's activities and hence the energy consumption should be
+ accounted against U1.
+ If U1 is concerned about his/her consumption, he/she can try to convince
+ U2 to modify the appliances or modify his/her activities by visiting U2
+ less frequently.
+ These are social and policy decisions and beyond the scope of this paper.
+ 
+\end_layout
+
+\begin_layout Subsection
 Limitation on RSSI as a localization mechanism
 \end_layout
 
