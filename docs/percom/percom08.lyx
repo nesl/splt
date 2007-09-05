@@ -269,39 +269,39 @@ Accounting for energy consumption
 
 \begin_layout Standard
 In order to unambiguously account for energy consumption for each of the
- preceding class of appliances, has a different policy for accounting for
- energy consumption.
- 
+ preceding class of appliances, Spotlight defines different mechanism for
+ each class: 
 \end_layout
 
 \begin_layout Enumerate
-For the class one appliances, consumption is determined by physical vicinity
- of the user to the appliance.
+For Class I appliances, consumption is determined by physical vicinity of
+ the user to the appliance.
  The key contribution of our work is in measuring the consumption for these
  set of appliances.
 \end_layout
 
 \begin_layout Enumerate
-A number of policies can be used here.
- Based on the available information such as account logs, it can be determined
- who used which appliance for what period of time.
- Implementing this policy will require a per appliance implementation based
- on the type of logging an appliance if any it presents.
- Another policy to account for consumption here is to simply charge the
- owner or the operator of the appliance for the energy consumption.
- It is determined that there exists a relationship between the user and
- the owner of the appliance based on which the owner is allowing the user
- its use.
- This relationship may take a economic or a social personal form.
- Such a relationship can be determined for each appliance in this class.
+Class II appliances are much harder to account for and have not been considered
+ within the current version of Spotlight.
+ We imagine that a mechanism other than physical vicinity could be used
+ as a proxy.
+ For example, accounting for energy in a networked printer can be determined
+ by analyzing access logs.
+ However, enabling this would require a per appliance implementation based
+ on the type of logging if any it presents.
+ Another mechanism to account for consumption of Class II devices could
+ be simply to 'charge' the owner or operator of the appliance for the energy
+ consumption.
+ There usually exists a relationship between a user and the owner of the
+ appliance allowing the user its service benefit.
+ This relationship may take an economic or personal form.
  
 \end_layout
 
 \begin_layout Enumerate
-The appliances in this class can be handled by an extension of class one
- appliances.
- The token system as introduced in section XX can be modified to issue indefinit
-e tokens to all users of the appliances and the consumption will be split
+The appliances in Class III can be handled by an extension of Class I appliances.
+ The token system as introduced in section can be modified to issue indefinite
+ tokens to all users of the appliances and the consumption will be split
  equally among them.
  
 \end_layout
@@ -488,6 +488,11 @@ key "sos05mobisys"
 \end_layout
 
 \begin_layout Subsection
+\begin_inset LatexCommand label
+name "sub:Token-System"
+
+\end_inset
+
 Token System
 \end_layout
 
@@ -732,6 +737,11 @@ Hysteresis Threshold : The same as the calibrated threshold, but set the
 \end_layout
 
 \begin_layout Subsection
+\begin_inset LatexCommand label
+name "sub:User-Tag-Design"
+
+\end_inset
+
 User Tag Design
 \end_layout
 
@@ -996,6 +1006,11 @@ In this section, we describe our experimental results in three aspects:
 \end_layout
 
 \begin_layout Subsection
+\begin_inset LatexCommand label
+name "sub:Deployment-setting"
+
+\end_inset
+
 Deployment setting
 \end_layout
 
@@ -2747,6 +2762,11 @@ Measured RSSI Token Space
 \end_layout
 
 \begin_layout Subsection
+\begin_inset LatexCommand label
+name "sub:Evaluation-of-RSSI"
+
+\end_inset
+
 Evaluation of RSSI based token space
 \end_layout
 
@@ -2796,6 +2816,11 @@ reference "fig:Measured-RSSI-Token"
 \end_layout
 
 \begin_layout Subsection
+\begin_inset LatexCommand label
+name "sub:Ground-truth/comparison"
+
+\end_inset
+
 Ground truth/comparison
 \end_layout
 
@@ -2902,6 +2927,11 @@ Simple thresholding and calibrated techniques suffers significantly from
 \end_layout
 
 \begin_layout Subsection
+\begin_inset LatexCommand label
+name "sub:Results/graphs"
+
+\end_inset
+
 Results/graphs
 \end_layout
 
