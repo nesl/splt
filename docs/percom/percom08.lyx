@@ -1328,28 +1328,28 @@ Unified and Calibrated RSSI service range
 \end_layout
 
 \begin_layout Standard
-As given in fig 
+As shown in fig 
 \begin_inset LatexCommand ref
 reference "fig:User-Defined-RSSI"
 
 \end_inset
 
-, we placed four power measurement units and MicaZ motes at the living room
- lamp, TV, coffee machine and bedroom lamp in 1 bedroom and 1 bathroom apartment
- environment.
- There are two users carrying their active RFID tags.
- The other MicaZ mote is used for snooping and collecting power measurement
- of the appliances and RSSI information.
- One apple PowerBook G4 is used for local data processing, storing and transferr
-ing.
+, we placed four power measurement units and MicaZ motes with the living
+ room lamp, TV, coffee machine and bedroom lamp in 1 bedroom and 1 bathroom
+ apartment environment.
+ Two users carry active RFID tags.
+ The MicaZ motes on the appliances are used for snooping and collecting
+ power measurement of the appliances and RSSI information.
+ A laptop is used for local data processing, storing and transferring of
+ data.
  For the post-deployment data analysis, we stored RSSI, token information,
- power measurement, and timestamp at the sensorbase.
- During the deployment, users carried on their typical daily life.
+ power measurement, and timestamp on sensorbase.
+ During the deployment, users carried on with their normal activities.
  
 \end_layout
 
 \begin_layout Standard
-At the first step, we set the user defined service range as in figure 
+As the first step, we set the user defined service range as in figure 
 \begin_inset LatexCommand ref
 reference "fig:User-Defined-RSSI"
 
@@ -1365,10 +1365,10 @@ reference "tab:Unified-and-Calibrated"
 
 \end_inset
 
- so that both of users can be fairly detected.
- And for the calibrated threshold, we measeared RSSI value at several points
- along the boundaries of the service range, then averaged the values and
- rounded as shown in the table 
+ so that both of users can be detected fairly.
+ For the calibrated threshold, we measeared RSSI value at several points
+ along the boundaries of the service range, averaged the values and rounded
+ as shown in the table 
 \begin_inset LatexCommand ref
 reference "tab:Unified-and-Calibrated"
 
@@ -1381,8 +1381,8 @@ reference "sec:System-Design"
 
 \end_inset
 
-, the hysteresis threshold also makes use of the same threshold as the calibrate
-d threshold does.
+, the hysteresis threshold also uses the same threshold as the calibrated
+ threshold does.
  
 \end_layout
 
@@ -2562,8 +2562,8 @@ Evaluation of RSSI based token space
 
 \begin_layout Standard
 To confirm whether the RSSI based token issuance algorithm works, we measured
- the number of tokens issued at each point of predefined grids.
- Firstly, the users define a rough service range for their appliances.
+ the number of tokens issued at each point of on a predefined grid.
+ First, the users define a rough service range for the participating appliances.
  Then users traverse along the boundaries with their RFID tags and the system
  averages RSSI for the initial calibration.
  After setting up the RSSI based service range, we made 30cm by 30cm grids
