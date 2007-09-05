@@ -228,27 +228,28 @@ Classification of Appliances
 
 \begin_layout Standard
 Based on our analysis of different appliances in use, we classify them in
- terms of the service they provide: 
+ terms of the way they provide service: 
 \end_layout
 
 \begin_layout Enumerate
 Class I: Physical presence is needed to receive the service from the appliance.
+ Only persons within the vicinity of the appliance can benefit from it,
+ user's outside the service range do not receive service.
+ Most appliances in common use fall into this class.
  Examples of appliances in this class include the television, coffee machine,
  etc.
- Only persons within the vicinity of the appliance can benefit from it.
- Most appliances in common use fall into this class.
- This class includes appliances which may provide services to more than
- one user at the same time.
+ This class includes 'shared use' appliances which may provide services
+ to more than one user at the same time.
  
 \end_layout
 
 \begin_layout Enumerate
-Physical presence is not required to benefit from the appliance.
- Examples of appliances in this class include servers, networked printers,
- etc.
+Class II: Physical presence is not required to benefit from the appliance.
  Persons are able to receive service from these appliances without being
  present in the vicinity of the appliance.
  Typically this is done by logging into the appliance remotely.
+ Examples of appliances in this class include servers, networked printers,
+ etc.
 \end_layout
 
 \begin_layout Enumerate
