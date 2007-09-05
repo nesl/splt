@@ -1023,7 +1023,15 @@ reference "tab:Unified-and-Calibrated"
 \end_inset
 
 .
- 
+ As we mentioned in section 
+\begin_inset LatexCommand ref
+reference "sec:System-Design"
+
+\end_inset
+
+, the hysteresis threshold also makes use of the same threshold as the calibrate
+d threshold does.
+  
 \end_layout
 
 \begin_layout Standard
@@ -1343,7 +1351,7 @@ Unified and Calibrated RSSI service range
 \begin_inset Float table
 wide true
 sideways false
-status open
+status collapsed
 
 \begin_layout Standard
 \align center
