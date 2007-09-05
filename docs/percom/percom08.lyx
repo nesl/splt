@@ -627,31 +627,27 @@ Further issues on Tokens
 
 \begin_layout Standard
 The notion of the token is an abstraction for accounting energy consumption
- of individuals, one could extend it.
- The extended token is a tuple associated with (Appliance ID, Type of energy,
- User ID, Time-out).
+ of individuals.
+ This abstraction can be extended to include a (Appliance ID, Type of energy,
+ User ID, Time-out) tuple.
 \end_layout
 
 \begin_layout Standard
 With this extended token, the system can be more configurable and can avoid
  some unfair energy distributions.
- Those cases are as follows.
- 
+ Those cases are as follows: 
 \end_layout
 
 \begin_layout Enumerate
 Case I.
  There are two users.
- After one uses an appliance intensively, then the other one came to the
- place and uses it for once.
+ After one uses an appliance intensively, the other user enters the service
+ range and uses it for a shorter duration.
  If the idle power consumption is almost the same as active power, then
- the last one will unfairly be responsible for all the wasted energy until
- other one comes to the service range because the last ones token will not
- be expired for a long time.
- By giving them different types of tokens, one token for the active power,
- the other token for the idle power, the system can relatively fairly distribute
- energy to users.
- 
+ the lastest user will unfairly be responsible for all the wasted energy
+ until another user enters the service range.
+ By issuing different types of tokens, one for active power and one for
+ idle power, the system can distribute energy to users with more fairness.
 \end_layout
 
 \begin_layout Enumerate
