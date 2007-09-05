@@ -2934,8 +2934,14 @@ status open
 
 \end_inset
 
-hler) [], in Karlsruhe, Germany provides users with realtime support for
- observing the electrical energy consumption.
+hler) 
+\begin_inset LatexCommand cite
+key "Derintelligente"
+
+\end_inset
+
+, in Karlsruhe, Germany provides users with realtime support for observing
+ the electrical energy consumption.
  The power meter that maintains the energy consumption for the entire household
  for billing purposes is instrumented to release such data.
  This data is released on the local network so the users can view it from
@@ -2946,13 +2952,31 @@ hler) [], in Karlsruhe, Germany provides users with realtime support for
 
 \begin_layout Standard
 The wireless sensor network community profiles different data for the user.
- In diet sensing [], the calorie intake of a person is measured by taking
- pictures of the food through a wearable camera.
- The carbon footprint project [] monitors the transportation profile of
- a user and estimates the amount of pollution the user's transportation
- choice generated and the amount of pollution the user was exposed to.
- In the citisniff project [], a household is instrumented to measure the
- amount of chemicals and other pollutants in the house.
+ In diet sensing 
+\begin_inset LatexCommand cite
+key "dietsensing"
+
+\end_inset
+
+, the calorie intake of a person is measured by taking pictures of the food
+ through a wearable camera.
+ The carbon footprint project 
+\begin_inset LatexCommand cite
+key "carbonfootprint"
+
+\end_inset
+
+ monitors the transportation profile of a user and estimates the amount
+ of pollution the user's transportation choice generated and the amount
+ of pollution the user was exposed to.
+ In the citisniff project 
+\begin_inset LatexCommand cite
+key "citysniff"
+
+\end_inset
+
+, a household is instrumented to measure the amount of chemicals and other
+ pollutants in the house.
  
 \end_layout
 
