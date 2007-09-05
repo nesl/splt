@@ -2576,11 +2576,11 @@ To confirm whether the RSSI based token issuance algorithm works, we measured
  Then users traverse along the boundaries with their RFID tags and the system
  averages RSSI for the initial calibration.
  After setting up the RSSI based service range, we made 30cm by 30cm grids
- over the house except the bathroom.
- And then with the calibrated RSSI service range, we tried to issue tokens
- for 5 times at each point, then counted number of issuance.
- Based on this numbers, we plot the contour maps of the token space.
- And in figure 
+ throughout the house.
+ Then with the calibrated RSSI service range, we tried to issue 5 tokens
+ at each point, and counted the actual number of issued tokens.
+ Based on these numbers, we plot the contour maps of the token space.
+ In figure 
 \begin_inset LatexCommand ref
 reference "fig:User-Defined-RSSI"
 
@@ -2588,16 +2588,10 @@ reference "fig:User-Defined-RSSI"
 
  yellow, red, green and blue colors give you the token space of the TV,
  the bedroom lamp, the living room lamp and the coffee machine, respectively.
- Because of the imperfection of RSSI values, we can see some outliers, and
- see some none uniform contours in figure 
-\begin_inset LatexCommand ref
-reference "fig:Measured-RSSI-Token"
-
-\end_inset
-
-.
- But, at the same time, it roughly gives us the real RSSI service range
- of the appliances.
+ Due to the imperfection of RSSI values, we see some outliers, and see some
+ no uniform contours in the figure.
+ At the same time, it roughly gives us the real RSSI service range of the
+ appliances.
  
 \end_layout
 
