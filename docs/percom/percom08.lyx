@@ -274,6 +274,13 @@ reference "sec:Evaluation"
 \end_inset
 
  we evaluate our system against the ground truth and for performance.
+ We discuss some limitations and observations in section 
+\begin_inset LatexCommand ref
+reference "sec:Discussion"
+
+\end_inset
+
+.
  We offer some related work in section 
 \begin_inset LatexCommand ref
 reference "sec:Related-works"
@@ -2550,10 +2557,9 @@ Evaluation of RSSI based token space
 \begin_layout Standard
 To confirm whether the RSSI based token issuance algorithm works, we measured
  the number of tokens issued at each point of predefined grids.
- Firstly, users define the service range of the appliances based upon physical
- vicinity information then draw rough boundaries.
- While users are walking along the boundaries with their RFID tags, the
- system averages RSSI for the initial calibration.
+ First the users define a rough service range for their appliances.
+ Then users traverse along the boundaries with their RFID tags and the system
+ averages RSSI for the initial calibration.
  After setting up the RSSI based service range, we made 30cm by 30cm grids
  over the house except the bathroom.
  And then with the calibrated RSSI service range, we tried to issue tokens
@@ -2933,6 +2939,112 @@ reference "fig:Total-Useful/Wasted-Power"
 \end_layout
 
 \begin_layout Section
+Discussion
+\begin_inset LatexCommand label
+name "sec:Discussion"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Some of the limitation and anomalies of our system have already been discussed
+ above.
+ Here we discuss some other limitations and issues in using this system.
+ 
+\end_layout
+
+\begin_layout Subsection
+More limitation on policies
+\end_layout
+
+\begin_layout Standard
+In section 
+\begin_inset LatexCommand ref
+reference "sub:Limitations-of-the"
+
+\end_inset
+
+, we discussed the limitation of the application in identifying the case
+ of being present and not being benefited.
+ Another issue with using vicinity information is when a user passes through
+ the vicinity of an appliance with no intention of using it and does not
+ benefit from it.
+ According to our token issuance policy, the user will be issued a token
+ for the appliance.
+ If there exists some tokens for the appliance issued to users not in the
+ vicinity of the appliance, they will expire.
+ If the appliance had been left on and the wasted energy was been accounted
+ against the previous user, it will now be accounted against the new user.
+ The new user maybe oblivious to the existance of the appliance and will
+ be accounted for it energy consumption unfairly.
+ One resolve maybe to allow for a grace period for the user to exit the
+ vicinity of the appliance.
+ The token should only be issued if the user remains in the vicinity for
+ a prelongated period of time.
+ However, this is just a generaliazation that may not always work.
+ One school of thought may dictate that if a user finds an appliance running
+ with no users, the user must be responsible to turn it off.
+ 
+\end_layout
+
+\begin_layout Subsection
+Subgroups
+\end_layout
+
+\begin_layout Standard
+There are different schools of thought on the notion that even though many
+ people might be present in the service range of an appliance, only a subgroup
+ of them should be charged for it.
+ This argument is highlighted when a user, U1 visits the household of another
+ user, U2.
+ User U1 might be uncomfortable with having her/his energy consumption profiled
+ based on the appliances present in the household of user U2.
+ User U2 might not be as energy consious as user U1 is and hence U1 might
+ be discouraged from visiting U2.
+ One school of thought dictates that since U1 is unaware of the efficiency
+ of the appliances in U2's household, U1 should not be accounted for their
+ energy consumption.
+ Another thought process claims that visiting another user's household is
+ part of a user's activities and hence the energy consumption should be
+ accounted against U1.
+ If U1 is concerned about his/her consumption, he/she can try to convince
+ U2 to modify the appliances or modify his/her activities by visiting U2
+ less frequently.
+ These are social and policy decisions and beyond the scope of this paper.
+ 
+\end_layout
+
+\begin_layout Subsection
+Limitation on RSSI as a localization mechanism
+\end_layout
+
+\begin_layout Standard
+RSSI is not a very precise and reliable measurement for deriving vicinity
+ information.
+ As discussed in section 
+\begin_inset LatexCommand ref
+reference "sub:Binary-detection-problem"
+
+\end_inset
+
+, it has inherent uncertainty associated with antenna characteristics and
+ time varying ambient conditions.
+ Figure 
+\begin_inset LatexCommand ref
+reference "fig:Measured-RSSI-Token"
+
+\end_inset
+
+ shows that RSSI is a far cry from the desired service range for the appliances.
+ Although heuristics such as calibration and hysteresis gave us relatively
+ reliable detection rate, we anticipate error rate could increase as number
+ of collocated appliances and users.
+ 
+\end_layout
+
+\begin_layout Section
 Related works 
 \begin_inset LatexCommand label
 name "sec:Related-works"
@@ -3054,116 +3166,6 @@ key "berkeley-dr"
  
 \end_layout
 
-\begin_layout Standard
-
-\end_layout
-
-\begin_layout Section
-Discussion
-\begin_inset LatexCommand label
-name "sec:Discussion"
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Some of the limitation and anomalies of our system have already been discussed
- above.
- Here we discuss some other limitations and issues in using this system.
- 
-\end_layout
-
-\begin_layout Subsection
-More limitation on policies
-\end_layout
-
-\begin_layout Standard
-In section 
-\begin_inset LatexCommand ref
-reference "sub:Limitations-of-the"
-
-\end_inset
-
-, we discussed the limitation of the application in identifying the case
- of being present and not being benefited.
- Another issue with using vicinity information is when a user passes through
- the vicinity of an appliance with no intention of using it and does not
- benefit from it.
- According to our token issuance policy, the user will be issued a token
- for the appliance.
- If there exists some tokens for the appliance issued to users not in the
- vicinity of the appliance, they will expire.
- If the appliance had been left on and the wasted energy was been accounted
- against the previous user, it will now be accounted against the new user.
- The new user maybe oblivious to the existance of the appliance and will
- be accounted for it energy consumption unfairly.
- One resolve maybe to allow for a grace period for the user to exit the
- vicinity of the appliance.
- The token should only be issued if the user remains in the vicinity for
- a prelongated period of time.
- However, this is just a generaliazation that may not always work.
- One school of thought may dictate that if a user finds an appliance running
- with no users, the user must be responsible to turn it off.
- 
-\end_layout
-
-\begin_layout Subsection
-Subgroups
-\end_layout
-
-\begin_layout Standard
-There are different schools of thought on the notion that even though many
- people might be present in the service range of an appliance, only a subgroup
- of them should be charged for it.
- This argument is highlighted when a user, U1 visits the household of another
- user, U2.
- User U1 might be uncomfortable with having her/his energy consumption profiled
- based on the appliances present in the household of user U2.
- User U2 might not be as energy consious as user U1 is and hence U1 might
- be discouraged from visiting U2.
- One school of thought dictates that since U1 is unaware of the efficiency
- of the appliances in U2's household, U1 should not be accounted for their
- energy consumption.
- Another thought process claims that visiting another user's household is
- part of a user's activities and hence the energy consumption should be
- accounted against U1.
- If U1 is concerned about his/her consumption, he/she can try to convince
- U2 to modify the appliances or modify his/her activities by visiting U2
- less frequently.
- These are social and policy decisions and beyond the scope of this paper.
- 
-\end_layout
-
-\begin_layout Subsection
-Limitation on RSSI as a localization mechanism
-\end_layout
-
-\begin_layout Standard
-RSSI is not a very precise and reliable measurement for deriving vicinity
- information.
- As discussed in section 
-\begin_inset LatexCommand ref
-reference "sub:Binary-detection-problem"
-
-\end_inset
-
-, it has inherent uncertainty associated with antenna characteristics and
- time varying ambient conditions.
- Figure 
-\begin_inset LatexCommand ref
-reference "fig:Measured-RSSI-Token"
-
-\end_inset
-
- shows that RSSI is a far cry from the desired service range for the appliances.
- Although heuristics such as calibration and hysteresis gave us relatively
- reliable detection rate, we anticipate error rate could increase as number
- of collocated appliances and users.
- 
-\end_layout
-
 \begin_layout Section
 Conclusion
 \begin_inset LatexCommand label
@@ -3178,17 +3180,17 @@ name "sec:Conclusion"
 In conclusion, we presented a new system that profiles energy consumption
  pattern of individuals based on raw RSSI readings among active RFID tags
  and readers.
- Our detection scheme gives reasonably successful detection rate as in the
- table 
+ Our detection scheme gives reasonably successful detection rate as shown
+ in table 
 \begin_inset LatexCommand ref
 reference "tab:Token-Issue-Success,"
 
 \end_inset
 
 .
- While analyzing energy consumption pattern of users, we found the system
- can profile two interesting aspects of energy profiles: first, total energy
- consumption, which gives us how much energy is consumed by an individual
+ While analyzing energy consumption pattern of users, we found that the
+ system can profile two interesting aspects of energy profiles: first, total
+ energy consumption, which gives us how much energy is consumed by an individual
  whether it's useful or not, and second, total wasted energy, which implies
  the energy wasted by an individual unintentionally.
  By notifying the total amount of energy users consume, on one hand, the
@@ -3203,7 +3205,7 @@ reference "tab:Token-Issue-Success,"
 \end_layout
 
 \begin_layout Standard
-For the future works, we can further the detection techniques by correlating
+For future work, we can further the detection techniques by correlating
  multiple RSSI readings among appliances with their relative positions.
  Along with that, more complex deployment setting among collocated appliances
  and more users can reveal more interesting observations regarding energy
