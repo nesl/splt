@@ -784,7 +784,7 @@ Lifetime (days)
 \begin_inset Text
 
 \begin_layout Standard
-1Hz timer triggered, radio always ON
+1Hz timer trig., radio always ON
 \end_layout
 
 \end_inset
@@ -813,7 +813,7 @@ Lifetime (days)
 \begin_inset Text
 
 \begin_layout Standard
-1Hz timer, radio OFF (when not TX)
+1Hz timer, radio toggled
 \end_layout
 
 \end_inset
@@ -842,7 +842,8 @@ Lifetime (days)
 \begin_inset Text
 
 \begin_layout Standard
-Vibration triggered, radio OFF, all events
+Vib.
+ trig., radio togg, all events
 \end_layout
 
 \end_inset
@@ -871,7 +872,8 @@ Vibration triggered, radio OFF, all events
 \begin_inset Text
 
 \begin_layout Standard
-Vibration triggered, radio OFF, no events
+Vib.
+ trig., radio togg, no events
 \end_layout
 
 \end_inset
@@ -1028,7 +1030,7 @@ status collapsed
 <lyxtabular version="3" rows="6" columns="4">
 <features>
 <column alignment="center" valignment="top" leftline="true" width="0">
-<column alignment="center" valignment="top" leftline="true" width="0">
+<column alignment="center" valignment="top" leftline="true" width="0.6in">
 <column alignment="center" valignment="top" leftline="true" width="0">
 <column alignment="center" valignment="top" leftline="true" rightline="true" width="0">
 <row topline="true" bottomline="true">
@@ -1555,7 +1557,7 @@ BedLamp
 \begin_inset Text
 
 \begin_layout Standard
-
+%
 \end_layout
 
 \end_inset
@@ -1910,7 +1912,7 @@ Unified
 \begin_inset Text
 
 \begin_layout Standard
-39.5
+39
 \end_layout
 
 \end_inset
@@ -1928,7 +1930,7 @@ Unified
 \begin_inset Text
 
 \begin_layout Standard
-0.5
+1
 \end_layout
 
 \end_inset
@@ -1964,7 +1966,7 @@ Unified
 \begin_inset Text
 
 \begin_layout Standard
-96.2
+96
 \end_layout
 
 \end_inset
@@ -1982,7 +1984,7 @@ Unified
 \begin_inset Text
 
 \begin_layout Standard
-3.8
+4
 \end_layout
 
 \end_inset
@@ -1991,7 +1993,7 @@ Unified
 \begin_inset Text
 
 \begin_layout Standard
-95.1
+95
 \end_layout
 
 \end_inset
@@ -2000,7 +2002,7 @@ Unified
 \begin_inset Text
 
 \begin_layout Standard
-2.7
+3
 \end_layout
 
 \end_inset
@@ -2009,7 +2011,7 @@ Unified
 \begin_inset Text
 
 \begin_layout Standard
-2.2
+2
 \end_layout
 
 \end_inset
@@ -2018,7 +2020,7 @@ Unified
 \begin_inset Text
 
 \begin_layout Standard
-74.6
+75
 \end_layout
 
 \end_inset
@@ -2027,7 +2029,7 @@ Unified
 \begin_inset Text
 
 \begin_layout Standard
-25.4
+25
 \end_layout
 
 \end_inset
@@ -2045,7 +2047,7 @@ Unified
 \begin_inset Text
 
 \begin_layout Standard
-68.7
+69
 \end_layout
 
 \end_inset
@@ -2054,7 +2056,7 @@ Unified
 \begin_inset Text
 
 \begin_layout Standard
-7.0
+7
 \end_layout
 
 \end_inset
@@ -2063,7 +2065,7 @@ Unified
 \begin_inset Text
 
 \begin_layout Standard
-24.3
+24
 \end_layout
 
 \end_inset
@@ -2083,7 +2085,7 @@ Calibrated
 \begin_inset Text
 
 \begin_layout Standard
-58.9
+59
 \end_layout
 
 \end_inset
@@ -2092,7 +2094,7 @@ Calibrated
 \begin_inset Text
 
 \begin_layout Standard
-35.1
+35
 \end_layout
 
 \end_inset
@@ -2110,7 +2112,7 @@ Calibrated
 \begin_inset Text
 
 \begin_layout Standard
-63.8
+64
 \end_layout
 
 \end_inset
@@ -2119,7 +2121,7 @@ Calibrated
 \begin_inset Text
 
 \begin_layout Standard
-3.8
+4
 \end_layout
 
 \end_inset
@@ -2128,7 +2130,7 @@ Calibrated
 \begin_inset Text
 
 \begin_layout Standard
-32.4
+32
 \end_layout
 
 \end_inset
@@ -2137,7 +2139,7 @@ Calibrated
 \begin_inset Text
 
 \begin_layout Standard
-94.6
+95
 \end_layout
 
 \end_inset
@@ -2155,7 +2157,7 @@ Calibrated
 \begin_inset Text
 
 \begin_layout Standard
-5.4
+5
 \end_layout
 
 \end_inset
@@ -2164,7 +2166,7 @@ Calibrated
 \begin_inset Text
 
 \begin_layout Standard
-92.4
+92
 \end_layout
 
 \end_inset
@@ -2173,7 +2175,7 @@ Calibrated
 \begin_inset Text
 
 \begin_layout Standard
-1.6
+2
 \end_layout
 
 \end_inset
@@ -2191,7 +2193,7 @@ Calibrated
 \begin_inset Text
 
 \begin_layout Standard
-98.4
+98
 \end_layout
 
 \end_inset
@@ -2200,7 +2202,7 @@ Calibrated
 \begin_inset Text
 
 \begin_layout Standard
-0.5
+1
 \end_layout
 
 \end_inset
@@ -2209,7 +2211,7 @@ Calibrated
 \begin_inset Text
 
 \begin_layout Standard
-1.1
+1
 \end_layout
 
 \end_inset
@@ -2218,7 +2220,7 @@ Calibrated
 \begin_inset Text
 
 \begin_layout Standard
-99.5
+99
 \end_layout
 
 \end_inset
@@ -2227,7 +2229,7 @@ Calibrated
 \begin_inset Text
 
 \begin_layout Standard
-0.5
+1
 \end_layout
 
 \end_inset
@@ -2256,7 +2258,7 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-88.1
+88
 \end_layout
 
 \end_inset
@@ -2265,7 +2267,7 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-9.7
+10
 \end_layout
 
 \end_inset
@@ -2274,7 +2276,7 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-2.2
+2
 \end_layout
 
 \end_inset
@@ -2283,34 +2285,7 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-90.3
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Standard
-0
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Standard
-9.7
-\end_layout
-
-\end_inset
-</cell>
-<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
-\begin_inset Text
-
-\begin_layout Standard
-95.7
+90
 \end_layout
 
 \end_inset
@@ -2328,7 +2303,7 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-4.3
+10
 \end_layout
 
 \end_inset
@@ -2337,7 +2312,7 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-95.1
+96
 \end_layout
 
 \end_inset
@@ -2346,7 +2321,7 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-2.2
+0
 \end_layout
 
 \end_inset
@@ -2355,7 +2330,7 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-2.7
+4
 \end_layout
 
 \end_inset
@@ -2364,7 +2339,7 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-98.4
+95
 \end_layout
 
 \end_inset
@@ -2373,7 +2348,7 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-0.5
+2
 \end_layout
 
 \end_inset
@@ -2382,7 +2357,7 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-1.1
+3
 \end_layout
 
 \end_inset
@@ -2391,7 +2366,7 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-99.5
+98
 \end_layout
 
 \end_inset
@@ -2400,7 +2375,34 @@ Hysteresis
 \begin_inset Text
 
 \begin_layout Standard
-0.5
+1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+99
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Standard
+1
 \end_layout
 
 \end_inset
@@ -2623,7 +2625,7 @@ status collapsed
 \begin_inset Graphics
 	filename figures/fig35.eps
 	lyxscale 50
-	width 80text%
+	width 100text%
 
 \end_inset
 
@@ -2641,10 +2643,6 @@ name "fig:Performance-of-various"
 
 Performance of various RSSI
 \begin_inset Formula $\rightarrow$
-\end_inset
-
-
-\begin_inset Formula $ $
 \end_inset
 
 Vicinity
