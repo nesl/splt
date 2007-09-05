@@ -3212,7 +3212,17 @@ For future work, we can further the detection techniques by correlating
  optimizing concerns.
  For the system to be more useful, the system will have more user-friendly
  interfaces.
- 
+\end_layout
+
+\begin_layout Section
+Acknowledgment
+\end_layout
+
+\begin_layout Standard
+This material is based upon work supported by the .
+ Any opinions, findings and conclusions or recommendations expressed in
+ this material are those of the author(s) and do not necessarily reflect
+ the views of the ONR.
 \begin_inset LatexCommand bibtex
 options "plain"
 bibfiles "percom08"
