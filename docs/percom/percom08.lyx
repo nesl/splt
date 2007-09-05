@@ -459,7 +459,15 @@ The Spotlight server is a system that receives beacon strengths and power
  to identify user vicinity and eventually per user appliance energy consumption.
  The Spotlight server is connected to the appliance motes through a 'base
  station' MICAz mote attached to the server.
- The 
+ The Spotlight server uses the SensorBase 
+\begin_inset LatexCommand cite
+key "sensorbase.org"
+
+\end_inset
+
+ package to record, maintain and retrieve the measurements from the appliance
+ motes.
+  
 \end_layout
 
 \begin_layout Subsection
@@ -686,6 +694,10 @@ Calibrated Threshold : An appliance has a set of RSSI based service range
 Hysteresis Threshold : The same as the calibrated threshold, but set the
  expiration threshold as (calibrated threshold-hysteresis constant).
  
+\end_layout
+
+\begin_layout Subsection
+User Tag Design
 \end_layout
 
 \begin_layout Standard
