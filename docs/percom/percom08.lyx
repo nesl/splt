@@ -1343,14 +1343,14 @@ Unified and Calibrated RSSI service range
 \begin_inset Float table
 wide true
 sideways false
-status collapsed
+status open
 
 \begin_layout Standard
 \align center
 \begin_inset Tabular
 <lyxtabular version="3" rows="6" columns="19">
 <features>
-<column alignment="center" valignment="top" leftline="true" width="0.7in">
+<column alignment="center" valignment="top" leftline="true" width="0.6in">
 <column alignment="center" valignment="top" leftline="true" width="0">
 <column alignment="center" valignment="top" leftline="true" width="0">
 <column alignment="center" valignment="top" leftline="true" width="0">
