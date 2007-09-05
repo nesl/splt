@@ -39,7 +39,6 @@
 \font_sf_scale 100
 \font_tt_scale 100
 \graphics default
-\float_placement h
 \paperfontsize default
 \spacing single
 \papersize default
@@ -567,7 +566,7 @@ status collapsed
 \begin_layout Standard
 \align center
 \begin_inset Graphics
-	filename /Users/darknight/projects/splt/docs/percom/figures/Fig1.png
+	filename figures/Fig1.png
 	lyxscale 50
 	width 75col%
 
