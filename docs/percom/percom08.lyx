@@ -766,9 +766,7 @@ status collapsed
 
 \begin_layout Standard
 
-\size footnotesize
 Avg Power (mW)
-\end_layout
 
 \end_inset
 </cell>
@@ -777,9 +775,7 @@ Avg Power (mW)
 
 \begin_layout Standard
 
-\size footnotesize
 Lifetime (days)
-\end_layout
 
 \end_inset
 </cell>
@@ -790,9 +786,7 @@ Lifetime (days)
 
 \begin_layout Standard
 
-\size footnotesize
 1Hz timer triggered, radio always ON
-\end_layout
 
 \end_inset
 </cell>
@@ -801,9 +795,7 @@ Lifetime (days)
 
 \begin_layout Standard
 
-\size footnotesize
 66.3
-\end_layout
 
 \end_inset
 </cell>
@@ -812,9 +804,7 @@ Lifetime (days)
 
 \begin_layout Standard
 
-\size footnotesize
 2.82
-\end_layout
 
 \end_inset
 </cell>
@@ -825,9 +815,7 @@ Lifetime (days)
 
 \begin_layout Standard
 
-\size footnotesize
 1Hz timer, radio OFF (when not TX)
-\end_layout
 
 \end_inset
 </cell>
@@ -836,9 +824,7 @@ Lifetime (days)
 
 \begin_layout Standard
 
-\size footnotesize
 6.9
-\end_layout
 
 \end_inset
 </cell>
@@ -847,9 +833,7 @@ Lifetime (days)
 
 \begin_layout Standard
 
-\size footnotesize
 27.23
-\end_layout
 
 \end_inset
 </cell>
@@ -860,9 +844,7 @@ Lifetime (days)
 
 \begin_layout Standard
 
-\size footnotesize
 Vibration triggered, radio OFF, all events
-\end_layout
 
 \end_inset
 </cell>
@@ -871,9 +853,7 @@ Vibration triggered, radio OFF, all events
 
 \begin_layout Standard
 
-\size footnotesize
 10.7
-\end_layout
 
 \end_inset
 </cell>
@@ -882,9 +862,7 @@ Vibration triggered, radio OFF, all events
 
 \begin_layout Standard
 
-\size footnotesize
 17.52
-\end_layout
 
 \end_inset
 </cell>
@@ -895,9 +873,7 @@ Vibration triggered, radio OFF, all events
 
 \begin_layout Standard
 
-\size footnotesize
 Vibration triggered, radio OFF, no events
-\end_layout
 
 \end_inset
 </cell>
@@ -906,9 +882,7 @@ Vibration triggered, radio OFF, no events
 
 \begin_layout Standard
 
-\size footnotesize
 6.6
-\end_layout
 
 \end_inset
 </cell>
@@ -917,9 +891,7 @@ Vibration triggered, radio OFF, no events
 
 \begin_layout Standard
 
-\size footnotesize
 28.52
-\end_layout
 
 \end_inset
 </cell>
@@ -1094,9 +1066,7 @@ status collapsed
 
 \begin_layout Standard
 
-\size footnotesize
 Unified Threshold
-\end_layout
 
 \end_inset
 </cell>
@@ -1105,9 +1075,7 @@ Unified Threshold
 
 \begin_layout Standard
 
-\size footnotesize
 Calibrated Threshold
-\end_layout
 
 \end_inset
 </cell>
@@ -1136,9 +1104,7 @@ Calibrated Threshold
 
 \begin_layout Standard
 
-\size footnotesize
 For both
-\end_layout
 
 \end_inset
 </cell>
@@ -1147,9 +1113,7 @@ For both
 
 \begin_layout Standard
 
-\size footnotesize
 User200
-\end_layout
 
 \end_inset
 </cell>
@@ -1158,9 +1122,7 @@ User200
 
 \begin_layout Standard
 
-\size footnotesize
 User201
-\end_layout
 
 \end_inset
 </cell>
@@ -1171,9 +1133,7 @@ User201
 
 \begin_layout Standard
 
-\size footnotesize
 TV
-\end_layout
 
 \end_inset
 </cell>
@@ -1182,9 +1142,7 @@ TV
 
 \begin_layout Standard
 
-\size footnotesize
 -20
-\end_layout
 
 \end_inset
 </cell>
@@ -1193,9 +1151,7 @@ TV
 
 \begin_layout Standard
 
-\size footnotesize
 -12
-\end_layout
 
 \end_inset
 </cell>
@@ -1204,9 +1160,7 @@ TV
 
 \begin_layout Standard
 
-\size footnotesize
 -14
-\end_layout
 
 \end_inset
 </cell>
@@ -1217,9 +1171,7 @@ TV
 
 \begin_layout Standard
 
-\size footnotesize
 LivingRoomLamp
-\end_layout
 
 \end_inset
 </cell>
@@ -1228,9 +1180,7 @@ LivingRoomLamp
 
 \begin_layout Standard
 
-\size footnotesize
 -26
-\end_layout
 
 \end_inset
 </cell>
@@ -1239,9 +1189,7 @@ LivingRoomLamp
 
 \begin_layout Standard
 
-\size footnotesize
 -23
-\end_layout
 
 \end_inset
 </cell>
@@ -1250,9 +1198,7 @@ LivingRoomLamp
 
 \begin_layout Standard
 
-\size footnotesize
 -22
-\end_layout
 
 \end_inset
 </cell>
@@ -1263,9 +1209,7 @@ LivingRoomLamp
 
 \begin_layout Standard
 
-\size footnotesize
 CoffeeMachine
-\end_layout
 
 \end_inset
 </cell>
@@ -1274,9 +1218,7 @@ CoffeeMachine
 
 \begin_layout Standard
 
-\size footnotesize
 -5
-\end_layout
 
 \end_inset
 </cell>
@@ -1285,9 +1227,7 @@ CoffeeMachine
 
 \begin_layout Standard
 
-\size footnotesize
 -10
-\end_layout
 
 \end_inset
 </cell>
@@ -1296,9 +1236,7 @@ CoffeeMachine
 
 \begin_layout Standard
 
-\size footnotesize
 -8
-\end_layout
 
 \end_inset
 </cell>
@@ -1309,9 +1247,7 @@ CoffeeMachine
 
 \begin_layout Standard
 
-\size footnotesize
 BedRoomLamp
-\end_layout
 
 \end_inset
 </cell>
@@ -1320,9 +1256,7 @@ BedRoomLamp
 
 \begin_layout Standard
 
-\size footnotesize
 -26
-\end_layout
 
 \end_inset
 </cell>
@@ -1331,9 +1265,7 @@ BedRoomLamp
 
 \begin_layout Standard
 
-\size footnotesize
 -16
-\end_layout
 
 \end_inset
 </cell>
@@ -1342,9 +1274,7 @@ BedRoomLamp
 
 \begin_layout Standard
 
-\size footnotesize
 -18
-\end_layout
 
 \end_inset
 </cell>
@@ -1423,9 +1353,7 @@ status collapsed
 
 \begin_layout Standard
 
-\size footnotesize
 TV
-\end_layout
 
 \end_inset
 </cell>
@@ -1479,9 +1407,7 @@ TV
 
 \begin_layout Standard
 
-\size footnotesize
 LivingLamp
-\end_layout
 
 \end_inset
 </cell>
@@ -1535,9 +1461,7 @@ LivingLamp
 
 \begin_layout Standard
 
-\size footnotesize
 BedLamp
-\end_layout
 
 \end_inset
 </cell>
@@ -1602,9 +1526,7 @@ BedLamp
 
 \begin_layout Standard
 
-\size footnotesize
 User200
-\end_layout
 
 \end_inset
 </cell>
@@ -1631,9 +1553,7 @@ User200
 
 \begin_layout Standard
 
-\size footnotesize
 User201
-\end_layout
 
 \end_inset
 </cell>
@@ -1660,9 +1580,7 @@ User201
 
 \begin_layout Standard
 
-\size footnotesize
 User200
-\end_layout
 
 \end_inset
 </cell>
@@ -1689,9 +1607,7 @@ User200
 
 \begin_layout Standard
 
-\size footnotesize
 User201
-\end_layout
 
 \end_inset
 </cell>
@@ -1718,9 +1634,7 @@ User201
 
 \begin_layout Standard
 
-\size footnotesize
 User200
-\end_layout
 
 \end_inset
 </cell>
@@ -1747,9 +1661,7 @@ User200
 
 \begin_layout Standard
 
-\size footnotesize
 User201
-\end_layout
 
 \end_inset
 </cell>
@@ -1778,9 +1690,7 @@ User201
 
 \begin_layout Standard
 
-\size footnotesize
 Threshold
-\end_layout
 
 \end_inset
 </cell>
@@ -1789,9 +1699,7 @@ Threshold
 
 \begin_layout Standard
 
-\size footnotesize
 C
-\end_layout
 
 \end_inset
 </cell>
@@ -1800,9 +1708,7 @@ C
 
 \begin_layout Standard
 
-\size footnotesize
 FP
-\end_layout
 
 \end_inset
 </cell>
@@ -1811,9 +1717,7 @@ FP
 
 \begin_layout Standard
 
-\size footnotesize
 FN
-\end_layout
 
 \end_inset
 </cell>
@@ -1822,9 +1726,7 @@ FN
 
 \begin_layout Standard
 
-\size footnotesize
 C
-\end_layout
 
 \end_inset
 </cell>
@@ -1833,9 +1735,7 @@ C
 
 \begin_layout Standard
 
-\size footnotesize
 FP
-\end_layout
 
 \end_inset
 </cell>
@@ -1844,9 +1744,7 @@ FP
 
 \begin_layout Standard
 
-\size footnotesize
 FN
-\end_layout
 
 \end_inset
 </cell>
@@ -1855,9 +1753,7 @@ FN
 
 \begin_layout Standard
 
-\size footnotesize
 C
-\end_layout
 
 \end_inset
 </cell>
@@ -1866,9 +1762,7 @@ C
 
 \begin_layout Standard
 
-\size footnotesize
 FP
-\end_layout
 
 \end_inset
 </cell>
@@ -1877,9 +1771,7 @@ FP
 
 \begin_layout Standard
 
-\size footnotesize
 FN
-\end_layout
 
 \end_inset
 </cell>
@@ -1888,9 +1780,7 @@ FN
 
 \begin_layout Standard
 
-\size footnotesize
 C
-\end_layout
 
 \end_inset
 </cell>
@@ -1899,9 +1789,7 @@ C
 
 \begin_layout Standard
 
-\size footnotesize
 FP
-\end_layout
 
 \end_inset
 </cell>
@@ -1910,9 +1798,7 @@ FP
 
 \begin_layout Standard
 
-\size footnotesize
 FN
-\end_layout
 
 \end_inset
 </cell>
@@ -1921,9 +1807,7 @@ FN
 
 \begin_layout Standard
 
-\size footnotesize
 C
-\end_layout
 
 \end_inset
 </cell>
@@ -1932,9 +1816,7 @@ C
 
 \begin_layout Standard
 
-\size footnotesize
 FP
-\end_layout
 
 \end_inset
 </cell>
@@ -1943,9 +1825,7 @@ FP
 
 \begin_layout Standard
 
-\size footnotesize
 FN
-\end_layout
 
 \end_inset
 </cell>
@@ -1954,9 +1834,7 @@ FN
 
 \begin_layout Standard
 
-\size footnotesize
 C
-\end_layout
 
 \end_inset
 </cell>
@@ -1965,9 +1843,7 @@ C
 
 \begin_layout Standard
 
-\size footnotesize
 FP
-\end_layout
 
 \end_inset
 </cell>
@@ -1976,9 +1852,7 @@ FP
 
 \begin_layout Standard
 
-\size footnotesize
 FN
-\end_layout
 
 \end_inset
 </cell>
@@ -1989,9 +1863,7 @@ FN
 
 \begin_layout Standard
 
-\size footnotesize
 Unified
-\end_layout
 
 \end_inset
 </cell>
@@ -2000,9 +1872,7 @@ Unified
 
 \begin_layout Standard
 
-\size footnotesize
 39.5
-\end_layout
 
 \end_inset
 </cell>
@@ -2011,9 +1881,7 @@ Unified
 
 \begin_layout Standard
 
-\size footnotesize
 60
-\end_layout
 
 \end_inset
 </cell>
@@ -2022,9 +1890,7 @@ Unified
 
 \begin_layout Standard
 
-\size footnotesize
 0.5
-\end_layout
 
 \end_inset
 </cell>
@@ -2033,9 +1899,7 @@ Unified
 
 \begin_layout Standard
 
-\size footnotesize
 73
-\end_layout
 
 \end_inset
 </cell>
@@ -2044,9 +1908,7 @@ Unified
 
 \begin_layout Standard
 
-\size footnotesize
 0
-\end_layout
 
 \end_inset
 </cell>
@@ -2055,9 +1917,7 @@ Unified
 
 \begin_layout Standard
 
-\size footnotesize
 27
-\end_layout
 
 \end_inset
 </cell>
@@ -2066,9 +1926,7 @@ Unified
 
 \begin_layout Standard
 
-\size footnotesize
 96.2
-\end_layout
 
 \end_inset
 </cell>
@@ -2077,9 +1935,7 @@ Unified
 
 \begin_layout Standard
 
-\size footnotesize
 0
-\end_layout
 
 \end_inset
 </cell>
@@ -2088,9 +1944,7 @@ Unified
 
 \begin_layout Standard
 
-\size footnotesize
 3.8
-\end_layout
 
 \end_inset
 </cell>
@@ -2099,9 +1953,7 @@ Unified
 
 \begin_layout Standard
 
-\size footnotesize
 95.1
-\end_layout
 
 \end_inset
 </cell>
@@ -2110,9 +1962,7 @@ Unified
 
 \begin_layout Standard
 
-\size footnotesize
 2.7
-\end_layout
 
 \end_inset
 </cell>
@@ -2121,9 +1971,7 @@ Unified
 
 \begin_layout Standard
 
-\size footnotesize
 2.2
-\end_layout
 
 \end_inset
 </cell>
@@ -2132,9 +1980,7 @@ Unified
 
 \begin_layout Standard
 
-\size footnotesize
 74.6
-\end_layout
 
 \end_inset
 </cell>
@@ -2143,9 +1989,7 @@ Unified
 
 \begin_layout Standard
 
-\size footnotesize
 25.4
-\end_layout
 
 \end_inset
 </cell>
@@ -2154,9 +1998,7 @@ Unified
 
 \begin_layout Standard
 
-\size footnotesize
 0
-\end_layout
 
 \end_inset
 </cell>
@@ -2165,9 +2007,7 @@ Unified
 
 \begin_layout Standard
 
-\size footnotesize
 68.7
-\end_layout
 
 \end_inset
 </cell>
@@ -2176,9 +2016,7 @@ Unified
 
 \begin_layout Standard
 
-\size footnotesize
 7.0
-\end_layout
 
 \end_inset
 </cell>
@@ -2187,9 +2025,7 @@ Unified
 
 \begin_layout Standard
 
-\size footnotesize
 24.3
-\end_layout
 
 \end_inset
 </cell>
@@ -2200,9 +2036,7 @@ Unified
 
 \begin_layout Standard
 
-\size footnotesize
 Calibrated 
-\end_layout
 
 \end_inset
 </cell>
@@ -2211,9 +2045,7 @@ Calibrated
 
 \begin_layout Standard
 
-\size footnotesize
 58.9
-\end_layout
 
 \end_inset
 </cell>
@@ -2222,9 +2054,7 @@ Calibrated
 
 \begin_layout Standard
 
-\size footnotesize
 35.1
-\end_layout
 
 \end_inset
 </cell>
@@ -2233,9 +2063,7 @@ Calibrated
 
 \begin_layout Standard
 
-\size footnotesize
 6
-\end_layout
 
 \end_inset
 </cell>
@@ -2244,9 +2072,7 @@ Calibrated
 
 \begin_layout Standard
 
-\size footnotesize
 63.8
-\end_layout
 
 \end_inset
 </cell>
@@ -2255,9 +2081,7 @@ Calibrated
 
 \begin_layout Standard
 
-\size footnotesize
 3.8
-\end_layout
 
 \end_inset
 </cell>
@@ -2266,9 +2090,7 @@ Calibrated
 
 \begin_layout Standard
 
-\size footnotesize
 32.4
-\end_layout
 
 \end_inset
 </cell>
@@ -2277,9 +2099,7 @@ Calibrated
 
 \begin_layout Standard
 
-\size footnotesize
 94.6
-\end_layout
 
 \end_inset
 </cell>
@@ -2288,9 +2108,7 @@ Calibrated
 
 \begin_layout Standard
 
-\size footnotesize
 0
-\end_layout
 
 \end_inset
 </cell>
@@ -2299,9 +2117,7 @@ Calibrated
 
 \begin_layout Standard
 
-\size footnotesize
 5.4
-\end_layout
 
 \end_inset
 </cell>
@@ -2310,9 +2126,7 @@ Calibrated
 
 \begin_layout Standard
 
-\size footnotesize
 92.4
-\end_layout
 
 \end_inset
 </cell>
@@ -2321,9 +2135,7 @@ Calibrated
 
 \begin_layout Standard
 
-\size footnotesize
 1.6
-\end_layout
 
 \end_inset
 </cell>
@@ -2332,9 +2144,7 @@ Calibrated
 
 \begin_layout Standard
 
-\size footnotesize
 6
-\end_layout
 
 \end_inset
 </cell>
@@ -2343,9 +2153,7 @@ Calibrated
 
 \begin_layout Standard
 
-\size footnotesize
 98.4
-\end_layout
 
 \end_inset
 </cell>
@@ -2354,9 +2162,7 @@ Calibrated
 
 \begin_layout Standard
 
-\size footnotesize
 0.5
-\end_layout
 
 \end_inset
 </cell>
@@ -2365,9 +2171,7 @@ Calibrated
 
 \begin_layout Standard
 
-\size footnotesize
 1.1
-\end_layout
 
 \end_inset
 </cell>
@@ -2376,9 +2180,7 @@ Calibrated
 
 \begin_layout Standard
 
-\size footnotesize
 99.5
-\end_layout
 
 \end_inset
 </cell>
@@ -2387,9 +2189,7 @@ Calibrated
 
 \begin_layout Standard
 
-\size footnotesize
 0.5
-\end_layout
 
 \end_inset
 </cell>
@@ -2398,9 +2198,7 @@ Calibrated
 
 \begin_layout Standard
 
-\size footnotesize
 0
-\end_layout
 
 \end_inset
 </cell>
@@ -2411,9 +2209,7 @@ Calibrated
 
 \begin_layout Standard
 
-\size footnotesize
 Hysteresis
-\end_layout
 
 \end_inset
 </cell>
@@ -2422,9 +2218,7 @@ Hysteresis
 
 \begin_layout Standard
 
-\size footnotesize
 88.1
-\end_layout
 
 \end_inset
 </cell>
@@ -2433,9 +2227,7 @@ Hysteresis
 
 \begin_layout Standard
 
-\size footnotesize
 9.7
-\end_layout
 
 \end_inset
 </cell>
@@ -2444,9 +2236,7 @@ Hysteresis
 
 \begin_layout Standard
 
-\size footnotesize
 2.2
-\end_layout
 
 \end_inset
 </cell>
@@ -2455,9 +2245,7 @@ Hysteresis
 
 \begin_layout Standard
 
-\size footnotesize
 90.3
-\end_layout
 
 \end_inset
 </cell>
@@ -2466,9 +2254,7 @@ Hysteresis
 
 \begin_layout Standard
 
-\size footnotesize
 0
-\end_layout
 
 \end_inset
 </cell>
@@ -2477,9 +2263,7 @@ Hysteresis
 
 \begin_layout Standard
 
-\size footnotesize
 9.7
-\end_layout
 
 \end_inset
 </cell>
@@ -2488,9 +2272,7 @@ Hysteresis
 
 \begin_layout Standard
 
-\size footnotesize
 95.7
-\end_layout
 
 \end_inset
 </cell>
@@ -2499,9 +2281,7 @@ Hysteresis
 
 \begin_layout Standard
 
-\size footnotesize
 0
-\end_layout
 
 \end_inset
 </cell>
@@ -2510,9 +2290,7 @@ Hysteresis
 
 \begin_layout Standard
 
-\size footnotesize
 4.3
-\end_layout
 
 \end_inset
 </cell>
@@ -2521,9 +2299,7 @@ Hysteresis
 
 \begin_layout Standard
 
-\size footnotesize
 95.1
-\end_layout
 
 \end_inset
 </cell>
@@ -2532,9 +2308,7 @@ Hysteresis
 
 \begin_layout Standard
 
-\size footnotesize
 2.2
-\end_layout
 
 \end_inset
 </cell>
@@ -2543,9 +2317,7 @@ Hysteresis
 
 \begin_layout Standard
 
-\size footnotesize
 2.7
-\end_layout
 
 \end_inset
 </cell>
@@ -2554,9 +2326,7 @@ Hysteresis
 
 \begin_layout Standard
 
-\size footnotesize
 98.4
-\end_layout
 
 \end_inset
 </cell>
@@ -2565,9 +2335,7 @@ Hysteresis
 
 \begin_layout Standard
 
-\size footnotesize
 0.5
-\end_layout
 
 \end_inset
 </cell>
@@ -2576,9 +2344,7 @@ Hysteresis
 
 \begin_layout Standard
 
-\size footnotesize
 1.1
-\end_layout
 
 \end_inset
 </cell>
@@ -2587,9 +2353,7 @@ Hysteresis
 
 \begin_layout Standard
 
-\size footnotesize
 99.5
-\end_layout
 
 \end_inset
 </cell>
@@ -2598,9 +2362,7 @@ Hysteresis
 
 \begin_layout Standard
 
-\size footnotesize
 0.5
-\end_layout
 
 \end_inset
 </cell>
@@ -2609,9 +2371,7 @@ Hysteresis
 
 \begin_layout Standard
 
-\size footnotesize
 0
-\end_layout
 
 \end_inset
 </cell>
