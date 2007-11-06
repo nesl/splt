@@ -1,0 +1,61 @@
+What's the eventual goal of the problem?
+	Individual level resource management or monitoring
+
+What are research questions regarding this?
+	What kind of resources we are interested in
+	- Electricity, Water, Fuel, Paper, else?
+	Where do we deploy this platform?
+	- Home environment
+	- Office environment
+	- Public space
+	- Mass transportation
+	- Car?
+	Where do we place sensors?
+	- Power measurement : Place at each appliance or One device for all appliances(GaTech)
+	- Water measurement : Pipeline(Non-intrusive or intrusive), or microphone to detect on/off status
+	- Fuel : Car(OBD II), Gas(Pipeline)
+	- Location information : Infrastructure
+	- What other sensor information needed to infer resource consumption patter
+		* Acceleration information 
+		* Gyro
+		* Else?
+	How do we relate various sensing modalities?
+	- Sensor fusion : Which sensor reading implies what?
+	- What kind of information is needed to infer well?
+	
+	Where is the optimal place where we get sensor information?
+	- Human behavior : Outside(Video, PIR, and others), Inside(Acceleration, Gyro, temperature of skin?)
+	- Resource : On each appliance or inference from some other related information
+
+In terms of platform:
+        Get one of appliance monitoring kits from Georgia Tech
+        Contact Leland, Berkeley to get some information regarding power monitoring MEMS device
+
+        Water Monitoring device: 
+        http://www.omega.com/prodinfo/ultrasonicflowmeters.html
+        which makes use of dopper shift effect and is well fit to monitor wastewater.
+        But it is not suitable for clean water because of its sensing
+        modality. (It measures particles' speed in fluid.)
+
+        Fuel monitoring: OBD II and fuel consumption
+
+
+Relation to Carbon Foorprint:
+        PEIR and cars' CO2 emission profile
+        
+        
+Some other Works:
+        Smart Kindergarden, Andrea's paper and dissertation
+        Sensory Grammer
+
+
+Groundtruth:
+        How do we measure ground truth
+
+Some other considerations:
+        Economy of the system
+        Usability issues.
+
+Time-line
+By dec:
+	Positioning paper or vision paper shooting for Mobicom Challenge Track
