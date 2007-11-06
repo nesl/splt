@@ -1,4 +1,30 @@
+Human intertwined loop
+	In a way to deploy
+	- Less sensors with users
+	- Less effort to carry and maintain
+	- Even an on/off switch is annoying
+	- Avoid any calibration stage(?)
+
+	In a way to receive service
+	- How to present information that help users notice their patterns
+		* PDA/CellPhone : LCD Graph representation (In terms of resources, appliances, sources of resources, else?)
+		* Laptop : On screen - via e-mail, application, or ?
+	- How often?
+		* real-time, daily-basis or on request
+	- Way to give a feedback(Individual)
+		* Suggestion for usesrs to reduce consumption
+		* Indication of wasted/useful resource consumption
+		* Daily/Weekly/Monthly/Yearly budget and current status
+		* Other metric?
+
+	- Way to give a feedback(Employer)
+		* Who's the most energy/resource hungry pereson
+		* Other metric, say productivity/resource access
+
 Since we want to affect human behavior, we also need to point out how this information affects it. 
 - http://www.animalbehavior.ucla.edu/
 
 Usability issue, How they feel?
+
+Hybrid car example,
+
