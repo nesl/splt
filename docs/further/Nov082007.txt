@@ -7,4 +7,9 @@ How to teach appliances/other resource source to know I'm using it.
 
 		* Users are willing to do that if rewards are provided
 
+Event Detection
+	- Look at Sadaf's work
+	- How to define event : What is consuming status?
+	- Which sensing modality can detect it?
+		* Currently it was relative location
 
