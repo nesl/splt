@@ -1,0 +1,13 @@
+How does the system identify who's spending resource
+	- It was location/relative location
+	- What about accel/gyro/other sensing modality that indicate human's intension
+	- What about vision sensor(Say sensory grammer)?
+	- What about explicit notification(i.e. tagging/log in)?
+	- Else?
+How should policy be?
+	- One idea : User definable preference(I'm willing to pay more, I'm willing to pay less)
+		* System could hit balance among users if some of them are spending at the same time
+		* Like LP/Least Square
+	- Equally distributed(?)
+	- First one is the one
+

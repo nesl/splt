@@ -21,6 +21,10 @@ Human intertwined loop
 		* Who's the most energy/resource hungry pereson
 		* Other metric, say productivity/resource access
 
+Survey will be needed(Descent Survey Scheme needed as well)
+	- How do people feel like
+	- How much are people willing to use
+
 Since we want to affect human behavior, we also need to point out how this information affects it. 
 - http://www.animalbehavior.ucla.edu/
 
