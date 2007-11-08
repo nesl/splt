@@ -1,0 +1,10 @@
+How to teach appliances/other resource source to know I'm using it.
+	- Baseline - generic usage pattern + correlation threshold
+	- explicit teaching (Button or so)
+		*Pros : Good
+		*Cons : Usability issue 
+		*After several explicit teaching, it makes some correlation tables and smaller thresholding
+
+		* Users are willing to do that if rewards are provided
+
+
