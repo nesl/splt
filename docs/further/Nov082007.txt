@@ -12,4 +12,10 @@ Event Detection
 	- How to define event : What is consuming status?
 	- Which sensing modality can detect it?
 		* Currently it was relative location
+Event Detection Prior Technique
+	- Baysian Estimator
+	- Hidden Markov Model (Morkov Process with unknown parameter) 
+	- Binary Detection Problem
+	- ??
+	
 
