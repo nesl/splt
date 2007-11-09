@@ -1,6 +1,7 @@
 What's motivations?
 	Book "Consumer Behavior and Energy Conservation" by Martinus nijhoff Publishers
 	- main argument : Conservation the cheapeast and the most promising way
+	Give some numbers
 
 What's the eventual goal of the problem?
 	Individual level resource management or monitoring
