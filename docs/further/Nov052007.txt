@@ -59,3 +59,9 @@ Some other considerations:
 Time-line
 By dec:
 	Positioning paper or vision paper shooting for Mobicom Challenge Track
+By Feb 04:
+	UCEI Proposal
+By Feb 29:
+	EmNet
+By April 1X:
+	SenSys
