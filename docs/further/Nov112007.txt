@@ -1,0 +1,27 @@
+Sensing resource consumption
+	Which resource
+		cost of running, installiation
+			effort
+			price
+			power size
+	Scalatility of solutions	
+	Precision, accuracy, acquisition time. 
+
+WHO : is the most interesting aspect. 
+Who's using it.
+Who's benefiting from it.
+Measuring utility(Misleading term)
+	Who's using it
+	Location
+	Combination of multiple appliances change utility
+	battery powered
+	correlation among status of users & apps
+	indirect
+	bus, car
+	Wasted/Useful
+
+Positive Feedback to 
+	We want to know our behavior. 
+
+GaTech: Sensing
+	Contact
