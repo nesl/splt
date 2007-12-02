@@ -1,0 +1,206 @@
+#LyX 1.5.1 created this file. For more info see http://www.lyx.org/
+\lyxformat 276
+\begin_document
+\begin_header
+\textclass article
+\language english
+\inputencoding auto
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+\graphics default
+\paperfontsize default
+\papersize default
+\use_geometry false
+\use_amsmath 1
+\use_esint 1
+\cite_engine basic
+\use_bibtopic false
+\paperorientation portrait
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\defskip medskip
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\author "" 
+\author "" 
+\end_header
+
+\begin_body
+
+\begin_layout Title
+SpotLight
+\end_layout
+
+\begin_layout Standard
+It is more than a cliche to say something about energy conservation.
+ A lot of countries established a regulation that encourage companies to
+ put Energy Star Level or a similar metric on each appliance that they made.
+ Consumers carefully consider this metric when they want to buy a new appliance.
+ Beside of the regulation, in addition, consumers' preference to energy
+ efficient appliances is a driving force for companies to develop more energy
+ efficient appliances than before.
+ People's awareness of energy conservation grows rapidly as developing countries
+ keep consuming tremendous amount of fossil fuel as they are developing
+ rapidly.
+ Public policy strongly encourage people to be aware of lack of fossil fuel
+ and improve their energy efficiency for the world to be sustainable.
+ NGOs also keep eyes on companies to determine their sustainability.
+ A good and compelling example is the great success of Toyota's Prius hybrid
+ automobile.
+ Due to its high price, it may not be cost effective for a short period
+ of time.
+ But a lot of people are willing to buy one if they are capable.
+ That means as long as cost doesn't exceed a lot more than a traditional
+ solution, some of them may still buy those products based upon their altruism.
+ All those could be strong motivations for us to develeop our system.
+ Meaning we have certain places where we sell our ideas.
+ 
+\end_layout
+
+\begin_layout Standard
+Meanwhile, traditional sensing and monitoring systems often focused on reliabili
+ty, accuracy, and precision in terms of sensing modalities.
+ Therefore, they usually lack providing individual level of granularity
+ but rather provide accurate and reliable sensory information of direct
+ observations such as image, temperature, humidity, and etc.
+ As emerging technology so called 
+\begin_inset Quotes eld
+\end_inset
+
+Human Intertwined Loop
+\begin_inset Quotes erd
+\end_inset
+
+ applications reveals, individual's behavior is one of the most important
+ factors that affect overall performance of the systems.
+ In regard to the energy saving concern, for example, on a freeway typical
+ energy efficient speed limit is 60MPH, however fuel-efficiency of a car
+ highly depends on users' decision whether a driver follows the limit or
+ not.
+ It is also obvisous that even if a householder bought an energy efficient
+ television, if he is very forgetful and therefore often forgets to turn
+ the television off, it results in that a huge amount of energy will be
+ wasted.
+ 
+\end_layout
+
+\begin_layout Standard
+Demands for individual level of granularity of information is also strong
+ motivation for us.
+ As natural, people want to listen to their own stories and there are many
+ examples.
+ 1) many of young people have their personal facebook, blog or webpage where
+ they put their personal stories.
+ One sometimes writes her diary and shopping list, puts her photos, and
+ share those stories with friends and family.
+ 2) personal health monitoring application is also a good example of such
+ demands.
+ Recently, Nike+iPod package provides individual with their traning/running
+ story on a daily basis which is of great success.
+ Some elderly people, who have potential heal problems, are willing to buy
+ personal blood pressure monitor/blood sugar level monitor.
+ 3) Curiousity often makes us want to know how well we are doing.
+ Typical video game gives us some numbers that indicate how good a player
+ is.
+ Grade and competition often motivate students to study harder.
+\end_layout
+
+\begin_layout Standard
+Technically speaking, sensing of people and sensing of phenomena are nothing
+ new.
+ However, sensing of how well and how are people doing with the world in
+ individual level is a new question that is very interesting to answer.
+ This is unanswered and our work tries to answer to this question.
+ First of all, we try to find some interaction models between a user and
+ an environment, i.e.
+ an appliance.
+ Some of prior arts that are related to 
+\begin_inset Quotes eld
+\end_inset
+
+Sensing of Human Activity
+\begin_inset Quotes erd
+\end_inset
+
+ such as sensory grammer and activity zone focus on the fact that what is
+ the most typical or common mobility profile when people do a specific behavior.
+ And they can achieve more than 90% of accuracy of detection rate under
+ realistic settings.
+ However, this approach doesn't actually care of how people change an environmen
+t when people do a specific job except their movement profile.
+ For example, in the activity zone paper they simply assume that if a person
+ is moving toward and backward in front of a white board, she is writing/using
+ the white board.
+ However, it is always possible that there is a case where she is just thinking
+ and going toward and backward in front of the white boards.
+ Imagine if we can also monitor current status of the white board, say accelerat
+ion/vibration.
+ Such information, of course, helps distinguish this kind of ambiguity.
+ However, adding sensing modality often is not desired as a cost issue come
+ to the place.
+ So, we also consider tradeoff between adding sensing modality and detection
+ rate.
+ One interesting observation regarding this issue could be [] where the
+ detection rate is a bell shaped curve due to various noise sources.
+ 
+\end_layout
+
+\begin_layout Standard
+Recalling our focus of work, we are aiming at monitoring people and sources
+ of resources at the same time.
+ Therefore, our approach is, in that regard, new because the correlation
+ among users and resources is the most important and essential point of
+ view.
+ Say, how people interact with appliances, how people change the status
+ of appliances, how different depending upon individual's characteristics
+ and how appliances can differentiate people.
+ Therefore, the interesting features could be both of people and appliances.
+ 
+\end_layout
+
+\begin_layout Standard
+We envision that our work can be an initial step to a new sensing regime
+ that scales down to the individual level of granularity.
+ Except some information that is solely personal such as health monitoring,
+ there are very few attempts to provide individual level of granularity
+ of sensory information.
+ 
+\end_layout
+
+\begin_layout Standard
+Interaction models played an important role especially in the Human Computer
+ Interface regime.
+ Some of researchers developed several techniques that accomodate users
+ with a new and intuitive way to interact with machines.
+ For example, a well known mice, touch pad, and other input devices gave
+ users a great experience from the beginning and they are all around nowadays.
+ As computing resources play an important role in our daily life, people
+ started to look at various aspects of technology.
+ Especially they started to want machines to help their decision making
+ processes by providing suggestions, numbers in regards to performance,
+ health, and money, and personal stories.
+ Such demands initiated tremendous amounts of research areas such as artificial
+ intelligence, personal health monitoring, and others.
+ In similar regards, we are aiming at develeoping a system that provides
+ personal stories in terms of resource/electricity consumption of individual
+ level of granularity and therefore helping people improve their daily resource
+ consumption pattern.
+\end_layout
+
+\begin_layout Standard
+
+\end_layout
+
+\end_body
+\end_document

@@ -1,0 +1,198 @@
+#LyX 1.5.1 created this file. For more info see http://www.lyx.org/
+\lyxformat 276
+\begin_document
+\begin_header
+\textclass article
+\language english
+\inputencoding auto
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+\graphics default
+\paperfontsize default
+\papersize default
+\use_geometry false
+\use_amsmath 1
+\use_esint 1
+\cite_engine basic
+\use_bibtopic false
+\paperorientation portrait
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\defskip medskip
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\author "" 
+\end_header
+
+\begin_body
+
+\begin_layout Title
+SpotLight : Story
+\end_layout
+
+\begin_layout Section
+Patrick's 2 days.
+ 
+\end_layout
+
+\begin_layout Standard
+Day 1.
+ 
+\end_layout
+
+\begin_layout Standard
+He woke up in the morning around 8AM.
+ He was about too late.
+ So he decided to quickly wash his face and shave.
+ He used A tiny amount of midium hot water and electrical shaving machine
+ and tooth brush.
+ He decided to take his car so he can reach his office on time.
+ It is about 20 minutes distance from his home to his office.
+ Right after he arrived his office, he turned on his computer and desk lamp
+ and checked some e-mails then brifly checked his agenda.
+ Before the meeting, he wanted to drink a cup of coffee because he didn't
+ have a chance.
+ He went to a vending machine and took one.
+ While drinking coffee, he double checked his presentation material using
+ his laptop.
+ Then he went to the meeting room and started his presentation using a beam
+ projector.
+ The meeting last more than 2 hours, so they decided to get some sandwitches
+ for their working lunch with some soda and coffee.
+ He took one salmon sandwidch and a bottle of mineral water.
+ When he came back to his office, he realized he left his lamp on so he
+ turn his lamp off.
+ Then he started updating today's meeting.
+ While doing it, he felt it got little hot, he decided to turn on then air
+ conditioner.
+ Around 3PM, one client came to his office to talk about the progress report
+ that he sent out a couple of days ago.
+ He served a cup of apple juice to his client and started talking about
+ it.
+ After a while, his client claimed that it is little too cold so he set
+ temperature a little higher.
+ After meeting his client, he decided to visit one of his colleagues near
+ his office to discuss about one problem that he had.
+ Walking along the street, he found one good hotdog place so he bought two
+ for him and his friend.
+ After visiting his friend, he felt so tired so he decided to go home and
+ take some rest.
+ So he made phone calls to his office and his home so he can let them know.
+ Then he took his car and drove back home.
+ 
+\end_layout
+
+\begin_layout Standard
+When he came home, his wife was preparing dinner for the family.
+ So, he went to the bathroom and took a short shower then went to the living
+ room and joined his daughter watching a television.
+ The TV show was boring so he started to chat with his daughter about her
+ day.
+ Shortly after, his wife called him and his daughter since dinner was ready.
+ After dinner, he decided to take care of his garden especially wanted to
+ water the garden.
+ Suddenly, he realized that he forgot to invite one of his friends to his
+ party on saturday.
+ So he went back to his room and made a phone call.
+ 
+\end_layout
+
+\begin_layout Standard
+After a long day, he felt so tired he just went to sleep.
+ 
+\end_layout
+
+\begin_layout Standard
+Day 2.
+\end_layout
+
+\begin_layout Standard
+He woke up around 6AM.
+ He went to the kitchen and made coffee using 12-cup brown coffee maker
+ for his family.
+ While brewing coffee, he started to make some omlet and toasts.
+ Then he went to the upstair and woke up his wife and daughter.
+ Then he was happty with that they had breakfast together.
+ He felt good, so he decided to take a bus to his office because it only
+ cost $0.25 per a ride.
+ At the office, he turned on his laptop because he didn't want to be bothered
+ with the noise of his desktop.
+ Then checked e-mails and agenda.
+ Since he got some request for items from his boss, he started to search
+ for necessary and appropriate items that he needed to order.
+ So he made some phone calls and used the Internet.
+ After making a list, he sent it to his boss and the department and also
+ printed out for recording purpose.
+ As things went well, he was in the mood of researching on his current project.
+ So he went to the library of his company and spent some time there.
+ During lunch time, he went out to one of restaurants with some of his colleague
+s to have pasta.
+ He had pomodoro pasta with a cup of sparkling water.
+ Then he came back to work and most of time he stayed in his office doing
+ some paper works.
+ 
+\end_layout
+
+\begin_layout Standard
+Around 6PM, he called his wife and daughter to ask to go out for dinner.
+ So, his wife drove her car and picked up him at his office.
+ And three of them went to a barbeque place.
+ He had one full size barbeque back-rip with two bottles of beer.
+ When they came home, they felt they are so smelly.
+ So everyone took a long shower just to get rid of smell.
+ It was around 10PM after they took shower.
+ So, his daughter went to bed.
+ Because of the beer, he wanted to talk to his wife about his day.
+ So, they went to the living room and talked about that.
+ Around 12PM, they both together went to bed.
+ 
+\end_layout
+
+\begin_layout Section
+What if stories
+\end_layout
+
+\begin_layout Standard
+What if there is a system that profiles his resource consumption pattern
+ and provides information regarding his resource efficiency on a daily basis.
+ What if the system can also give a benign suggestion if there is unintentional
+ resource waste.
+ Everytime he checks his agenda, what if the system sends an e-mail that
+ informs his resource budget, consumed and remainder.
+ What if he carefully considers the information for improving his resource
+ efficiency.
+ 
+\end_layout
+
+\begin_layout Standard
+For example, the system displays his current resource consumption as well
+ as total resource consumption on his PDA screen.
+ If he wants, the system can provide finer grained information such as what
+ kind of resources he consumed for what.
+ In addition, it also gives places where he wasted resource unintentionally
+ so he can be more aware of his wasteful resource consumption pattern.
+ If he forgot to turn off a television, a desk lamp, or a desktop, or close
+ a faucet, it may help him reduce such waste of resource if the system can
+ notify him as soon as it detects such events.
+ 
+\end_layout
+
+\begin_layout Standard
+SpotLight, a system that aims at providing such information for individuals
+ to be more resource efficient, can eventually help the earth be sustainable.
+  
+\end_layout
+
+\end_body
+\end_document
