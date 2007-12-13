@@ -1,0 +1,80 @@
+#LyX 1.5.1 created this file. For more info see http://www.lyx.org/
+\lyxformat 276
+\begin_document
+\begin_header
+\textclass article
+\language english
+\inputencoding auto
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+\graphics default
+\paperfontsize default
+\papersize default
+\use_geometry false
+\use_amsmath 1
+\use_esint 1
+\cite_engine basic
+\use_bibtopic false
+\paperorientation portrait
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\defskip medskip
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\author "" 
+\author "" 
+\end_header
+
+\begin_body
+
+\begin_layout Abstract
+In a building we can divide energy consumption in two domains; infrastructure
+ domain and personal domain.
+ As more control over HVAC and lighting systems, which mainly consist of
+ infrastructure domain, became available, more efficient energy management
+ of buildings became possible.
+ As a result, an individual's energy consumption is a significant amount
+ of the total consumption of a building.
+ Often times an individual's awareness of various environmental factors
+ such as carbon dioxide emission and consumption plays an important role
+ in energy conservation.
+ Some works in the social sciences field emphasizes on that fine grained
+ information regarding energy consumption may help people improve their
+ energy usage pattern significantly.
+ Some social scientists claim that continual awareness of energy conservation
+ is also important.
+ In light of such works, we present SpotLight, a system that profiles individual
+'s energy consumption pattern in real time.
+ Our prototype implementation views appliances as rendering a service to
+ a user and the energy consumption associated with the appliance as a cost
+ for the service.
+ Each participating appliance is specified a service range, a physical vicinity
+ from the appliance within which the user benefits from the service.
+ Using radio receive strength from user-wearable mote tags, an appliance
+ is able to determine the users in its service range.
+ In order to make these measurements, each appliance is instrumented with
+ a power meter and a mote tag reader.
+ The current implementation of Spotlight uses a COTS power meter and MicaZ
+ motes.
+ The Spotlight system is deployed and tested in an experimental setup with
+ various appliances and users.
+ We evaluate multiple schemes of accounting energy consumption based on
+ an individual's movement profile and the appliances' power profile.
+ Our preliminary results show how the system could detect wasted energy
+ and we discuss interesting individual behavior that could be interpreted
+ for various energy optimizations.
+\end_layout
+
+\end_body
+\end_document
