@@ -39,67 +39,12 @@
 \begin_body
 
 \begin_layout Abstract
-The energy consumption of a building can divided into two domains: infrastructur
-e and personal.
- The infrastructure domain includes devices such as HVAC and lighting systems.
- As new technology enable improved control over such devices with finer
- granularity, it is now possible to operate these devices very efficiently.
- There also have been many technological innovations for efficient devices
- in the personal domain.
- However, various works in the social science fields have addressed this
- issue and inspired the notion that if individuals were made better aware
- of their energy usage pattern and carbon footprint, they will be more willing
- to conserve energy and modify their behavior to improve their carbon footprint.
- In light such works
-\end_layout
-
-\begin_layout Abstract
-============================
-\end_layout
-
-\begin_layout Abstract
-The energy consumption of a building can divided into two domains: infrastructur
-e and personal.
- The infrastructure domain includes devices such as HVAC and lighting systems.
- As new technology enable improved control over such devices with finer
- granularity, it is now possible to operate these devices very efficiently.
- However, there have not been as many technological innovations for devices
- in the personal domain such as XX, XX.
- This results in the dominant amount of energy consumption in a building
- coming from devices in the personal domain.
- 
-\end_layout
-
-\begin_layout Abstract
-Various works in the social sciences field have addressed this issue and
- inspired the notion that if individuals were made better aware of their
- energy usage pattern and carbon footprint, they will be more willing to
- conserve energy and modify their behavior to improve their carbon footprint.
- In light such works....
-\end_layout
-
-\begin_layout Abstract
-============================
-\end_layout
-
-\begin_layout Abstract
-In a building we can divide energy consumption in two domains; infrastructure
- domain and personal domain.
- As more control over HVAC and lighting systems, which mainly consist of
- infrastructure domain, became available, more efficient energy management
- of buildings became possible.
- As a result, an individual's energy consumption is a significant amount
- of the total consumption of a building.
- Often times an individual's awareness of various environmental factors
- such as carbon dioxide emission and consumption plays an important role
- in energy conservation.
- Some works in the social sciences field emphasizes on that fine grained
- information regarding energy consumption may help people improve their
- energy usage pattern significantly.
- Some social scientists claim that continual awareness of energy conservation
- is also important.
- In light of such works, we present SpotLight, a system that profiles individual
-'s energy consumption pattern in real time.
+The impending energy crisis forces us to research innovative ways of optimizing
+ energy consumption.
+ We believe that a better understanding of energy consumption can help improve
+ energy efficiency.
+ We present SpotLight, a system that profiles individual's energy consumption
+ pattern in real time.
  Our prototype implementation views appliances as rendering a service to
  a user and the energy consumption associated with the appliance as a cost
  for the service.
