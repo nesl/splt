@@ -1,0 +1,297 @@
+#LyX 1.5.1 created this file. For more info see http://www.lyx.org/
+\lyxformat 276
+\begin_document
+\begin_header
+\textclass extarticle
+\options times, 10pt,twocolumn
+\language english
+\inputencoding auto
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+\graphics default
+\paperfontsize default
+\spacing single
+\papersize default
+\use_geometry false
+\use_amsmath 1
+\use_esint 1
+\cite_engine basic
+\use_bibtopic false
+\paperorientation portrait
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\defskip medskip
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\author "" 
+\author "" 
+\end_header
+
+\begin_body
+
+\begin_layout Title
+SpotLight : Focusing on Energy Consumption of Individials
+\end_layout
+
+\begin_layout Author
+Younghun Kim, Zainul Charbiwala, Akhilesh Singhania, Mani B.
+ Srivastava
+\newline
+Networked and Embedded Systems Laboratory 
+\newline
+Department of Electrical
+ Engineering
+\newline
+University of California, Los Angeles
+\newline
+{kimyh, zainul, akhi, mbs}@ucla.
+edu
+\end_layout
+
+\begin_layout Abstract
+The impending energy crisis forces us to research innovative ways of optimizing
+ energy consumption.
+ We believe that a better understanding of energy consumption can help improve
+ energy efficiency.
+ We present SpotLight, a system that profiles individual's energy consumption
+ pattern in real time using wireless sensor network technology.
+ Our prototype implementation views appliances as rendering a service to
+ a user and the energy consumption associated with the appliance as a cost
+ for the service.
+ Each participating appliance is specified a service range, a physical vicinity
+ from the appliance within which the user benefits from the service.
+ Using radio receive strength from user-wearable mote tags, an appliance
+ is able to determine the users in its service range.
+ In order to make these measurements, each appliance is instrumented with
+ a power meter and a mote tag reader.
+ The current implementation of Spotlight uses a COTS power meter and MicaZ
+ motes.
+ The Spotlight system is deployed and tested in an experimental setup with
+ various appliances and users.
+ We evaluate multiple schemes of accounting energy consumption based on
+ an individual's movement profile and the appliances' power profile.
+ Our preliminary results show how the system could detect wasted energy
+ and we discuss interesting individual behavior that could be interpreted
+ for various energy optimizations.
+\end_layout
+
+\begin_layout Section
+Introduction
+\end_layout
+
+\begin_layout Standard
+NYMEX CRUDE FUTURE PETROLEUM price is $95.50/barrel [Bloomberg] Feb 15 2008,
+ and Eighty-five percent of this energy was generated from non-renewable
+ fossil fuels such as coal, natural gas, and petroleum (U.S.
+ Department of Energy, 2006).
+ Thus energy production and consumption comes not only with a significant
+ cost but also with environmental concern.
+ Recently, more government agencies and companies are becoming concerned
+ with the cost of energy consumption.
+ The cost is also affecting many households with significant consumption.
+ The UN Economic and Social Commission for Asia and the Pacific is concerned
+ with sustainable energy consumption.
+ Dr.
+ Song et.
+ al.
+ 
+\begin_inset LatexCommand cite
+key "UNESCAP"
+
+\end_inset
+
+claim that energy consumption pattern per household can provide a good way
+ to determine socio-economic level of society as well as a solution for
+ saving energy.
+ 
+\end_layout
+
+\begin_layout Standard
+The traditional dimensions measure the consumption at a very coarse-grained
+ granularity.
+ The consumption is given in terms of household and over a period of many
+ days.
+ This allows for only a partial awareness on the part of the users about
+ their energy consumption.
+ In such settings, if measurement of energy consumption was made available
+ at a finer granularity, it would help users in pinpointing specific habits
+ or trends, modifying which would aid in significant improvements in energy
+ consumption.
+ For example, ??? et.
+ al.
+ showed people are willing to do the right thing as well as want to save
+ their energy cost, and people want to know such feedback information.
+ Personal experience in regards to socio-environmental concern also motivates
+ individual to want to have information sources to be more aware of that.
+ 
+\end_layout
+
+\begin_layout Standard
+All these programs are still aimed profiling the consumption at the granularity
+ of a household.
+ To the best of our knowledge, there have been no attempts at profiling
+ an individual's energy consumption pattern.
+ We believe that profiling at this granularity would further aid in pinpointing
+ consumption patterns to further improve energy efficiency.
+ We introduce a system called Spotlight that is capable of estimating an
+ individual's personal energy consumption profile.
+ The system can be operated at a household level or on a larger scale allowing
+ users to set their own privacy settings.
+\end_layout
+
+\begin_layout Standard
+After an initial calibration procedure, it operates with little or no interventi
+on from the user.
+ Users are able to monitor their consumption pattern in real time or observe
+ long term trend reports.
+ The application can detect instances of energy wastage where an appliance
+ could be operating unnecessarily and could also identify the person responsible
+ for the wasted energy.
+ The application also details how much of a user's energy consumption came
+ from specific appliances and how much energy was consumed by different
+ appliances.
+ This information can be used by the users to make decisions on the efficiency
+ of different appliances and about their personal habits.
+ 
+\end_layout
+
+\begin_layout Standard
+We developed and deployed an application to estimate the consumption under
+ the first classification of appliances.
+ The third class of appliances and if the latter consumption policy for
+ the second class of appliances is followed, they too can be monitored under
+ this application with minor modifications.
+ In the application, each user carries a RFID tag and each appliance is
+ instrumented with a RFID reader and a power meter.
+ The power meter records the energy consumption of the appliance and the
+ RFID reader detects when a user enters the service range of the appliance.
+ When a user is present in the service range of an appliance, the user is
+ charged for the energy consumption of the appliance.
+ If multiple users are present in the range, the charge is divided equally.
+ The last person to leave the range will continue to be charged for the
+ consumption of that appliance until another person enters the service range.
+ We provide the ability for the users to observe their consumption in real-time
+ through our Spotlight server.
+ 
+\end_layout
+
+\begin_layout Standard
+The rest of the paper is structured as following.
+ Section 
+\begin_inset LatexCommand ref
+reference "sec:System-Design"
+
+\end_inset
+
+ details the design and prototype implementation of our system.
+ In section 
+\begin_inset LatexCommand ref
+reference "sec:Evaluation"
+
+\end_inset
+
+ we evaluate our system against the ground truth and for performance.
+ We discuss some limitations of our approach and some observations in Section
+ 
+\begin_inset LatexCommand ref
+reference "sec:Discussion"
+
+\end_inset
+
+.
+ Though no prior work targets energy profiling at an individual level, we
+ note some projects of similar nature in Section 
+\begin_inset LatexCommand ref
+reference "sec:Related-works"
+
+\end_inset
+
+ and finally conclude in section 
+\begin_inset LatexCommand ref
+reference "sec:Conclusion"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+In this paper, we explore challenges in regards to our specific application,
+ but our vision is not restricted to one specific application but to broader
+ view of information reuse and innovative applications.
+ 
+\end_layout
+
+\begin_layout Section
+System Architecture
+\end_layout
+
+\begin_layout Standard
+We envision 
+\end_layout
+
+\begin_layout Subsection
+Activity Recognition
+\end_layout
+
+\begin_layout Subsection
+Infrastructure Monitoring and Indistrial Resource Monitoring Technology
+\end_layout
+
+\begin_layout Subsection
+Resource monitoring
+\end_layout
+
+\begin_layout Section
+Challenges
+\end_layout
+
+\begin_layout Subsection
+Heterogenous Network
+\end_layout
+
+\begin_layout Subsection
+Highly ad-hoc nature
+\end_layout
+
+\begin_layout Subsection
+MIMO nature
+\end_layout
+
+\begin_layout Subsection
+Fuzzy nature of decision
+\end_layout
+
+\begin_layout Subsection
+Redundant Information Sources
+\end_layout
+
+\begin_layout Subsection
+Lack of network capability and participants
+\end_layout
+
+\begin_layout Section
+Research plan
+\end_layout
+
+\begin_layout Section
+Concluding Remarks
+\end_layout
+
+\begin_layout Section
+Acknowledgement
+\end_layout
+
+\end_body
+\end_document

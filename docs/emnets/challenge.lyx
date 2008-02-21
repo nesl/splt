@@ -1,0 +1,168 @@
+#LyX 1.5.1 created this file. For more info see http://www.lyx.org/
+\lyxformat 276
+\begin_document
+\begin_header
+\textclass article
+\language english
+\inputencoding auto
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+\graphics default
+\paperfontsize default
+\papersize default
+\use_geometry false
+\use_amsmath 1
+\use_esint 1
+\cite_engine basic
+\use_bibtopic false
+\paperorientation portrait
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\defskip medskip
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\author "" 
+\author "" 
+\end_header
+
+\begin_body
+
+\begin_layout Abstract
+The impending energy and water crisis forces us to research innovative ways
+ of optimizing energy consumption.
+ We believe that a better understanding of energy and water consumption
+ can help improve energy and resource efficiency.
+ Wireless sensor network, pervasive computing, and mobile computing and
+ network technologies allow us to monitor variety of context, human activity,
+ resource consumption and interaction among people and resources and therefore
+ allow us to develop personal resource monitoring devices.
+ However, their closed nature in that often the systems separately focus
+ on the data processing, network configuration, or low power design hampers
+ information reuse and innovative applications.
+ 
+\end_layout
+
+\begin_layout Abstract
+In this paper, we point out challenges in terms of network configuation,
+ data processing, machine learning, etc.
+ of this specific application by exploiting its highly adhoc and hybrid
+ network nature, and distributed information sources and sinks structure.
+ 
+\end_layout
+
+\begin_layout Section
+Introduction
+\end_layout
+
+\begin_layout Standard
+In 2006, we consumed 847,299,700 barrels of petroleum per a day[].
+ In 2005, 15,746.54 billion killowattshours are consumed world wide.
+ (Energy and water crisis)
+\end_layout
+
+\begin_layout Standard
+Ubiquitous computing society focused on developing of inexpensive and easy-to-de
+ploy sensing systems to support activity recognition and context-aware computing
+ applications.
+ For example, [switches] explored activity recognition methodology based
+ on low-cost sensors such as motion detectors and simple contact switches.
+ [expensive ones] tried to minimize number of sensor by exploiting expensive
+ and complicated sensors such as microphones or CCD cameras.
+ [wearable sensors] promises possible activity recognition technique.
+ 
+\end_layout
+
+\begin_layout Standard
+While these approaches promise many opportunities, they are closed as informatio
+n sources.
+ 
+\end_layout
+
+\begin_layout Standard
+We envision that networked information and dynamic information processing
+ can reveal futher research opportunities while lowering overall bandwidth
+ requirements.
+ However, anticipated challenges hamper a progress toward the goal.
+ 
+\end_layout
+
+\begin_layout Standard
+In this paper, we try to explore challenges in regards to our specific applicati
+on, but our vision is not restricted to one specific application but to
+ broader view of information reuse and innovative applications.
+ 
+\end_layout
+
+\begin_layout Section
+Related Work
+\end_layout
+
+\begin_layout Subsection
+Activity Recognition
+\end_layout
+
+\begin_layout Subsection
+Wireless sensor network
+\end_layout
+
+\begin_layout Subsection
+Infrastructure Monitoring and Indistrial Resource Monitoring Technology
+\end_layout
+
+\begin_layout Subsection
+Resource monitoring
+\end_layout
+
+\begin_layout Section
+Challenges
+\end_layout
+
+\begin_layout Subsection
+Heterogenous Network
+\end_layout
+
+\begin_layout Subsection
+Highly ad-hoc nature
+\end_layout
+
+\begin_layout Subsection
+MIMO nature
+\end_layout
+
+\begin_layout Subsection
+Fuzzy nature of decision
+\end_layout
+
+\begin_layout Subsection
+Redundant Information Sources
+\end_layout
+
+\begin_layout Subsection
+Lack of network capability and participants
+\end_layout
+
+\begin_layout Section
+Research plan
+\end_layout
+
+\begin_layout Section
+Concluding Remarks
+\end_layout
+
+\begin_layout Section
+Acknowledgement
+\end_layout
+
+\end_body
+\end_document
