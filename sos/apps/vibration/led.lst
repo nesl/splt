@@ -1,0 +1,144 @@
+   1               		.file	"led.c"
+   2               		.arch atmega128
+   3               	__SREG__ = 0x3f
+   4               	__SP_H__ = 0x3e
+   5               	__SP_L__ = 0x3d
+   6               	__tmp_reg__ = 0
+   7               	__zero_reg__ = 1
+   8               		.global __do_copy_data
+   9               		.global __do_clear_bss
+  12               		.text
+  13               	.Ltext0:
+ 209               	.global	ker_led
+ 211               	ker_led:
+   1:/Users/Administrator/sos-2x/platform/micaz/led.c **** /**
+   2:/Users/Administrator/sos-2x/platform/micaz/led.c ****  * @brief    led module for mica2
+   3:/Users/Administrator/sos-2x/platform/micaz/led.c ****  * @author   Simon Han (simonhan@ee.ucla.edu)
+   4:/Users/Administrator/sos-2x/platform/micaz/led.c ****  * @version  0.1
+   5:/Users/Administrator/sos-2x/platform/micaz/led.c ****  *
+   6:/Users/Administrator/sos-2x/platform/micaz/led.c ****  */
+   7:/Users/Administrator/sos-2x/platform/micaz/led.c **** 
+   8:/Users/Administrator/sos-2x/platform/micaz/led.c **** #include <sos.h>
+   9:/Users/Administrator/sos-2x/platform/micaz/led.c **** #include "led.h"
+  10:/Users/Administrator/sos-2x/platform/micaz/led.c **** 
+  11:/Users/Administrator/sos-2x/platform/micaz/led.c **** int8_t ker_led(uint8_t action){
+ 213               	.LM1:
+ 214               	/* prologue: frame size=0 */
+ 215               	/* prologue end (size=0) */
+  12:/Users/Administrator/sos-2x/platform/micaz/led.c **** 	switch (action){
+ 217               	.LM2:
+ 218 0000 9927      		clr r25
+ 219 0002 8530      		cpi r24,5
+ 220 0004 9105      		cpc r25,__zero_reg__
+ 221 0006 31F1      		breq .L7
+ 223               	.LM3:
+ 224 0008 8630      		cpi r24,6
+ 225 000a 9105      		cpc r25,__zero_reg__
+ 226 000c 7CF4      		brge .L12
+ 227 000e 8230      		cpi r24,2
+ 228 0010 9105      		cpc r25,__zero_reg__
+ 229 0012 D1F0      		breq .L4
+ 230 0014 8330      		cpi r24,3
+ 231 0016 9105      		cpc r25,__zero_reg__
+ 232 0018 1CF4      		brge .L13
+ 233 001a 0197      		sbiw r24,1
+ 234 001c 99F0      		breq .L3
+ 235 001e 28C0      		rjmp .L2
+ 236               	.L13:
+ 237 0020 8330      		cpi r24,3
+ 238 0022 9105      		cpc r25,__zero_reg__
+ 239 0024 99F0      		breq .L5
+ 240 0026 0497      		sbiw r24,4
+ 241 0028 99F0      		breq .L6
+ 242 002a 22C0      		rjmp .L2
+ 243               	.L12:
+ 244 002c 8730      		cpi r24,7
+ 245 002e 9105      		cpc r25,__zero_reg__
+ 246 0030 A9F0      		breq .L9
+ 247 0032 8730      		cpi r24,7
+ 248 0034 9105      		cpc r25,__zero_reg__
+ 249 0036 84F0      		brlt .L8
+ 250 0038 8830      		cpi r24,8
+ 251 003a 9105      		cpc r25,__zero_reg__
+ 252 003c 91F0      		breq .L10
+ 253 003e 0997      		sbiw r24,9
+ 254 0040 99F0      		breq .L11
+ 255 0042 16C0      		rjmp .L2
+ 256               	.L3:
+  13:/Users/Administrator/sos-2x/platform/micaz/led.c **** 		case LED_RED_ON:        led_red_on();        break;
+ 258               	.LM4:
+ 259 0044 DA98      		cbi 59-0x20,2
+ 260 0046 14C0      		rjmp .L2
+ 261               	.L4:
+  14:/Users/Administrator/sos-2x/platform/micaz/led.c **** 		case LED_GREEN_ON:      led_green_on();      break;
+ 263               	.LM5:
+ 264 0048 D998      		cbi 59-0x20,1
+ 265 004a 12C0      		rjmp .L2
+ 266               	.L5:
+  15:/Users/Administrator/sos-2x/platform/micaz/led.c **** 		case LED_YELLOW_ON:     led_yellow_on();     break;
+ 268               	.LM6:
+ 269 004c D898      		cbi 59-0x20,0
+ 270 004e 10C0      		rjmp .L2
+ 271               	.L6:
+  16:/Users/Administrator/sos-2x/platform/micaz/led.c **** 		case LED_RED_OFF:       led_red_off();       break;
+ 273               	.LM7:
+ 274 0050 DA9A      		sbi 59-0x20,2
+ 275 0052 0EC0      		rjmp .L2
+ 276               	.L7:
+  17:/Users/Administrator/sos-2x/platform/micaz/led.c **** 		case LED_GREEN_OFF:     led_green_off();     break;
+ 278               	.LM8:
+ 279 0054 D99A      		sbi 59-0x20,1
+ 280 0056 0CC0      		rjmp .L2
+ 281               	.L8:
+  18:/Users/Administrator/sos-2x/platform/micaz/led.c **** 		case LED_YELLOW_OFF:    led_yellow_off();    break;
+ 283               	.LM9:
+ 284 0058 D89A      		sbi 59-0x20,0
+ 285 005a 0AC0      		rjmp .L2
+ 286               	.L9:
+  19:/Users/Administrator/sos-2x/platform/micaz/led.c **** 		case LED_RED_TOGGLE:    led_red_toggle();    break;
+ 288               	.LM10:
+ 289 005c 8BB3      		in r24,59-0x20
+ 290 005e 94E0      		ldi r25,lo8(4)
+ 291 0060 05C0      		rjmp .L14
+ 292               	.L10:
+  20:/Users/Administrator/sos-2x/platform/micaz/led.c **** 		case LED_GREEN_TOGGLE:  led_green_toggle();  break;
+ 294               	.LM11:
+ 295 0062 8BB3      		in r24,59-0x20
+ 296 0064 92E0      		ldi r25,lo8(2)
+ 297 0066 02C0      		rjmp .L14
+ 298               	.L11:
+  21:/Users/Administrator/sos-2x/platform/micaz/led.c **** 		case LED_YELLOW_TOGGLE: led_yellow_toggle(); break;
+ 300               	.LM12:
+ 301 0068 8BB3      		in r24,59-0x20
+ 302 006a 91E0      		ldi r25,lo8(1)
+ 303               	.L14:
+ 304 006c 8927      		eor r24,r25
+ 305 006e 8BBB      		out 59-0x20,r24
+ 306               	.L2:
+  22:/Users/Administrator/sos-2x/platform/micaz/led.c **** 	}
+  23:/Users/Administrator/sos-2x/platform/micaz/led.c **** 	return 0;
+  24:/Users/Administrator/sos-2x/platform/micaz/led.c **** }
+ 308               	.LM13:
+ 309 0070 80E0      		ldi r24,lo8(0)
+ 310 0072 90E0      		ldi r25,hi8(0)
+ 311               	/* epilogue: frame size=0 */
+ 312 0074 0895      		ret
+ 313               	/* epilogue end (size=1) */
+ 314               	/* function ker_led size 62 (61) */
+ 316               	.Lscope0:
+ 318               		.text
+ 320               	Letext:
+ 321               	/* File "/Users/Administrator/sos-2x/platform/micaz/led.c": code   62 = 0x003e (  61), prologues   
+DEFINED SYMBOLS
+                            *ABS*:00000000 led.c
+                            *ABS*:0000003f __SREG__
+                            *ABS*:0000003e __SP_H__
+                            *ABS*:0000003d __SP_L__
+                            *ABS*:00000000 __tmp_reg__
+                            *ABS*:00000001 __zero_reg__
+/var/tmp//ccW09hZQ.s:211    .text:00000000 ker_led
+/var/tmp//ccW09hZQ.s:320    .text:00000076 Letext
+
+UNDEFINED SYMBOLS
+__do_copy_data
+__do_clear_bss

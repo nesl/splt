@@ -1,0 +1,3629 @@
+   1               		.file	"sos_timer.c"
+   2               		.arch atmega128
+   3               	__SREG__ = 0x3f
+   4               	__SP_H__ = 0x3e
+   5               	__SP_L__ = 0x3d
+   6               	__tmp_reg__ = 0
+   7               	__zero_reg__ = 1
+   8               		.global __do_copy_data
+   9               		.global __do_clear_bss
+  12               		.text
+  13               	.Ltext0:
+ 198               		.lcomm num_realtime_clock,1
+ 199               		.lcomm outstanding_ticks,4
+ 201               	.global	timer_init
+ 203               	timer_init:
+   1:/Users/Administrator/sos-2x/kernel/sos_timer.c **** /* -*- Mode: C; tab-width:4 -*- */
+   2:/Users/Administrator/sos-2x/kernel/sos_timer.c **** /* ex: set ts=4 shiftwidth=4 softtabstop=4 cindent: */
+   3:/Users/Administrator/sos-2x/kernel/sos_timer.c **** /** 
+   4:/Users/Administrator/sos-2x/kernel/sos_timer.c ****  * @brief delta timer implementation
+   5:/Users/Administrator/sos-2x/kernel/sos_timer.c ****  * @author Simon Han
+   6:/Users/Administrator/sos-2x/kernel/sos_timer.c ****  * @brief Pre-allocated timers with safe blocks
+   7:/Users/Administrator/sos-2x/kernel/sos_timer.c ****  * @author Ram Kumar
+   8:/Users/Administrator/sos-2x/kernel/sos_timer.c ****  */
+   9:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+  10:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #include <sos_timer.h>
+  11:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #include <message_queue.h>
+  12:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #include <malloc.h>
+  13:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #include <hardware_types.h>
+  14:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #include <timer.h>
+  15:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #include <message.h>
+  16:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #include <measurement.h>
+  17:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #include <sos_sched.h>
+  18:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #include <sos_info.h>
+  19:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #include <sos_list.h>
+  20:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #include <sos_logging.h>
+  21:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #include <slab.h>
+  22:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+  23:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #ifdef SOS_USE_PREEMPTION
+  24:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #include <priority.h>
+  25:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #include <message_queue.h>
+  26:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #endif
+  27:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+  28:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #ifndef SOS_DEBUG_TIMER
+  29:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #undef DEBUG
+  30:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #define DEBUG(...)
+  31:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #undef DEBUG_SHORT
+  32:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #define DEBUG_SHORT(...)
+  33:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #define print_all_timers(...)
+  34:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #endif
+  35:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+  36:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #define MAX_SLEEP_INTERVAL 250
+  37:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #define MAX_REALTIME_CLOCK 4
+  38:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+  39:/Users/Administrator/sos-2x/kernel/sos_timer.c **** //------------------------------------------------------------------------
+  40:/Users/Administrator/sos-2x/kernel/sos_timer.c **** // INTERNAL DATA STRUCTURE
+  41:/Users/Administrator/sos-2x/kernel/sos_timer.c **** //------------------------------------------------------------------------
+  42:/Users/Administrator/sos-2x/kernel/sos_timer.c **** typedef struct {
+  43:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	uint16_t value;
+  44:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	uint16_t interval;
+  45:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	timer_callback_t f;
+  46:/Users/Administrator/sos-2x/kernel/sos_timer.c **** } timer_realtime_t;
+  47:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+  48:/Users/Administrator/sos-2x/kernel/sos_timer.c **** //------------------------------------------------------------------------
+  49:/Users/Administrator/sos-2x/kernel/sos_timer.c **** // GLOBAL VARIABLES
+  50:/Users/Administrator/sos-2x/kernel/sos_timer.c **** //------------------------------------------------------------------------
+  51:/Users/Administrator/sos-2x/kernel/sos_timer.c **** static list_t   deltaq;              //!< Timer delta queue
+  52:/Users/Administrator/sos-2x/kernel/sos_timer.c **** static list_t   timer_pool;          //!< Pool of initialized timers
+  53:/Users/Administrator/sos-2x/kernel/sos_timer.c **** static list_t   prealloc_timer_pool; //!< Pool of pre-allocated timers
+  54:/Users/Administrator/sos-2x/kernel/sos_timer.c **** static list_t  periodic_pool;        //!< periodic pool used by soft_interrupt
+  55:/Users/Administrator/sos-2x/kernel/sos_timer.c **** static int32_t  outstanding_ticks = 0; 
+  56:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+  57:/Users/Administrator/sos-2x/kernel/sos_timer.c **** static uint8_t num_realtime_clock = 0;
+  58:/Users/Administrator/sos-2x/kernel/sos_timer.c **** static timer_realtime_t realtime[MAX_REALTIME_CLOCK];
+  59:/Users/Administrator/sos-2x/kernel/sos_timer.c **** static slab_t timer_slab;
+  60:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+  61:/Users/Administrator/sos-2x/kernel/sos_timer.c **** //------------------------------------------------------------------------
+  62:/Users/Administrator/sos-2x/kernel/sos_timer.c **** // STATIC FUNCTION PROTOTYPES
+  63:/Users/Administrator/sos-2x/kernel/sos_timer.c **** //------------------------------------------------------------------------
+  64:/Users/Administrator/sos-2x/kernel/sos_timer.c **** static void timer_delta_q_insert(sos_timer_t *h, bool new_timer);
+  65:/Users/Administrator/sos-2x/kernel/sos_timer.c **** static sos_timer_t* find_timer_block(sos_pid_t pid, uint8_t tid);
+  66:/Users/Administrator/sos-2x/kernel/sos_timer.c **** static sos_timer_t *find_timer_in_periodic_pool(sos_pid_t pid, uint8_t tid);
+  67:/Users/Administrator/sos-2x/kernel/sos_timer.c **** static sos_timer_t* alloc_from_timer_pool(sos_pid_t pid, uint8_t tid);
+  68:/Users/Administrator/sos-2x/kernel/sos_timer.c **** static sos_timer_t* alloc_from_preallocated_timer_pool(sos_pid_t pid);
+  69:/Users/Administrator/sos-2x/kernel/sos_timer.c **** static int8_t timer_remove_timer(sos_timer_t *tt);
+  70:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #ifdef SOS_USE_PREEMPTION
+  71:/Users/Administrator/sos-2x/kernel/sos_timer.c **** static void timer_update_delta(int32_t delta);
+  72:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #else
+  73:/Users/Administrator/sos-2x/kernel/sos_timer.c **** static void timer_update_delta(void);
+  74:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #endif
+  75:/Users/Administrator/sos-2x/kernel/sos_timer.c **** static void timer_pre_alloc_block_init(sos_timer_t *h, sos_pid_t pid);
+  76:/Users/Administrator/sos-2x/kernel/sos_timer.c **** static uint16_t timer_update_realtime_clock(uint8_t cnt);
+  77:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+  78:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+  79:/Users/Administrator/sos-2x/kernel/sos_timer.c **** //------------------------------------------------------------------------
+  80:/Users/Administrator/sos-2x/kernel/sos_timer.c **** // KERNEL FUNCTIONS
+  81:/Users/Administrator/sos-2x/kernel/sos_timer.c **** //------------------------------------------------------------------------
+  82:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+  83:/Users/Administrator/sos-2x/kernel/sos_timer.c **** /**
+  84:/Users/Administrator/sos-2x/kernel/sos_timer.c ****  * @brief Initialize the timer unit
+  85:/Users/Administrator/sos-2x/kernel/sos_timer.c ****  */
+  86:/Users/Administrator/sos-2x/kernel/sos_timer.c **** void timer_init(void)
+  87:/Users/Administrator/sos-2x/kernel/sos_timer.c **** {
+ 205               	.LM1:
+ 206               	/* prologue: frame size=0 */
+ 207 0000 0F93      		push r16
+ 208               	/* prologue end (size=1) */
+  88:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	uint8_t i;
+  89:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   list_init(&deltaq);
+ 210               	.LM2:
+ 211 0002 80E0      		ldi r24,lo8(deltaq)
+ 212 0004 90E0      		ldi r25,hi8(deltaq)
+ 213 0006 0E94 0000 		call list_init
+  90:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   list_init(&timer_pool);
+ 215               	.LM3:
+ 216 000a 80E0      		ldi r24,lo8(timer_pool)
+ 217 000c 90E0      		ldi r25,hi8(timer_pool)
+ 218 000e 0E94 0000 		call list_init
+  91:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   list_init(&prealloc_timer_pool);
+ 220               	.LM4:
+ 221 0012 80E0      		ldi r24,lo8(prealloc_timer_pool)
+ 222 0014 90E0      		ldi r25,hi8(prealloc_timer_pool)
+ 223 0016 0E94 0000 		call list_init
+  92:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   list_init(&periodic_pool);
+ 225               	.LM5:
+ 226 001a 80E0      		ldi r24,lo8(periodic_pool)
+ 227 001c 90E0      		ldi r25,hi8(periodic_pool)
+ 228 001e 0E94 0000 		call list_init
+ 229 0022 20E0      		ldi r18,lo8(0)
+ 230 0024 30E0      		ldi r19,hi8(0)
+ 231 0026 A901      		movw r20,r18
+ 232 0028 83E0      		ldi r24,lo8(3)
+ 233               	.L5:
+  93:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+  94:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   for(i = 0; i < MAX_REALTIME_CLOCK; i++) {
+  95:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	realtime[i].f = NULL;  
+ 235               	.LM6:
+ 236 002a F901      		movw r30,r18
+ 237 002c E40F      		add r30,r20
+ 238 002e F51F      		adc r31,r21
+ 239 0030 E050      		subi r30,lo8(-(realtime))
+ 240 0032 F040      		sbci r31,hi8(-(realtime))
+ 241 0034 1482      		std Z+4,__zero_reg__
+ 242 0036 1582      		std Z+5,__zero_reg__
+ 244               	.LM7:
+ 245 0038 8150      		subi r24,lo8(-(-1))
+ 246 003a 4F5F      		subi r20,lo8(-(1))
+ 247 003c 5F4F      		sbci r21,hi8(-(1))
+ 248 003e 2B5F      		subi r18,lo8(-(5))
+ 249 0040 3F4F      		sbci r19,hi8(-(5))
+ 250 0042 87FF      		sbrs r24,7
+ 251 0044 F2CF      		rjmp .L5
+ 252 0046 84E0      		ldi r24,lo8(4)
+  96:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   }
+  97:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   
+  98:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   ker_slab_init( TIMER_PID, &timer_slab, sizeof(sos_timer_t), 4, SLAB_LONGTERM );
+ 254               	.LM8:
+ 255 0048 00E8      		ldi r16,lo8(-128)
+ 256 004a 282F      		mov r18,r24
+ 257 004c 40E1      		ldi r20,lo8(16)
+ 258 004e 60E0      		ldi r22,lo8(timer_slab)
+ 259 0050 70E0      		ldi r23,hi8(timer_slab)
+ 260 0052 0E94 0000 		call ker_slab_init
+ 261               	/* epilogue: frame size=0 */
+ 262 0056 0F91      		pop r16
+ 263 0058 0895      		ret
+ 264               	/* epilogue end (size=2) */
+ 265               	/* function timer_init size 45 (42) */
+ 270               	.Lscope0:
+ 275               	timer_remove_timer:
+  99:/Users/Administrator/sos-2x/kernel/sos_timer.c **** }
+ 100:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 101:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 102:/Users/Administrator/sos-2x/kernel/sos_timer.c **** /**
+ 103:/Users/Administrator/sos-2x/kernel/sos_timer.c ****  * @brief Pre-allocate timers for a module at load time
+ 104:/Users/Administrator/sos-2x/kernel/sos_timer.c ****  */
+ 105:/Users/Administrator/sos-2x/kernel/sos_timer.c **** int8_t timer_preallocate(sos_pid_t pid, uint8_t num_timers)
+ 106:/Users/Administrator/sos-2x/kernel/sos_timer.c **** {
+ 107:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    // We have already checked if num_timer > 0 and pid is not NULL_PID
+ 108:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 109:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   uint8_t i, j;
+ 110:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   sos_timer_t* tt[MAX_PRE_ALLOCATED_TIMERS];
+ 111:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    
+ 112:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   //! We cannot allow a single module to pre allocate a lot of timers
+ 113:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   if (num_timers > MAX_PRE_ALLOCATED_TIMERS)
+ 114:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	return -EINVAL;
+ 115:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   
+ 116:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   //! First try to safely allocate memory blocks for all the pre-allocated timers
+ 117:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   for (i = 0; i < num_timers; i++){
+ 118:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	tt[i] = (sos_timer_t*)ker_slab_alloc(&timer_slab, TIMER_PID);
+ 119:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	if (tt[i] == NULL){
+ 120:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  for (j = 0; j < i; j++){
+ 121:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		ker_slab_free(&timer_slab, tt[j]);
+ 122:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  }
+ 123:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  return -ENOMEM;
+ 124:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	}   
+ 125:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   }
+ 126:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   
+ 127:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    //! If we get here then we have all the memory allocated
+ 128:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    //! Now initialize all the data structures and just add them to the timer pool
+ 129:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   for (i = 0; i < num_timers; i++){
+ 130:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	timer_pre_alloc_block_init(tt[i], pid);
+ 131:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   }
+ 132:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   
+ 133:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   return SOS_OK;
+ 134:/Users/Administrator/sos-2x/kernel/sos_timer.c **** }
+ 135:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 136:/Users/Administrator/sos-2x/kernel/sos_timer.c **** /**
+ 137:/Users/Administrator/sos-2x/kernel/sos_timer.c ****  * @brief remove timers for a particular pid
+ 138:/Users/Administrator/sos-2x/kernel/sos_timer.c ****  */
+ 139:/Users/Administrator/sos-2x/kernel/sos_timer.c **** int8_t timer_remove_all(sos_pid_t pid)
+ 140:/Users/Administrator/sos-2x/kernel/sos_timer.c **** {
+ 141:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   list_link_t *link;
+ 142:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   
+ 143:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   for(link = deltaq.l_next;
+ 144:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  link != (&deltaq); link = link->l_next) {
+ 145:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	sos_timer_t *h = (sos_timer_t*)link;         
+ 146:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	if(h->pid == pid) {
+ 147:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  link = link->l_prev;
+ 148:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  timer_remove_timer(h);
+ 149:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  ker_slab_free( &timer_slab, h );
+ 150:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  //	break; Ram - Why are we breaking from this loop ?
+ 151:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	}
+ 152:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   }
+ 153:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	
+ 154:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   for (link = timer_pool.l_next; link != (&timer_pool); link = link->l_next){
+ 155:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	sos_timer_t *h = (sos_timer_t*)link;
+ 156:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	if (h->pid == pid){
+ 157:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  link = link->l_prev;
+ 158:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  list_remove((list_link_t*)h);
+ 159:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  ker_slab_free(&timer_slab,h);
+ 160:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	}
+ 161:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   }
+ 162:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 163:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   for (link = prealloc_timer_pool.l_next; link != (&prealloc_timer_pool); link = link->l_next){
+ 164:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	sos_timer_t *h = (sos_timer_t*)link;
+ 165:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	if (h->pid == pid){
+ 166:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  link = link->l_prev;
+ 167:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  list_remove((list_link_t*)h);
+ 168:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  ker_slab_free(&timer_slab,h);
+ 169:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	}
+ 170:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   }
+ 171:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 172:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   for (link = periodic_pool.l_next; link != (&periodic_pool); link = link->l_next){
+ 173:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	sos_timer_t *h = (sos_timer_t*)link;
+ 174:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	if (h->pid == pid){
+ 175:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  link = link->l_prev;
+ 176:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  list_remove((list_link_t*)h);
+ 177:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  ker_slab_free(&timer_slab,h);
+ 178:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	}
+ 179:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   }
+ 180:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 181:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   return SOS_OK;
+ 182:/Users/Administrator/sos-2x/kernel/sos_timer.c **** }
+ 183:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 184:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 185:/Users/Administrator/sos-2x/kernel/sos_timer.c **** //------------------------------------------------------------------------
+ 186:/Users/Administrator/sos-2x/kernel/sos_timer.c **** // STATIC FUNCTIONS
+ 187:/Users/Administrator/sos-2x/kernel/sos_timer.c **** //------------------------------------------------------------------------
+ 188:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 189:/Users/Administrator/sos-2x/kernel/sos_timer.c **** /**
+ 190:/Users/Administrator/sos-2x/kernel/sos_timer.c ****  * @brief Initialize the pre-allocated timer blocks
+ 191:/Users/Administrator/sos-2x/kernel/sos_timer.c ****  */ 
+ 192:/Users/Administrator/sos-2x/kernel/sos_timer.c **** static void timer_pre_alloc_block_init(sos_timer_t *h, sos_pid_t pid)
+ 193:/Users/Administrator/sos-2x/kernel/sos_timer.c **** {
+ 194:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    h->pid = pid;                  //! Indicate ownership of a timer block
+ 195:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    h->flag = TIMER_PRE_ALLOCATED; //! Pre-allocated timer block
+ 196:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    list_insert_tail(&prealloc_timer_pool, (list_link_t*)h);
+ 197:/Users/Administrator/sos-2x/kernel/sos_timer.c **** }
+ 198:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 199:/Users/Administrator/sos-2x/kernel/sos_timer.c **** static void timer_set_hw_interval(int32_t cnt)
+ 200:/Users/Administrator/sos-2x/kernel/sos_timer.c **** {
+ 201:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	if( cnt < TIMER_MIN_INTERVAL ) {
+ 202:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		DEBUG("set hw top to %d\n", TIMER_MIN_INTERVAL );
+ 203:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		timer_setInterval(TIMER_MIN_INTERVAL);
+ 204:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	} else if( cnt > MAX_SLEEP_INTERVAL ) {
+ 205:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		DEBUG("set hw top to %d\n", MAX_SLEEP_INTERVAL);
+ 206:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		timer_setInterval(MAX_SLEEP_INTERVAL);
+ 207:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	} else {
+ 208:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		DEBUG("set hw top to %d\n", cnt);
+ 209:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		timer_setInterval((uint8_t)cnt);
+ 210:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	}
+ 211:/Users/Administrator/sos-2x/kernel/sos_timer.c **** }
+ 212:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 213:/Users/Administrator/sos-2x/kernel/sos_timer.c **** static void timer_set_hw_top(int32_t cnt, bool update_outstanding)
+ 214:/Users/Administrator/sos-2x/kernel/sos_timer.c **** {
+ 215:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	uint8_t hw_cnt = timer_hardware_get_counter();
+ 216:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	uint16_t rt_cnt;
+ 217:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	HAS_CRITICAL_SECTION;
+ 218:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 219:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	ENTER_CRITICAL_SECTION();
+ 220:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	if( update_outstanding ) {
+ 221:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		outstanding_ticks += hw_cnt;
+ 222:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	} else {
+ 223:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		outstanding_ticks = 0;
+ 224:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	}
+ 225:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	if( num_realtime_clock > 0 ) {
+ 226:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		rt_cnt = timer_update_realtime_clock(hw_cnt);
+ 227:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 228:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		if( rt_cnt < cnt ) {
+ 229:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			cnt = rt_cnt;
+ 230:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		}
+ 231:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	}
+ 232:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 233:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	timer_set_hw_interval(cnt);
+ 234:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 235:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	LEAVE_CRITICAL_SECTION();
+ 236:/Users/Administrator/sos-2x/kernel/sos_timer.c **** }
+ 237:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 238:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #ifdef SOS_DEBUG_TIMER
+ 239:/Users/Administrator/sos-2x/kernel/sos_timer.c **** static void print_all_timers(char *context)
+ 240:/Users/Administrator/sos-2x/kernel/sos_timer.c **** {
+ 241:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	list_link_t *link;
+ 242:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	uint8_t i = 0;
+ 243:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 244:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	DEBUG(" *** ALL TIMER: %s ***\n", context);
+ 245:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	for(link = deltaq.l_next;
+ 246:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			link != (&deltaq); link = link->l_next, i++) {
+ 247:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		sos_timer_t *h = (sos_timer_t*)link;
+ 248:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		DEBUG("(%d) pid = %d, tid = %d, ticks = %d, delta = %d, prev = %x, next = %x\n", i, h->pid, h->ti
+ 249:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	}
+ 250:/Users/Administrator/sos-2x/kernel/sos_timer.c **** }
+ 251:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #endif
+ 252:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 253:/Users/Administrator/sos-2x/kernel/sos_timer.c **** /**
+ 254:/Users/Administrator/sos-2x/kernel/sos_timer.c ****  * @brief insert handle into delta queue
+ 255:/Users/Administrator/sos-2x/kernel/sos_timer.c ****  * This routine assumes that the data structure is set
+ 256:/Users/Administrator/sos-2x/kernel/sos_timer.c ****  */
+ 257:/Users/Administrator/sos-2x/kernel/sos_timer.c **** static void timer_delta_q_insert(sos_timer_t *h, bool new_timer)
+ 258:/Users/Administrator/sos-2x/kernel/sos_timer.c **** {
+ 259:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	list_link_t *link;
+ 260:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	int32_t hw_cnt;
+ 261:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	HAS_CRITICAL_SECTION;
+ 262:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	
+ 263:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	DEBUG("ticks = %d, delta = %d\n", h->ticks, h->delta);
+ 264:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	if(list_empty(&deltaq) == true) {
+ 265:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		//! empty queue
+ 266:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		//! start the timer
+ 267:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		DEBUG("empty q, set top to %d\n", h->delta);
+ 268:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		if( new_timer ) {
+ 269:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			// clear any outstnading ticks
+ 270:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			// and start new timer
+ 271:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			timer_set_hw_top(h->delta, false);
+ 272:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		}
+ 273:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		list_insert_head(&deltaq, (list_link_t*)h);
+ 274:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		return;
+ 275:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	}
+ 276:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 277:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	ENTER_CRITICAL_SECTION();
+ 278:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	hw_cnt = outstanding_ticks + timer_hardware_get_counter();
+ 279:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	LEAVE_CRITICAL_SECTION();
+ 280:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 281:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	if( new_timer ) {
+ 282:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		// if it is a new timer, we need to add the ticks that are 
+ 283:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		// already counted because these ticks will be subtracted 
+ 284:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		// later.
+ 285:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		// outstanding_ticks + timer_hardware_get_counter() is the 
+ 286:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		// ticks that are already passed in time
+ 287:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		h->delta += hw_cnt;
+ 288:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		DEBUG("get hw_cnt = %d\n", hw_cnt);
+ 289:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	}
+ 290:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 291:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	link = deltaq.l_next;
+ 292:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 293:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	// Check whether new timer will be new head
+ 294:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	// because we need to modify hardware counter if it is the case
+ 295:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	if( h->delta < (((sos_timer_t*)link)->delta)) {
+ 296:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		DEBUG("new timer will be the head\n");
+ 297:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		(((sos_timer_t*)link)->delta) -= (h->delta);
+ 298:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		if( new_timer ) {
+ 299:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			timer_set_hw_top(h->delta - hw_cnt, true);
+ 300:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		}
+ 301:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		list_insert_head(&deltaq, (list_link_t*)h);
+ 302:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		return;
+ 303:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	}
+ 304:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 305:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	// Work this timer to the current position
+ 306:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	for(/* initialized already */ ;
+ 307:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		link != (&deltaq); 
+ 308:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		link = link->l_next) {
+ 309:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		sos_timer_t *curr = (sos_timer_t*)link;
+ 310:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		if(h->delta < curr->delta) {
+ 311:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			//! insert here
+ 312:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			DEBUG("insert to middle\n");
+ 313:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			curr->delta -= h->delta;
+ 314:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			list_insert_before(link, (list_link_t*)h);
+ 315:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			return;
+ 316:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		}
+ 317:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		h->delta -= curr->delta;
+ 318:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	}
+ 319:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	DEBUG("insert to tail\n");
+ 320:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	list_insert_tail(&deltaq, (list_link_t*)h);
+ 321:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	return;
+ 322:/Users/Administrator/sos-2x/kernel/sos_timer.c **** }
+ 323:/Users/Administrator/sos-2x/kernel/sos_timer.c **** /**
+ 324:/Users/Administrator/sos-2x/kernel/sos_timer.c ****  * @brief Locate a timer block from the detlaq
+ 325:/Users/Administrator/sos-2x/kernel/sos_timer.c ****  */
+ 326:/Users/Administrator/sos-2x/kernel/sos_timer.c **** static sos_timer_t* find_timer_block(sos_pid_t pid, uint8_t tid)
+ 327:/Users/Administrator/sos-2x/kernel/sos_timer.c **** {
+ 328:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    sos_timer_t* tt;
+ 329:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    
+ 330:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 331:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    if (list_empty(&deltaq)){
+ 332:/Users/Administrator/sos-2x/kernel/sos_timer.c ****       return NULL;   
+ 333:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    }
+ 334:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    
+ 335:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    tt = (sos_timer_t*) deltaq.l_next;
+ 336:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    do{
+ 337:/Users/Administrator/sos-2x/kernel/sos_timer.c ****       if ((tt->pid == pid) &&
+ 338:/Users/Administrator/sos-2x/kernel/sos_timer.c ****           (tt->tid == tid))
+ 339:/Users/Administrator/sos-2x/kernel/sos_timer.c ****          return tt;
+ 340:/Users/Administrator/sos-2x/kernel/sos_timer.c ****       tt = (sos_timer_t*)tt->list.l_next;
+ 341:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    } while ((list_t*)tt != &deltaq);
+ 342:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 343:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    return NULL;
+ 344:/Users/Administrator/sos-2x/kernel/sos_timer.c **** }
+ 345:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 346:/Users/Administrator/sos-2x/kernel/sos_timer.c **** static sos_timer_t *find_timer_in_periodic_pool(sos_pid_t pid, uint8_t tid)
+ 347:/Users/Administrator/sos-2x/kernel/sos_timer.c **** {
+ 348:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    sos_timer_t* tt;
+ 349:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 350:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    if (list_empty(&periodic_pool) == false) {
+ 351:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	   tt = (sos_timer_t*) periodic_pool.l_next;
+ 352:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	   do {
+ 353:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		   if( (tt->pid == pid) && (tt->tid == tid) ) {
+ 354:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 				list_remove((list_t*)tt);
+ 355:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 				return tt;
+ 356:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		   }
+ 357:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		   tt = (sos_timer_t*)tt->list.l_next;
+ 358:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	   } while((list_t*)tt != &periodic_pool);
+ 359:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    }
+ 360:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    return NULL;
+ 361:/Users/Administrator/sos-2x/kernel/sos_timer.c **** }
+ 362:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 363:/Users/Administrator/sos-2x/kernel/sos_timer.c **** /**
+ 364:/Users/Administrator/sos-2x/kernel/sos_timer.c ****  * @brief Locate a free timer block from the preallocated timer pool
+ 365:/Users/Administrator/sos-2x/kernel/sos_timer.c ****  */
+ 366:/Users/Administrator/sos-2x/kernel/sos_timer.c **** static sos_timer_t* alloc_from_preallocated_timer_pool(sos_pid_t pid)
+ 367:/Users/Administrator/sos-2x/kernel/sos_timer.c **** {
+ 368:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    sos_timer_t* tt;
+ 369:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    
+ 370:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    if (list_empty(&prealloc_timer_pool))
+ 371:/Users/Administrator/sos-2x/kernel/sos_timer.c ****       return NULL;
+ 372:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    
+ 373:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    //! Find an unused pre-allocated block or an intialized block
+ 374:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    tt = (sos_timer_t*) prealloc_timer_pool.l_next;
+ 375:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    do{
+ 376:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	 
+ 377:/Users/Administrator/sos-2x/kernel/sos_timer.c ****       if (tt->pid == pid)
+ 378:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		{
+ 379:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		  list_remove((list_t*)tt);
+ 380:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		  return tt;
+ 381:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		}
+ 382:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  tt = (sos_timer_t*)tt->list.l_next;
+ 383:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    } while ((list_t*)tt != &prealloc_timer_pool);
+ 384:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    
+ 385:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    return NULL;
+ 386:/Users/Administrator/sos-2x/kernel/sos_timer.c **** }
+ 387:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 388:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 389:/Users/Administrator/sos-2x/kernel/sos_timer.c **** static sos_timer_t* alloc_from_timer_pool(sos_pid_t pid, uint8_t tid)
+ 390:/Users/Administrator/sos-2x/kernel/sos_timer.c **** {
+ 391:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    sos_timer_t* tt;
+ 392:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    
+ 393:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    if (list_empty(&timer_pool)) {
+ 394:/Users/Administrator/sos-2x/kernel/sos_timer.c ****       return NULL;
+ 395:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    }
+ 396:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    
+ 397:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    //! Find an unused pre-allocated block or an intialized block
+ 398:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    tt = (sos_timer_t*) timer_pool.l_next;
+ 399:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    do{
+ 400:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	 
+ 401:/Users/Administrator/sos-2x/kernel/sos_timer.c ****       if ((tt->pid == pid) &&
+ 402:/Users/Administrator/sos-2x/kernel/sos_timer.c ****           (tt->tid == tid))
+ 403:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		{
+ 404:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		  list_remove((list_t*)tt);
+ 405:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		  return tt;
+ 406:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		}
+ 407:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  tt = (sos_timer_t*)tt->list.l_next;
+ 408:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    } while ((list_t*)tt != &timer_pool);
+ 409:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    
+ 410:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    return NULL;
+ 411:/Users/Administrator/sos-2x/kernel/sos_timer.c **** }
+ 412:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 413:/Users/Administrator/sos-2x/kernel/sos_timer.c **** /**
+ 414:/Users/Administrator/sos-2x/kernel/sos_timer.c ****  * @brief Remove a timer from the deltaq
+ 415:/Users/Administrator/sos-2x/kernel/sos_timer.c ****  */
+ 416:/Users/Administrator/sos-2x/kernel/sos_timer.c **** static int8_t timer_remove_timer(sos_timer_t *tt)
+ 417:/Users/Administrator/sos-2x/kernel/sos_timer.c **** {
+ 277               	.LM9:
+ 278               	/* prologue: frame size=0 */
+ 279 005a CF93      		push r28
+ 280 005c DF93      		push r29
+ 281               	/* prologue end (size=2) */
+ 282 005e EC01      		movw r28,r24
+ 418:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	
+ 419:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	if((tt->list.l_next == NULL) ||
+ 284               	.LM10:
+ 285 0060 E881      		ld r30,Y
+ 286 0062 F981      		ldd r31,Y+1
+ 287 0064 3097      		sbiw r30,0
+ 288 0066 21F0      		breq .L10
+ 290               	.LM11:
+ 291 0068 8A81      		ldd r24,Y+2
+ 292 006a 9B81      		ldd r25,Y+3
+ 293 006c 892B      		or r24,r25
+ 294 006e 19F4      		brne .L9
+ 295               	.L10:
+ 420:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	   (tt->list.l_prev == NULL)) {
+ 421:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		return -EINVAL;
+ 297               	.LM12:
+ 298 0070 8AEE      		ldi r24,lo8(-22)
+ 299 0072 9FEF      		ldi r25,hi8(-22)
+ 300 0074 1EC0      		rjmp .L8
+ 301               	.L9:
+ 422:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	}
+ 423:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	// if I am not the tail... and I have positive delta
+ 424:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	if((tt->list.l_next != &deltaq) && (tt->delta > 0 )) {
+ 303               	.LM13:
+ 304 0076 80E0      		ldi r24,hi8(deltaq)
+ 305 0078 E030      		cpi r30,lo8(deltaq)
+ 306 007a F807      		cpc r31,r24
+ 307 007c A9F0      		breq .L11
+ 308 007e 2B85      		ldd r18,Y+11
+ 309 0080 3C85      		ldd r19,Y+12
+ 310 0082 4D85      		ldd r20,Y+13
+ 311 0084 5E85      		ldd r21,Y+14
+ 312 0086 1216      		cp __zero_reg__,r18
+ 313 0088 1306      		cpc __zero_reg__,r19
+ 314 008a 1406      		cpc __zero_reg__,r20
+ 315 008c 1506      		cpc __zero_reg__,r21
+ 316 008e 64F4      		brge .L11
+ 425:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		((sos_timer_t*)(tt->list.l_next))->delta += tt->delta;
+ 318               	.LM14:
+ 319 0090 8385      		ldd r24,Z+11
+ 320 0092 9485      		ldd r25,Z+12
+ 321 0094 A585      		ldd r26,Z+13
+ 322 0096 B685      		ldd r27,Z+14
+ 323 0098 820F      		add r24,r18
+ 324 009a 931F      		adc r25,r19
+ 325 009c A41F      		adc r26,r20
+ 326 009e B51F      		adc r27,r21
+ 327 00a0 8387      		std Z+11,r24
+ 328 00a2 9487      		std Z+12,r25
+ 329 00a4 A587      		std Z+13,r26
+ 330 00a6 B687      		std Z+14,r27
+ 331               	.L11:
+ 426:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	}
+ 427:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	list_remove((list_t*)tt);
+ 333               	.LM15:
+ 334 00a8 CE01      		movw r24,r28
+ 335 00aa 0E94 0000 		call list_remove
+ 428:/Users/Administrator/sos-2x/kernel/sos_timer.c ****     return SOS_OK;
+ 337               	.LM16:
+ 338 00ae 80E0      		ldi r24,lo8(0)
+ 339 00b0 90E0      		ldi r25,hi8(0)
+ 340               	.L8:
+ 341               	/* epilogue: frame size=0 */
+ 342 00b2 DF91      		pop r29
+ 343 00b4 CF91      		pop r28
+ 344 00b6 0895      		ret
+ 345               	/* epilogue end (size=3) */
+ 346               	/* function timer_remove_timer size 47 (42) */
+ 348               	.Lscope1:
+ 352               	.global	timer_remove_all
+ 354               	timer_remove_all:
+ 356               	.LM17:
+ 357               	/* prologue: frame size=0 */
+ 358 00b8 FF92      		push r15
+ 359 00ba 0F93      		push r16
+ 360 00bc 1F93      		push r17
+ 361 00be CF93      		push r28
+ 362 00c0 DF93      		push r29
+ 363               	/* prologue end (size=5) */
+ 364 00c2 F82E      		mov r15,r24
+ 366               	.LM18:
+ 367 00c4 C091 0000 		lds r28,deltaq
+ 368 00c8 D091 0000 		lds r29,(deltaq)+1
+ 369               	.L41:
+ 371               	.LM19:
+ 372 00cc 80E0      		ldi r24,hi8(deltaq)
+ 373 00ce C030      		cpi r28,lo8(deltaq)
+ 374 00d0 D807      		cpc r29,r24
+ 375 00d2 99F0      		breq .L34
+ 376               	.LBB2:
+ 378               	.LM20:
+ 379 00d4 8E01      		movw r16,r28
+ 381               	.LM21:
+ 382 00d6 8D81      		ldd r24,Y+5
+ 383 00d8 8F15      		cp r24,r15
+ 384 00da 59F4      		brne .L15
+ 386               	.LM22:
+ 387 00dc 0A80      		ldd __tmp_reg__,Y+2
+ 388 00de DB81      		ldd r29,Y+3
+ 389 00e0 C02D      		mov r28,__tmp_reg__
+ 391               	.LM23:
+ 392 00e2 C801      		movw r24,r16
+ 393 00e4 0E94 0000 		call timer_remove_timer
+ 395               	.LM24:
+ 396 00e8 B801      		movw r22,r16
+ 397 00ea 80E0      		ldi r24,lo8(timer_slab)
+ 398 00ec 90E0      		ldi r25,hi8(timer_slab)
+ 399 00ee 0E94 0000 		call ker_slab_free
+ 400               	.L15:
+ 401               	.LBE2:
+ 403               	.LM25:
+ 404 00f2 0990      		ld __tmp_reg__,Y+
+ 405 00f4 D881      		ld r29,Y
+ 406 00f6 C02D      		mov r28,__tmp_reg__
+ 407 00f8 E9CF      		rjmp .L41
+ 408               	.L34:
+ 410               	.LM26:
+ 411 00fa C091 0000 		lds r28,timer_pool
+ 412 00fe D091 0000 		lds r29,(timer_pool)+1
+ 413               	.L42:
+ 414 0102 80E0      		ldi r24,hi8(timer_pool)
+ 415 0104 C030      		cpi r28,lo8(timer_pool)
+ 416 0106 D807      		cpc r29,r24
+ 417 0108 99F0      		breq .L36
+ 418               	.LBB3:
+ 420               	.LM27:
+ 421 010a 8E01      		movw r16,r28
+ 423               	.LM28:
+ 424 010c 8D81      		ldd r24,Y+5
+ 425 010e 8F15      		cp r24,r15
+ 426 0110 59F4      		brne .L20
+ 428               	.LM29:
+ 429 0112 0A80      		ldd __tmp_reg__,Y+2
+ 430 0114 DB81      		ldd r29,Y+3
+ 431 0116 C02D      		mov r28,__tmp_reg__
+ 433               	.LM30:
+ 434 0118 C801      		movw r24,r16
+ 435 011a 0E94 0000 		call list_remove
+ 437               	.LM31:
+ 438 011e B801      		movw r22,r16
+ 439 0120 80E0      		ldi r24,lo8(timer_slab)
+ 440 0122 90E0      		ldi r25,hi8(timer_slab)
+ 441 0124 0E94 0000 		call ker_slab_free
+ 442               	.L20:
+ 443               	.LBE3:
+ 445               	.LM32:
+ 446 0128 0990      		ld __tmp_reg__,Y+
+ 447 012a D881      		ld r29,Y
+ 448 012c C02D      		mov r28,__tmp_reg__
+ 449 012e E9CF      		rjmp .L42
+ 450               	.L36:
+ 452               	.LM33:
+ 453 0130 C091 0000 		lds r28,prealloc_timer_pool
+ 454 0134 D091 0000 		lds r29,(prealloc_timer_pool)+1
+ 455               	.L43:
+ 456 0138 80E0      		ldi r24,hi8(prealloc_timer_pool)
+ 457 013a C030      		cpi r28,lo8(prealloc_timer_pool)
+ 458 013c D807      		cpc r29,r24
+ 459 013e 99F0      		breq .L38
+ 460               	.LBB4:
+ 462               	.LM34:
+ 463 0140 8E01      		movw r16,r28
+ 465               	.LM35:
+ 466 0142 8D81      		ldd r24,Y+5
+ 467 0144 8F15      		cp r24,r15
+ 468 0146 59F4      		brne .L25
+ 470               	.LM36:
+ 471 0148 0A80      		ldd __tmp_reg__,Y+2
+ 472 014a DB81      		ldd r29,Y+3
+ 473 014c C02D      		mov r28,__tmp_reg__
+ 475               	.LM37:
+ 476 014e C801      		movw r24,r16
+ 477 0150 0E94 0000 		call list_remove
+ 479               	.LM38:
+ 480 0154 B801      		movw r22,r16
+ 481 0156 80E0      		ldi r24,lo8(timer_slab)
+ 482 0158 90E0      		ldi r25,hi8(timer_slab)
+ 483 015a 0E94 0000 		call ker_slab_free
+ 484               	.L25:
+ 485               	.LBE4:
+ 487               	.LM39:
+ 488 015e 0990      		ld __tmp_reg__,Y+
+ 489 0160 D881      		ld r29,Y
+ 490 0162 C02D      		mov r28,__tmp_reg__
+ 491 0164 E9CF      		rjmp .L43
+ 492               	.L38:
+ 494               	.LM40:
+ 495 0166 C091 0000 		lds r28,periodic_pool
+ 496 016a D091 0000 		lds r29,(periodic_pool)+1
+ 497               	.L44:
+ 498 016e 80E0      		ldi r24,hi8(periodic_pool)
+ 499 0170 C030      		cpi r28,lo8(periodic_pool)
+ 500 0172 D807      		cpc r29,r24
+ 501 0174 99F0      		breq .L40
+ 502               	.LBB5:
+ 504               	.LM41:
+ 505 0176 8E01      		movw r16,r28
+ 507               	.LM42:
+ 508 0178 8D81      		ldd r24,Y+5
+ 509 017a 8F15      		cp r24,r15
+ 510 017c 59F4      		brne .L30
+ 512               	.LM43:
+ 513 017e 0A80      		ldd __tmp_reg__,Y+2
+ 514 0180 DB81      		ldd r29,Y+3
+ 515 0182 C02D      		mov r28,__tmp_reg__
+ 517               	.LM44:
+ 518 0184 C801      		movw r24,r16
+ 519 0186 0E94 0000 		call list_remove
+ 521               	.LM45:
+ 522 018a B801      		movw r22,r16
+ 523 018c 80E0      		ldi r24,lo8(timer_slab)
+ 524 018e 90E0      		ldi r25,hi8(timer_slab)
+ 525 0190 0E94 0000 		call ker_slab_free
+ 526               	.L30:
+ 527               	.LBE5:
+ 529               	.LM46:
+ 530 0194 0990      		ld __tmp_reg__,Y+
+ 531 0196 D881      		ld r29,Y
+ 532 0198 C02D      		mov r28,__tmp_reg__
+ 533 019a E9CF      		rjmp .L44
+ 534               	.L40:
+ 536               	.LM47:
+ 537 019c 80E0      		ldi r24,lo8(0)
+ 538 019e 90E0      		ldi r25,hi8(0)
+ 539               	/* epilogue: frame size=0 */
+ 540 01a0 DF91      		pop r29
+ 541 01a2 CF91      		pop r28
+ 542 01a4 1F91      		pop r17
+ 543 01a6 0F91      		pop r16
+ 544 01a8 FF90      		pop r15
+ 545 01aa 0895      		ret
+ 546               	/* epilogue end (size=6) */
+ 547               	/* function timer_remove_all size 122 (111) */
+ 564               	.Lscope2:
+ 569               	.global	timer_preallocate
+ 571               	timer_preallocate:
+ 573               	.LM48:
+ 574               	/* prologue: frame size=20 */
+ 575 01ac 9F92      		push r9
+ 576 01ae AF92      		push r10
+ 577 01b0 BF92      		push r11
+ 578 01b2 CF92      		push r12
+ 579 01b4 DF92      		push r13
+ 580 01b6 EF92      		push r14
+ 581 01b8 FF92      		push r15
+ 582 01ba 0F93      		push r16
+ 583 01bc 1F93      		push r17
+ 584 01be CF93      		push r28
+ 585 01c0 DF93      		push r29
+ 586 01c2 CDB7      		in r28,__SP_L__
+ 587 01c4 DEB7      		in r29,__SP_H__
+ 588 01c6 6497      		sbiw r28,20
+ 589 01c8 0FB6      		in __tmp_reg__,__SREG__
+ 590 01ca F894      		cli
+ 591 01cc DEBF      		out __SP_H__,r29
+ 592 01ce 0FBE      		out __SREG__,__tmp_reg__
+ 593 01d0 CDBF      		out __SP_L__,r28
+ 594               	/* prologue end (size=19) */
+ 595 01d2 982E      		mov r9,r24
+ 596 01d4 D62E      		mov r13,r22
+ 598               	.LM49:
+ 599 01d6 8AE0      		ldi r24,lo8(10)
+ 600 01d8 8617      		cp r24,r22
+ 601 01da 18F4      		brsh .L46
+ 603               	.LM50:
+ 604 01dc 8AEE      		ldi r24,lo8(-22)
+ 605 01de 9FEF      		ldi r25,hi8(-22)
+ 606 01e0 48C0      		rjmp .L45
+ 607               	.L46:
+ 609               	.LM51:
+ 610 01e2 CC24      		clr r12
+ 611 01e4 C616      		cp r12,r22
+ 612 01e6 58F5      		brsh .L62
+ 613 01e8 EE24      		clr r14
+ 614 01ea FF24      		clr r15
+ 615               	.L55:
+ 617               	.LM52:
+ 618 01ec 5E01      		movw r10,r28
+ 619 01ee 0894      		sec
+ 620 01f0 A11C      		adc r10,__zero_reg__
+ 621 01f2 B11C      		adc r11,__zero_reg__
+ 622 01f4 8701      		movw r16,r14
+ 623 01f6 0A0D      		add r16,r10
+ 624 01f8 1B1D      		adc r17,r11
+ 625 01fa 64E0      		ldi r22,lo8(4)
+ 626 01fc 80E0      		ldi r24,lo8(timer_slab)
+ 627 01fe 90E0      		ldi r25,hi8(timer_slab)
+ 628 0200 0E94 0000 		call ker_slab_alloc
+ 629 0204 F801      		movw r30,r16
+ 630 0206 8083      		st Z,r24
+ 631 0208 9183      		std Z+1,r25
+ 633               	.LM53:
+ 634 020a 892B      		or r24,r25
+ 635 020c 89F4      		brne .L49
+ 637               	.LM54:
+ 638 020e CC20      		tst r12
+ 639 0210 61F0      		breq .L64
+ 640 0212 0C2D      		mov r16,r12
+ 641 0214 7501      		movw r14,r10
+ 642               	.L54:
+ 644               	.LM55:
+ 645 0216 F701      		movw r30,r14
+ 646 0218 6191      		ld r22,Z+
+ 647 021a 7191      		ld r23,Z+
+ 648 021c 7F01      		movw r14,r30
+ 649 021e 80E0      		ldi r24,lo8(timer_slab)
+ 650 0220 90E0      		ldi r25,hi8(timer_slab)
+ 651 0222 0E94 0000 		call ker_slab_free
+ 653               	.LM56:
+ 654 0226 0150      		subi r16,lo8(-(-1))
+ 655 0228 B1F7      		brne .L54
+ 656               	.L64:
+ 658               	.LM57:
+ 659 022a 84EF      		ldi r24,lo8(-12)
+ 660 022c 9FEF      		ldi r25,hi8(-12)
+ 661 022e 21C0      		rjmp .L45
+ 662               	.L49:
+ 664               	.LM58:
+ 665 0230 C394      		inc r12
+ 666 0232 82E0      		ldi r24,lo8(2)
+ 667 0234 90E0      		ldi r25,hi8(2)
+ 668 0236 E80E      		add r14,r24
+ 669 0238 F91E      		adc r15,r25
+ 670 023a CD14      		cp r12,r13
+ 671 023c B8F2      		brlo .L55
+ 672               	.L62:
+ 674               	.LM59:
+ 675 023e DD20      		tst r13
+ 676 0240 B1F0      		breq .L66
+ 677 0242 CD2C      		mov r12,r13
+ 678 0244 00E0      		ldi r16,lo8(0)
+ 679 0246 10E0      		ldi r17,hi8(0)
+ 680               	.L60:
+ 681               	.LBB6:
+ 683               	.LM60:
+ 684 0248 FE01      		movw r30,r28
+ 685 024a E00F      		add r30,r16
+ 686 024c F11F      		adc r31,r17
+ 687 024e 0180      		ldd __tmp_reg__,Z+1
+ 688 0250 F281      		ldd r31,Z+2
+ 689 0252 E02D      		mov r30,__tmp_reg__
+ 690               	.LBB7:
+ 692               	.LM61:
+ 693 0254 9582      		std Z+5,r9
+ 695               	.LM62:
+ 696 0256 82E0      		ldi r24,lo8(2)
+ 697 0258 8787      		std Z+15,r24
+ 699               	.LM63:
+ 700 025a BF01      		movw r22,r30
+ 701 025c 80E0      		ldi r24,lo8(prealloc_timer_pool)
+ 702 025e 90E0      		ldi r25,hi8(prealloc_timer_pool)
+ 703 0260 0E94 0000 		call list_insert_tail
+ 704               	.LBE7:
+ 705               	.LBE6:
+ 707               	.LM64:
+ 708 0264 CA94      		dec r12
+ 709 0266 0E5F      		subi r16,lo8(-(2))
+ 710 0268 1F4F      		sbci r17,hi8(-(2))
+ 711 026a CC20      		tst r12
+ 712 026c 69F7      		brne .L60
+ 713               	.L66:
+ 715               	.LM65:
+ 716 026e 80E0      		ldi r24,lo8(0)
+ 717 0270 90E0      		ldi r25,hi8(0)
+ 718               	.L45:
+ 719               	/* epilogue: frame size=20 */
+ 720 0272 6496      		adiw r28,20
+ 721 0274 0FB6      		in __tmp_reg__,__SREG__
+ 722 0276 F894      		cli
+ 723 0278 DEBF      		out __SP_H__,r29
+ 724 027a 0FBE      		out __SREG__,__tmp_reg__
+ 725 027c CDBF      		out __SP_L__,r28
+ 726 027e DF91      		pop r29
+ 727 0280 CF91      		pop r28
+ 728 0282 1F91      		pop r17
+ 729 0284 0F91      		pop r16
+ 730 0286 FF90      		pop r15
+ 731 0288 EF90      		pop r14
+ 732 028a DF90      		pop r13
+ 733 028c CF90      		pop r12
+ 734 028e BF90      		pop r11
+ 735 0290 AF90      		pop r10
+ 736 0292 9F90      		pop r9
+ 737 0294 0895      		ret
+ 738               	/* epilogue end (size=18) */
+ 739               	/* function timer_preallocate size 118 (81) */
+ 749               	.Lscope3:
+ 754               	timer_set_hw_interval:
+ 756               	.LM66:
+ 757               	/* prologue: frame size=0 */
+ 758               	/* prologue end (size=0) */
+ 760               	.LM67:
+ 761 0296 6530      		cpi r22,lo8(5)
+ 762 0298 7105      		cpc r23,__zero_reg__
+ 763 029a 8105      		cpc r24,__zero_reg__
+ 764 029c 9105      		cpc r25,__zero_reg__
+ 765 029e 2CF4      		brge .L68
+ 767               	.LM68:
+ 768 02a0 65E0      		ldi r22,lo8(5)
+ 769 02a2 70E0      		ldi r23,hi8(5)
+ 770 02a4 80E0      		ldi r24,hlo8(5)
+ 771 02a6 90E0      		ldi r25,hhi8(5)
+ 772 02a8 09C0      		rjmp .L72
+ 773               	.L68:
+ 775               	.LM69:
+ 776 02aa 6B3F      		cpi r22,lo8(251)
+ 777 02ac 7105      		cpc r23,__zero_reg__
+ 778 02ae 8105      		cpc r24,__zero_reg__
+ 779 02b0 9105      		cpc r25,__zero_reg__
+ 780 02b2 3CF0      		brlt .L70
+ 782               	.LM70:
+ 783 02b4 6AEF      		ldi r22,lo8(250)
+ 784 02b6 70E0      		ldi r23,hi8(250)
+ 785 02b8 80E0      		ldi r24,hlo8(250)
+ 786 02ba 90E0      		ldi r25,hhi8(250)
+ 787               	.L72:
+ 788 02bc 0E94 0000 		call timer_setInterval
+ 789 02c0 0895      		ret
+ 790               	.L70:
+ 792               	.LM71:
+ 793 02c2 862F      		mov r24,r22
+ 794 02c4 9927      		clr r25
+ 795 02c6 AA27      		clr r26
+ 796 02c8 BB27      		clr r27
+ 797 02ca BC01      		movw r22,r24
+ 798 02cc CD01      		movw r24,r26
+ 799 02ce F6CF      		rjmp .L72
+ 800               	/* epilogue: frame size=0 */
+ 801               	/* epilogue: noreturn */
+ 802               	/* epilogue end (size=0) */
+ 803               	/* function timer_set_hw_interval size 29 (29) */
+ 805               	.Lscope4:
+ 810               	timer_update_realtime_clock:
+ 429:/Users/Administrator/sos-2x/kernel/sos_timer.c **** }
+ 430:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 431:/Users/Administrator/sos-2x/kernel/sos_timer.c **** /**
+ 432:/Users/Administrator/sos-2x/kernel/sos_timer.c ****  * @brief update delta queue
+ 433:/Users/Administrator/sos-2x/kernel/sos_timer.c ****  * traverse each item in the queue until no more delta left
+ 434:/Users/Administrator/sos-2x/kernel/sos_timer.c ****  * NOTE: this is executed in interrupt handler, so NO lock necessary
+ 435:/Users/Administrator/sos-2x/kernel/sos_timer.c ****  */
+ 436:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #ifdef SOS_USE_PREEMPTION
+ 437:/Users/Administrator/sos-2x/kernel/sos_timer.c **** static void timer_update_delta(int32_t delta)
+ 438:/Users/Administrator/sos-2x/kernel/sos_timer.c **** {
+ 439:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	list_link_t *link;
+ 440:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 441:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	if(list_empty(&deltaq) == true) {
+ 442:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		return;
+ 443:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	}
+ 444:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	DEBUG("update delta = %d\n", delta);
+ 445:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	for(link = deltaq.l_next;
+ 446:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			link != (&deltaq); link = link->l_next) {
+ 447:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		sos_timer_t *h = (sos_timer_t*)link;         
+ 448:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		if(h->delta >= delta) {
+ 449:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			// if we use all ticks...
+ 450:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			h->delta -= delta;
+ 451:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			return;
+ 452:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		} else {
+ 453:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			int32_t tmp = h->delta;
+ 454:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			h->delta -= delta;
+ 455:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			delta -= tmp;
+ 456:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		}
+ 457:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	}
+ 458:/Users/Administrator/sos-2x/kernel/sos_timer.c **** }
+ 459:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #else
+ 460:/Users/Administrator/sos-2x/kernel/sos_timer.c **** static void timer_update_delta(void)
+ 461:/Users/Administrator/sos-2x/kernel/sos_timer.c **** {
+ 462:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	list_link_t *link;
+ 463:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	int32_t delta;
+ 464:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	HAS_CRITICAL_SECTION;
+ 465:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	
+ 466:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	ENTER_CRITICAL_SECTION();
+ 467:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	delta = outstanding_ticks;
+ 468:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	outstanding_ticks = 0;
+ 469:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	LEAVE_CRITICAL_SECTION();
+ 470:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	
+ 471:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	if(list_empty(&deltaq) == true) {
+ 472:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		return;
+ 473:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	}
+ 474:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	DEBUG("update delta = %d\n", delta);
+ 475:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	for(link = deltaq.l_next;
+ 476:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			link != (&deltaq); link = link->l_next) {
+ 477:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		sos_timer_t *h = (sos_timer_t*)link;         
+ 478:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		if(h->delta >= delta) {
+ 479:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			// if we use all ticks...
+ 480:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			h->delta -= delta;
+ 481:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			return;
+ 482:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		} else {
+ 483:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			int32_t tmp = h->delta;
+ 484:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			h->delta -= delta;
+ 485:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			delta -= tmp;
+ 486:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		}
+ 487:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	}
+ 488:/Users/Administrator/sos-2x/kernel/sos_timer.c **** }
+ 489:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #endif
+ 490:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 491:/Users/Administrator/sos-2x/kernel/sos_timer.c **** /**
+ 492:/Users/Administrator/sos-2x/kernel/sos_timer.c ****  * @brief Post the timeout messages
+ 493:/Users/Administrator/sos-2x/kernel/sos_timer.c ****  */
+ 494:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 495:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 496:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 497:/Users/Administrator/sos-2x/kernel/sos_timer.c **** //------------------------------------------------------------------------
+ 498:/Users/Administrator/sos-2x/kernel/sos_timer.c **** // TIMER API
+ 499:/Users/Administrator/sos-2x/kernel/sos_timer.c **** //------------------------------------------------------------------------
+ 500:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 501:/Users/Administrator/sos-2x/kernel/sos_timer.c **** //! Assumption - This function is never called from an interrupt context
+ 502:/Users/Administrator/sos-2x/kernel/sos_timer.c **** int8_t ker_timer_init(sos_pid_t pid, uint8_t tid, uint8_t type)
+ 503:/Users/Administrator/sos-2x/kernel/sos_timer.c **** {
+ 504:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   sos_timer_t* tt;
+ 505:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 506:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   tt = find_timer_in_periodic_pool(pid, tid);
+ 507:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   if (tt != NULL) {
+ 508:/Users/Administrator/sos-2x/kernel/sos_timer.c ****       tt->type = type;
+ 509:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  list_insert_tail(&timer_pool, (list_link_t*)tt);
+ 510:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  return SOS_OK;
+ 511:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   }
+ 512:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   //! re-initialize an existing timer by stoping it and updating the type
+ 513:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   tt = find_timer_block(pid, tid);
+ 514:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   if (tt != NULL){
+ 515:/Users/Administrator/sos-2x/kernel/sos_timer.c ****       ker_timer_stop(pid,tid);
+ 516:/Users/Administrator/sos-2x/kernel/sos_timer.c ****       tt->type = type;
+ 517:/Users/Administrator/sos-2x/kernel/sos_timer.c ****       return SOS_OK;
+ 518:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   }
+ 519:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   
+ 520:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   //! Search if pre-initialized timer exists
+ 521:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   tt = alloc_from_timer_pool(pid, tid);
+ 522:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   
+ 523:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   //! Look for pre-allocated timers or try to get dynamic memory
+ 524:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   if (tt == NULL){
+ 525:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	tt = alloc_from_preallocated_timer_pool(pid);
+ 526:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	if (tt == NULL)
+ 527:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  tt = (sos_timer_t*)ker_slab_alloc(&timer_slab, TIMER_PID);
+ 528:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	//! Init will fail if the system does not have sufficient resources
+ 529:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	if (tt == NULL)
+ 530:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  return -ENOMEM;
+ 531:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   }
+ 532:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   
+ 533:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   //! Fill up the data structure and insert into the timer pool
+ 534:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   tt->pid = pid;
+ 535:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   tt->tid = tid;
+ 536:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   tt->type = type;
+ 537:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   
+ 538:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   list_insert_tail(&timer_pool, (list_link_t*)tt);
+ 539:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   return SOS_OK;
+ 540:/Users/Administrator/sos-2x/kernel/sos_timer.c **** }
+ 541:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 542:/Users/Administrator/sos-2x/kernel/sos_timer.c **** int8_t ker_permanent_timer_init(sos_timer_t* tt, sos_pid_t pid, uint8_t tid, uint8_t type)
+ 543:/Users/Administrator/sos-2x/kernel/sos_timer.c **** {
+ 544:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    //! Fill up the data structures and insert into the timer pool
+ 545:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    tt->pid = pid;
+ 546:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    tt->tid = tid;
+ 547:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    tt->type = type | PERMANENT_TIMER_MASK;
+ 548:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    list_insert_tail(&timer_pool, (list_link_t*)tt);
+ 549:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 550:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    return SOS_OK; 
+ 551:/Users/Administrator/sos-2x/kernel/sos_timer.c **** }
+ 552:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 553:/Users/Administrator/sos-2x/kernel/sos_timer.c **** void timer_gc( void )
+ 554:/Users/Administrator/sos-2x/kernel/sos_timer.c **** {
+ 555:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	list_link_t *link;
+ 556:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	
+ 557:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	for(link = deltaq.l_next; link != (&deltaq); link = link->l_next) {
+ 558:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		if( (((sos_timer_t*)link)->type & PERMANENT_TIMER_MASK) == 0 ) {
+ 559:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			slab_gc_mark( &timer_slab, link );
+ 560:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		} 
+ 561:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	}
+ 562:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	
+ 563:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	for (link = timer_pool.l_next; link != (&timer_pool); link = link->l_next) {
+ 564:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		if( (((sos_timer_t*)link)->type & PERMANENT_TIMER_MASK) == 0 ) {
+ 565:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			slab_gc_mark( &timer_slab, link );
+ 566:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		}
+ 567:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	}
+ 568:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	
+ 569:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	for (link = prealloc_timer_pool.l_next; link != (&prealloc_timer_pool); link = link->l_next) {
+ 570:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		if( (((sos_timer_t*)link)->type & PERMANENT_TIMER_MASK) == 0 ) {
+ 571:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			slab_gc_mark( &timer_slab, link );
+ 572:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		}
+ 573:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	}
+ 574:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	
+ 575:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	for (link = periodic_pool.l_next; link != (&periodic_pool); link = link->l_next) {
+ 576:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		if( (((sos_timer_t*)link)->type & PERMANENT_TIMER_MASK) == 0 ) {
+ 577:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			slab_gc_mark( &timer_slab, link );
+ 578:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		}
+ 579:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	}
+ 580:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	
+ 581:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	slab_gc( &timer_slab, TIMER_PID );
+ 582:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	
+ 583:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	malloc_gc( TIMER_PID );
+ 584:/Users/Administrator/sos-2x/kernel/sos_timer.c **** }
+ 585:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 586:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 587:/Users/Administrator/sos-2x/kernel/sos_timer.c **** int8_t ker_timer_start(sos_pid_t pid, uint8_t tid, int32_t interval)
+ 588:/Users/Administrator/sos-2x/kernel/sos_timer.c **** {
+ 589:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   sos_timer_t* tt;
+ 590:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   //! Start the timer from the timer pool
+ 591:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   tt = alloc_from_timer_pool(pid, tid);
+ 592:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   
+ 593:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   //! If the timer does not exist, then it is already in use or not initialized
+ 594:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   if (tt == NULL) {
+ 595:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	DEBUG_PID(TIMER_PID, "ker_timer_start: tt == NULL\n");
+ 596:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	return -EINVAL;
+ 597:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   }
+ 598:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   
+ 599:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   //  tt->ticks = PROCESSOR_TICKS(interval);
+ 600:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   tt->ticks = interval;
+ 601:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   tt->delta = interval;
+ 602:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   
+ 603:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   //DEBUG("timer_start(%d) %d %d %d\n", tt->pid, tt->tid, tt->type, tt->ticks);
+ 604:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   
+ 605:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   //! insert into delta queue
+ 606:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   print_all_timers("timer_start_start");
+ 607:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   timer_delta_q_insert(tt, true);
+ 608:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   print_all_timers("timer_start_end");
+ 609:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   ker_log( SOS_LOG_TIMER_START, pid, tid );
+ 610:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   return SOS_OK;
+ 611:/Users/Administrator/sos-2x/kernel/sos_timer.c **** }
+ 612:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 613:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 614:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 615:/Users/Administrator/sos-2x/kernel/sos_timer.c **** //! The implementation of this call can be optimized to include the find with
+ 616:/Users/Administrator/sos-2x/kernel/sos_timer.c **** //! the remove. We will do it later
+ 617:/Users/Administrator/sos-2x/kernel/sos_timer.c **** int8_t ker_timer_stop(sos_pid_t pid, uint8_t tid)
+ 618:/Users/Administrator/sos-2x/kernel/sos_timer.c **** {
+ 619:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   sos_timer_t* tt;
+ 620:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 621:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   tt = find_timer_in_periodic_pool(pid, tid);
+ 622:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   if( tt == NULL ) {
+ 623:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  //! Find the timer block
+ 624:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  tt = find_timer_block(pid, tid);
+ 625:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  if (tt == NULL) {
+ 626:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		  return -EINVAL;
+ 627:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  } else {
+ 628:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		  //! Remove the timer from the deltaq and any pending messages in the queue
+ 629:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		  timer_remove_timer(tt);
+ 630:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  }
+ 631:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   }
+ 632:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   //timer_remove_timeout_from_scheduler(tt);
+ 633:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   //! Re-insert timer into the pool
+ 634:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   list_insert_tail(&timer_pool, (list_link_t*)tt);
+ 635:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   ker_log( SOS_LOG_TIMER_STOP, pid, tid );
+ 636:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   return SOS_OK;
+ 637:/Users/Administrator/sos-2x/kernel/sos_timer.c **** }
+ 638:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 639:/Users/Administrator/sos-2x/kernel/sos_timer.c **** //! Free the first timer block beloning to pid in the timer_pool
+ 640:/Users/Administrator/sos-2x/kernel/sos_timer.c **** int8_t ker_timer_stop_and_release(sos_pid_t pid, uint8_t tid)
+ 641:/Users/Administrator/sos-2x/kernel/sos_timer.c **** {
+ 642:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   sos_timer_t* tt;
+ 643:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 644:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   //! First stop the timer if it is running
+ 645:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   ker_timer_stop(pid, tid);
+ 646:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 647:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   //! Get the timer block from the pool
+ 648:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   tt = alloc_from_timer_pool(pid, tid);
+ 649:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   
+ 650:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   if (tt == NULL) 
+ 651:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	return -EINVAL;
+ 652:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 653:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   //! Deep free of the timer
+ 654:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   ker_slab_free(&timer_slab,tt); 
+ 655:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   
+ 656:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   return SOS_OK;   
+ 657:/Users/Administrator/sos-2x/kernel/sos_timer.c **** }
+ 658:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 659:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 660:/Users/Administrator/sos-2x/kernel/sos_timer.c **** int8_t ker_timer_restart(sos_pid_t pid, uint8_t tid, int32_t interval)
+ 661:/Users/Administrator/sos-2x/kernel/sos_timer.c **** {
+ 662:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   sos_timer_t* tt;
+ 663:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   
+ 664:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   tt = find_timer_in_periodic_pool(pid, tid);
+ 665:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   if (tt == NULL) {
+ 666:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  //! Locate a running timer or from the timer pool
+ 667:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  tt = find_timer_block(pid, tid);
+ 668:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  if (tt != NULL){
+ 669:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		  timer_remove_timer(tt);
+ 670:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  }
+ 671:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  else {
+ 672:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		  tt = alloc_from_timer_pool(pid, tid);
+ 673:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  }
+ 674:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   }
+ 675:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    
+ 676:/Users/Administrator/sos-2x/kernel/sos_timer.c ****    //! The timer is neither running nor initialized
+ 677:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   if (tt == NULL) {
+ 678:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	return -EINVAL;
+ 679:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   }
+ 680:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   /* Special Case restart with existing ticks field */
+ 681:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   if( interval <= 0 )
+ 682:/Users/Administrator/sos-2x/kernel/sos_timer.c ****       interval = tt->ticks;
+ 683:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 684:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   if(interval < TIMER_MIN_INTERVAL){
+ 685:/Users/Administrator/sos-2x/kernel/sos_timer.c ****       /* Need to put the timer back in to the pool 
+ 686:/Users/Administrator/sos-2x/kernel/sos_timer.c ****          as an initialized timer that was never started */
+ 687:/Users/Administrator/sos-2x/kernel/sos_timer.c ****       list_insert_tail(&timer_pool, (list_link_t*)tt);
+ 688:/Users/Administrator/sos-2x/kernel/sos_timer.c ****       return -EPERM;
+ 689:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   }
+ 690:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   //! Initialize the data structure
+ 691:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   tt->ticks = interval;
+ 692:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   //  tt->ticks = PROCESSOR_TICKS(interval);
+ 693:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   tt->delta = interval;
+ 694:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 695:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   //! Insert into the delta queue
+ 696:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   timer_delta_q_insert(tt, true);
+ 697:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   ker_log( SOS_LOG_TIMER_RESTART, pid, tid );
+ 698:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   return SOS_OK;
+ 699:/Users/Administrator/sos-2x/kernel/sos_timer.c **** }
+ 700:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 701:/Users/Administrator/sos-2x/kernel/sos_timer.c **** int8_t ker_sys_timer_start(uint8_t tid, int32_t interval, uint8_t type)
+ 702:/Users/Administrator/sos-2x/kernel/sos_timer.c **** {
+ 703:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #ifdef SOS_USE_PREEMPTION
+ 704:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   HAS_ATOMIC_PREEMPTION_SECTION;
+ 705:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #endif
+ 706:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   sos_pid_t my_id = ker_get_current_pid();
+ 707:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #ifdef SOS_USE_PREEMPTION
+ 708:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   ATOMIC_DISABLE_PREEMPTION();
+ 709:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #endif
+ 710:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   if( (ker_timer_init(my_id, tid, type) != SOS_OK) ||       
+ 711:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  (ker_timer_start(my_id, tid, interval) != SOS_OK)) {
+ 712:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #ifdef SOS_USE_PREEMPTION
+ 713:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	ATOMIC_ENABLE_PREEMPTION();
+ 714:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #endif
+ 715:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	return ker_mod_panic(my_id);                                 
+ 716:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   }                                                         
+ 717:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #ifdef SOS_USE_PREEMPTION
+ 718:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   ATOMIC_ENABLE_PREEMPTION();
+ 719:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #endif
+ 720:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   return SOS_OK;                                            
+ 721:/Users/Administrator/sos-2x/kernel/sos_timer.c **** }
+ 722:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 723:/Users/Administrator/sos-2x/kernel/sos_timer.c **** int8_t ker_sys_timer_restart(uint8_t tid, int32_t interval)       
+ 724:/Users/Administrator/sos-2x/kernel/sos_timer.c **** {                                                             
+ 725:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #ifdef SOS_USE_PREEMPTION
+ 726:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   HAS_ATOMIC_PREEMPTION_SECTION;
+ 727:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #endif
+ 728:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   sos_pid_t my_id = ker_get_current_pid();                  
+ 729:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #ifdef SOS_USE_PREEMPTION
+ 730:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   ATOMIC_DISABLE_PREEMPTION();
+ 731:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #endif
+ 732:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   if( ker_timer_restart(my_id, tid, interval) != SOS_OK ) { 
+ 733:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #ifdef SOS_USE_PREEMPTION
+ 734:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	ATOMIC_ENABLE_PREEMPTION();
+ 735:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #endif
+ 736:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	return ker_mod_panic(my_id);                                 
+ 737:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   }
+ 738:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #ifdef SOS_USE_PREEMPTION
+ 739:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   ATOMIC_ENABLE_PREEMPTION();
+ 740:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #endif
+ 741:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   return SOS_OK;                                            
+ 742:/Users/Administrator/sos-2x/kernel/sos_timer.c **** }                                                             
+ 743:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 744:/Users/Administrator/sos-2x/kernel/sos_timer.c **** int8_t ker_sys_timer_stop(uint8_t tid)              
+ 745:/Users/Administrator/sos-2x/kernel/sos_timer.c **** {                                                             
+ 746:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   int8_t ret;
+ 747:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #ifdef SOS_USE_PREEMPTION
+ 748:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   HAS_ATOMIC_PREEMPTION_SECTION;
+ 749:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #endif
+ 750:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   sos_pid_t my_id = ker_get_current_pid();                  
+ 751:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #ifdef SOS_USE_PREEMPTION
+ 752:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   ATOMIC_DISABLE_PREEMPTION();
+ 753:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #endif
+ 754:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   ret = ker_timer_stop_and_release(my_id, tid);
+ 755:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #ifdef SOS_USE_PREEMPTION
+ 756:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   ATOMIC_ENABLE_PREEMPTION();
+ 757:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #endif
+ 758:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   return ret;                                            
+ 759:/Users/Administrator/sos-2x/kernel/sos_timer.c **** }
+ 760:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 761:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #ifndef SOS_USE_PREEMPTION
+ 762:/Users/Administrator/sos-2x/kernel/sos_timer.c **** // called from scheduler
+ 763:/Users/Administrator/sos-2x/kernel/sos_timer.c **** static void soft_interrupt( void )
+ 764:/Users/Administrator/sos-2x/kernel/sos_timer.c **** {
+ 765:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   HAS_CRITICAL_SECTION;
+ 766:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 767:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   timer_update_delta();
+ 768:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   while(list_empty(&deltaq) == false) {
+ 769:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	sos_timer_t *h = (sos_timer_t*)(deltaq.l_next);         
+ 770:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	if(h->delta <= 0) {
+ 771:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  sos_pid_t pid = h->pid;
+ 772:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  uint8_t tid = h->tid;
+ 773:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  uint8_t flag;
+ 774:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  list_remove_head(&deltaq);
+ 775:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  
+ 776:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  if(((h->type) & SLOW_TIMER_MASK) == 0){
+ 777:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		flag = SOS_MSG_HIGH_PRIORITY;
+ 778:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  } else {
+ 779:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		flag = 0;
+ 780:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  }
+ 781:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  
+ 782:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  if (((h->type) & ONE_SHOT_TIMER_MASK) == 0){
+ 783:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		//! periocic timer
+ 784:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		while(h->delta <= 0) {
+ 785:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		  // make sure it is positive
+ 786:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		  h->delta += h->ticks;
+ 787:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		}
+ 788:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		list_insert_tail(&periodic_pool, (list_t*) h);
+ 789:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		
+ 790:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  } else {
+ 791:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		list_insert_tail(&timer_pool, (list_link_t*)h);
+ 792:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  }
+ 793:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  sched_dispatch_short_message(pid, TIMER_PID,
+ 794:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 								   MSG_TIMER_TIMEOUT, 
+ 795:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 								   tid, 0,
+ 796:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 								   flag);
+ 797:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  
+ 798:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	} else {
+ 799:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  break;
+ 800:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	}
+ 801:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   }
+ 802:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   
+ 803:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   while(list_empty(&periodic_pool) == false) {
+ 804:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	list_link_t *link = periodic_pool.l_next;
+ 805:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	list_remove_head(&periodic_pool);
+ 806:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	timer_delta_q_insert((sos_timer_t*)link, false);
+ 807:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   }
+ 808:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   
+ 809:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   if(list_empty(&deltaq) == false) {
+ 810:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	sos_timer_t *h = (sos_timer_t*)(deltaq.l_next);
+ 811:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	int32_t hw_cnt;
+ 812:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	ENTER_CRITICAL_SECTION();
+ 813:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	hw_cnt = outstanding_ticks - timer_hardware_get_counter();
+ 814:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	if( h->delta - hw_cnt > 0) {
+ 815:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  LEAVE_CRITICAL_SECTION();
+ 816:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  timer_set_hw_top(h->delta - hw_cnt, true);	
+ 817:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	} else {
+ 818:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  LEAVE_CRITICAL_SECTION();
+ 819:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  sched_add_interrupt(SCHED_TIMER_INT, soft_interrupt);
+ 820:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	}
+ 821:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   } else {
+ 822:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	ENTER_CRITICAL_SECTION();
+ 823:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	timer_set_hw_top(MAX_SLEEP_INTERVAL, false);
+ 824:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	LEAVE_CRITICAL_SECTION();
+ 825:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   }
+ 826:/Users/Administrator/sos-2x/kernel/sos_timer.c **** }
+ 827:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #endif
+ 828:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 829:/Users/Administrator/sos-2x/kernel/sos_timer.c **** static void timer_realtime_set_hw_top(uint16_t value)
+ 830:/Users/Administrator/sos-2x/kernel/sos_timer.c **** {
+ 831:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   // compute the time it takes to have next interrupt
+ 832:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   if(list_empty(&deltaq) == true) {
+ 833:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	timer_set_hw_top(value, false);
+ 834:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   } else {
+ 835:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	uint8_t hw_interval = timer_getInterval();
+ 836:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	uint8_t hw_cnt = timer_hardware_get_counter();
+ 837:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	if( (hw_interval - hw_cnt) >= value ) {
+ 838:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  if(list_empty(&deltaq) == true) {
+ 839:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		timer_set_hw_top(value, false);
+ 840:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  } else {
+ 841:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		timer_set_hw_top(value, true);
+ 842:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  }
+ 843:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	}
+ 844:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   }
+ 845:/Users/Administrator/sos-2x/kernel/sos_timer.c **** }
+ 846:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 847:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 848:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 849:/Users/Administrator/sos-2x/kernel/sos_timer.c **** int8_t timer_realtime_start(uint16_t value, uint16_t interval, timer_callback_t f)
+ 850:/Users/Administrator/sos-2x/kernel/sos_timer.c **** {
+ 851:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	uint8_t i;
+ 852:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	HAS_CRITICAL_SECTION;
+ 853:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 854:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	ENTER_CRITICAL_SECTION();
+ 855:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	if( num_realtime_clock == MAX_REALTIME_CLOCK ) {
+ 856:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		LEAVE_CRITICAL_SECTION();
+ 857:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		return -ENOMEM;
+ 858:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	}
+ 859:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 860:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	for( i = 0; i < MAX_REALTIME_CLOCK; i++ ) {
+ 861:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		if( realtime[i].f == NULL ) {
+ 862:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 863:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			timer_realtime_set_hw_top(value);
+ 864:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			num_realtime_clock++;
+ 865:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 866:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			realtime[i].value = value;
+ 867:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			realtime[i].interval = interval;
+ 868:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			realtime[i].f = f;
+ 869:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			LEAVE_CRITICAL_SECTION();
+ 870:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			return SOS_OK;
+ 871:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		}
+ 872:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	}	
+ 873:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	LEAVE_CRITICAL_SECTION();
+ 874:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	return -ENOMEM;
+ 875:/Users/Administrator/sos-2x/kernel/sos_timer.c **** }
+ 876:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 877:/Users/Administrator/sos-2x/kernel/sos_timer.c **** int8_t timer_realtime_stop(timer_callback_t f)
+ 878:/Users/Administrator/sos-2x/kernel/sos_timer.c **** {
+ 879:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	uint8_t i;
+ 880:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	HAS_CRITICAL_SECTION;
+ 881:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 882:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	ENTER_CRITICAL_SECTION();
+ 883:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	for( i = 0; i < MAX_REALTIME_CLOCK; i++ ) {
+ 884:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		if( realtime[i].f == f ) {
+ 885:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			realtime[i].f = NULL;
+ 886:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			num_realtime_clock--;
+ 887:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			LEAVE_CRITICAL_SECTION();
+ 888:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			return SOS_OK;
+ 889:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		}
+ 890:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	}
+ 891:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	LEAVE_CRITICAL_SECTION();
+ 892:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	return -EINVAL;
+ 893:/Users/Administrator/sos-2x/kernel/sos_timer.c **** }
+ 894:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 895:/Users/Administrator/sos-2x/kernel/sos_timer.c **** static uint16_t timer_update_realtime_clock(uint8_t cnt)
+ 896:/Users/Administrator/sos-2x/kernel/sos_timer.c **** {
+ 812               	.LM72:
+ 813               	/* prologue: frame size=8 */
+ 814 02d0 4F92      		push r4
+ 815 02d2 5F92      		push r5
+ 816 02d4 7F92      		push r7
+ 817 02d6 8F92      		push r8
+ 818 02d8 9F92      		push r9
+ 819 02da AF92      		push r10
+ 820 02dc BF92      		push r11
+ 821 02de CF92      		push r12
+ 822 02e0 DF92      		push r13
+ 823 02e2 EF92      		push r14
+ 824 02e4 FF92      		push r15
+ 825 02e6 0F93      		push r16
+ 826 02e8 1F93      		push r17
+ 827 02ea CF93      		push r28
+ 828 02ec DF93      		push r29
+ 829 02ee CDB7      		in r28,__SP_L__
+ 830 02f0 DEB7      		in r29,__SP_H__
+ 831 02f2 2897      		sbiw r28,8
+ 832 02f4 0FB6      		in __tmp_reg__,__SREG__
+ 833 02f6 F894      		cli
+ 834 02f8 DEBF      		out __SP_H__,r29
+ 835 02fa 0FBE      		out __SREG__,__tmp_reg__
+ 836 02fc CDBF      		out __SP_L__,r28
+ 837               	/* prologue end (size=23) */
+ 838 02fe 782E      		mov r7,r24
+ 897:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	uint8_t i;
+ 898:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	uint16_t min_cnt = 65535;
+ 840               	.LM73:
+ 841 0300 3FEF      		ldi r19,lo8(-1)
+ 842 0302 A32E      		mov r10,r19
+ 843 0304 B32E      		mov r11,r19
+ 844 0306 4E01      		movw r8,r28
+ 845 0308 0894      		sec
+ 846 030a 811C      		adc r8,__zero_reg__
+ 847 030c 911C      		adc r9,__zero_reg__
+ 848 030e E090 0000 		lds r14,num_realtime_clock
+ 849 0312 4424      		clr r4
+ 850 0314 5524      		clr r5
+ 851 0316 6201      		movw r12,r4
+ 852 0318 C201      		movw r24,r4
+ 853 031a 23E0      		ldi r18,lo8(3)
+ 854 031c F22E      		mov r15,r18
+ 855 031e 8401      		movw r16,r8
+ 856               	.L83:
+ 899:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	timer_callback_t f[MAX_REALTIME_CLOCK];
+ 900:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 901:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	// iterate through all realtime clock
+ 902:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	for( i = 0; i < MAX_REALTIME_CLOCK; i++ ) {
+ 903:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		f[i] = NULL;
+ 858               	.LM74:
+ 859 0320 D801      		movw r26,r16
+ 860 0322 1D92      		st X+,__zero_reg__
+ 861 0324 1C92      		st X,__zero_reg__
+ 862 0326 1197      		sbiw r26,1
+ 904:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		if( realtime[i].f != NULL ) {
+ 864               	.LM75:
+ 865 0328 F601      		movw r30,r12
+ 866 032a E80F      		add r30,r24
+ 867 032c F91F      		adc r31,r25
+ 868 032e E050      		subi r30,lo8(-(realtime))
+ 869 0330 F040      		sbci r31,hi8(-(realtime))
+ 870 0332 4481      		ldd r20,Z+4
+ 871 0334 5581      		ldd r21,Z+5
+ 872 0336 4115      		cp r20,__zero_reg__
+ 873 0338 5105      		cpc r21,__zero_reg__
+ 874 033a 39F1      		breq .L76
+ 905:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			if( realtime[i].value <= cnt ) {
+ 876               	.LM76:
+ 877 033c 672D      		mov r22,r7
+ 878 033e 7727      		clr r23
+ 879 0340 2081      		ld r18,Z
+ 880 0342 3181      		ldd r19,Z+1
+ 881 0344 6217      		cp r22,r18
+ 882 0346 7307      		cpc r23,r19
+ 883 0348 80F0      		brlo .L78
+ 906:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 				f[i] = realtime[i].f;
+ 885               	.LM77:
+ 886 034a 4D93      		st X+,r20
+ 887 034c 5C93      		st X,r21
+ 907:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 				if( realtime[i].interval != 0 ) {
+ 889               	.LM78:
+ 890 034e 4281      		ldd r20,Z+2
+ 891 0350 5381      		ldd r21,Z+3
+ 892 0352 4115      		cp r20,__zero_reg__
+ 893 0354 5105      		cpc r21,__zero_reg__
+ 894 0356 29F0      		breq .L79
+ 908:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 					realtime[i].value += (realtime[i].interval - cnt);
+ 896               	.LM79:
+ 897 0358 461B      		sub r20,r22
+ 898 035a 570B      		sbc r21,r23
+ 899 035c 240F      		add r18,r20
+ 900 035e 351F      		adc r19,r21
+ 901 0360 06C0      		rjmp .L94
+ 902               	.L79:
+ 909:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 				} else {
+ 910:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 					realtime[i].f = NULL;
+ 904               	.LM80:
+ 905 0362 4483      		std Z+4,r20
+ 906 0364 5583      		std Z+5,r21
+ 911:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 					num_realtime_clock--;
+ 908               	.LM81:
+ 909 0366 EA94      		dec r14
+ 912:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 					continue;
+ 911               	.LM82:
+ 912 0368 10C0      		rjmp .L76
+ 913               	.L78:
+ 913:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 				}
+ 914:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			} else {
+ 915:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 				realtime[i].value -= cnt;
+ 915               	.LM83:
+ 916 036a 261B      		sub r18,r22
+ 917 036c 370B      		sbc r19,r23
+ 918               	.L94:
+ 919 036e 2083      		st Z,r18
+ 920 0370 3183      		std Z+1,r19
+ 916:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			}
+ 917:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			if( realtime[i].value < min_cnt ) {                 
+ 922               	.LM84:
+ 923 0372 F201      		movw r30,r4
+ 924 0374 E80F      		add r30,r24
+ 925 0376 F91F      		adc r31,r25
+ 926 0378 E050      		subi r30,lo8(-(realtime))
+ 927 037a F040      		sbci r31,hi8(-(realtime))
+ 928 037c 0190      		ld __tmp_reg__,Z+
+ 929 037e F081      		ld r31,Z
+ 930 0380 E02D      		mov r30,__tmp_reg__
+ 931 0382 EA15      		cp r30,r10
+ 932 0384 FB05      		cpc r31,r11
+ 933 0386 08F4      		brsh .L76
+ 918:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 				min_cnt = realtime[i].value;                    
+ 935               	.LM85:
+ 936 0388 5F01      		movw r10,r30
+ 937               	.L76:
+ 939               	.LM86:
+ 940 038a FA94      		dec r15
+ 941 038c 0196      		adiw r24,1
+ 942 038e 0E5F      		subi r16,lo8(-(2))
+ 943 0390 1F4F      		sbci r17,hi8(-(2))
+ 944 0392 E5E0      		ldi r30,lo8(5)
+ 945 0394 F0E0      		ldi r31,hi8(5)
+ 946 0396 CE0E      		add r12,r30
+ 947 0398 DF1E      		adc r13,r31
+ 948 039a 4E0E      		add r4,r30
+ 949 039c 5F1E      		adc r5,r31
+ 950 039e F7FE      		sbrs r15,7
+ 951 03a0 BFCF      		rjmp .L83
+ 952 03a2 E092 0000 		sts num_realtime_clock,r14
+ 953 03a6 83E0      		ldi r24,lo8(3)
+ 954 03a8 F82E      		mov r15,r24
+ 955 03aa 8401      		movw r16,r8
+ 956               	.L88:
+ 919:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			}
+ 920:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		}
+ 921:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	}
+ 922:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 923:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	for( i = 0; i < MAX_REALTIME_CLOCK; i++ ) {
+ 924:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		if( f[i] != NULL ) {
+ 958               	.LM87:
+ 959 03ac D801      		movw r26,r16
+ 960 03ae ED91      		ld r30,X+
+ 961 03b0 FD91      		ld r31,X+
+ 962 03b2 8D01      		movw r16,r26
+ 963 03b4 3097      		sbiw r30,0
+ 964 03b6 09F0      		breq .L86
+ 925:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 			(f[i])();
+ 966               	.LM88:
+ 967 03b8 0995      		icall
+ 968               	.L86:
+ 970               	.LM89:
+ 971 03ba FA94      		dec r15
+ 972 03bc F7FE      		sbrs r15,7
+ 973 03be F6CF      		rjmp .L88
+ 926:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		}
+ 927:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	}
+ 928:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 929:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	return min_cnt;
+ 930:/Users/Administrator/sos-2x/kernel/sos_timer.c **** }
+ 975               	.LM90:
+ 976 03c0 C501      		movw r24,r10
+ 977               	/* epilogue: frame size=8 */
+ 978 03c2 2896      		adiw r28,8
+ 979 03c4 0FB6      		in __tmp_reg__,__SREG__
+ 980 03c6 F894      		cli
+ 981 03c8 DEBF      		out __SP_H__,r29
+ 982 03ca 0FBE      		out __SREG__,__tmp_reg__
+ 983 03cc CDBF      		out __SP_L__,r28
+ 984 03ce DF91      		pop r29
+ 985 03d0 CF91      		pop r28
+ 986 03d2 1F91      		pop r17
+ 987 03d4 0F91      		pop r16
+ 988 03d6 FF90      		pop r15
+ 989 03d8 EF90      		pop r14
+ 990 03da DF90      		pop r13
+ 991 03dc CF90      		pop r12
+ 992 03de BF90      		pop r11
+ 993 03e0 AF90      		pop r10
+ 994 03e2 9F90      		pop r9
+ 995 03e4 8F90      		pop r8
+ 996 03e6 7F90      		pop r7
+ 997 03e8 5F90      		pop r5
+ 998 03ea 4F90      		pop r4
+ 999 03ec 0895      		ret
+ 1000               	/* epilogue end (size=22) */
+ 1001               	/* function timer_update_realtime_clock size 143 (98) */
+ 1008               	.Lscope5:
+ 1014               	timer_set_hw_top:
+ 1016               	.LM91:
+ 1017               	/* prologue: frame size=0 */
+ 1018 03ee EF92      		push r14
+ 1019 03f0 FF92      		push r15
+ 1020 03f2 0F93      		push r16
+ 1021 03f4 1F93      		push r17
+ 1022 03f6 CF93      		push r28
+ 1023               	/* prologue end (size=5) */
+ 1024 03f8 7B01      		movw r14,r22
+ 1025 03fa 8C01      		movw r16,r24
+ 1026               	.LBB8:
+ 1027               	.LBB9:
+ 1029               	.Ltext1:
+   1:/Users/Administrator/sos-2x/processor/avr/include/timer.h **** /* -*- Mode: C; tab-width:4 -*- */
+   2:/Users/Administrator/sos-2x/processor/avr/include/timer.h **** /* ex: set ts=4 shiftwidth=4 softtabstop=4 cindent: */
+   3:/Users/Administrator/sos-2x/processor/avr/include/timer.h **** /*
+   4:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  * Copyright (c) 2003 The Regents of the University of California.
+   5:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  * All rights reserved.
+   6:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  *
+   7:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  * Redistribution and use in source and binary forms, with or without
+   8:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  * modification, are permitted provided that the following conditions
+   9:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  * are met:
+  10:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  * 1. Redistributions of source code must retain the above copyright
+  11:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  *    notice, this list of conditions and the following disclaimer.
+  12:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  * 2. Redistributions in binary form must reproduce the above
+  13:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  *    copyright notice, this list of conditions and the following
+  14:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  *    disclaimer in the documentation and/or other materials provided
+  15:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  *    with the distribution.
+  16:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  * 3. All advertising materials mentioning features or use of this
+  17:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  *    software must display the following acknowledgement:
+  18:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  *       This product includes software developed by Networked &
+  19:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  *       Embedded Systems Lab at UCLA
+  20:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  * 4. Neither the name of the University nor that of the Laboratory
+  21:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  *    may be used to endorse or promote products derived from this
+  22:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  *    software without specific prior written permission.
+  23:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  *
+  24:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS''
+  25:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+  26:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+  27:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  * PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE REGENTS
+  28:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+  29:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+  30:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+  31:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+  32:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+  33:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+  34:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+  35:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  * SUCH DAMAGE.
+  36:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  *
+  37:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  */
+  38:/Users/Administrator/sos-2x/processor/avr/include/timer.h **** 
+  39:/Users/Administrator/sos-2x/processor/avr/include/timer.h **** #ifndef _TIMER_H
+  40:/Users/Administrator/sos-2x/processor/avr/include/timer.h **** #define _TIMER_H
+  41:/Users/Administrator/sos-2x/processor/avr/include/timer.h **** #include <avr/interrupt.h>
+  42:/Users/Administrator/sos-2x/processor/avr/include/timer.h **** 
+  43:/Users/Administrator/sos-2x/processor/avr/include/timer.h **** #define PROCESSOR_TICKS(x) x
+  44:/Users/Administrator/sos-2x/processor/avr/include/timer.h **** 
+  45:/Users/Administrator/sos-2x/processor/avr/include/timer.h **** /**
+  46:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  * @brief Initialize the timer hardware
+  47:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  * @param interval Hardware timer interval
+  48:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  * @param scale The hardware pre-scalar setting
+  49:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  */
+  50:/Users/Administrator/sos-2x/processor/avr/include/timer.h **** extern void timer_hardware_init(uint8_t interval, uint8_t scale);
+  51:/Users/Administrator/sos-2x/processor/avr/include/timer.h **** /**
+  52:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  * @brief Set a new value for the timer interval
+  53:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  * @param val The value of the new interval
+  54:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  */
+  55:/Users/Administrator/sos-2x/processor/avr/include/timer.h **** extern void timer_setInterval(int32_t val);
+  56:/Users/Administrator/sos-2x/processor/avr/include/timer.h **** // Timer Interrupt from hardware
+  57:/Users/Administrator/sos-2x/processor/avr/include/timer.h **** #define timer_interrupt()    SIGNAL(SIG_OUTPUT_COMPARE0)
+  58:/Users/Administrator/sos-2x/processor/avr/include/timer.h **** /**
+  59:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  * @brief Get the current interval setting
+  60:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  */ 
+  61:/Users/Administrator/sos-2x/processor/avr/include/timer.h **** static inline uint8_t timer_getInterval()   {return OCR0 + 1;}
+  62:/Users/Administrator/sos-2x/processor/avr/include/timer.h **** /**
+  63:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  * @brief Get the current value stored in the hardware register
+  64:/Users/Administrator/sos-2x/processor/avr/include/timer.h ****  */
+  65:/Users/Administrator/sos-2x/processor/avr/include/timer.h **** static inline uint8_t timer_hardware_get_counter()
+  66:/Users/Administrator/sos-2x/processor/avr/include/timer.h **** {
+  67:/Users/Administrator/sos-2x/processor/avr/include/timer.h **** 	return TCNT0;
+ 1031               	.LM92:
+ 1032 03fc 82B7      		in r24,82-0x20
+ 1033               	.LBE9:
+ 1034               	.LBE8:
+ 1036               	.LM93:
+ 1037 03fe 282F      		mov r18,r24
+ 1039               	.Ltext2:
+ 1041               	.LM94:
+ 1042               	/* #APP */
+ 1043 0400 CFB7      		in r28, __SREG__
+ 1044 0402 F894      		cli
+ 1045               		
+ 1047               	.LM95:
+ 1048               	/* #NOAPP */
+ 1049 0404 4423      		tst r20
+ 1050 0406 A9F0      		breq .L97
+ 1052               	.LM96:
+ 1053 0408 8091 0000 		lds r24,outstanding_ticks
+ 1054 040c 9091 0000 		lds r25,(outstanding_ticks)+1
+ 1055 0410 A091 0000 		lds r26,(outstanding_ticks)+2
+ 1056 0414 B091 0000 		lds r27,(outstanding_ticks)+3
+ 1057 0418 820F      		add r24,r18
+ 1058 041a 911D      		adc r25,__zero_reg__
+ 1059 041c A11D      		adc r26,__zero_reg__
+ 1060 041e B11D      		adc r27,__zero_reg__
+ 1061 0420 8093 0000 		sts outstanding_ticks,r24
+ 1062 0424 9093 0000 		sts (outstanding_ticks)+1,r25
+ 1063 0428 A093 0000 		sts (outstanding_ticks)+2,r26
+ 1064 042c B093 0000 		sts (outstanding_ticks)+3,r27
+ 1065 0430 08C0      		rjmp .L98
+ 1066               	.L97:
+ 1068               	.LM97:
+ 1069 0432 1092 0000 		sts outstanding_ticks,__zero_reg__
+ 1070 0436 1092 0000 		sts (outstanding_ticks)+1,__zero_reg__
+ 1071 043a 1092 0000 		sts (outstanding_ticks)+2,__zero_reg__
+ 1072 043e 1092 0000 		sts (outstanding_ticks)+3,__zero_reg__
+ 1073               	.L98:
+ 1075               	.LM98:
+ 1076 0442 8091 0000 		lds r24,num_realtime_clock
+ 1077 0446 8823      		tst r24
+ 1078 0448 61F0      		breq .L99
+ 1080               	.LM99:
+ 1081 044a 822F      		mov r24,r18
+ 1082 044c 0E94 0000 		call timer_update_realtime_clock
+ 1084               	.LM100:
+ 1085 0450 AA27      		clr r26
+ 1086 0452 BB27      		clr r27
+ 1087 0454 8E15      		cp r24,r14
+ 1088 0456 9F05      		cpc r25,r15
+ 1089 0458 A007      		cpc r26,r16
+ 1090 045a B107      		cpc r27,r17
+ 1091 045c 14F4      		brge .L99
+ 1093               	.LM101:
+ 1094 045e 7C01      		movw r14,r24
+ 1095 0460 8D01      		movw r16,r26
+ 1096               	.L99:
+ 1098               	.LM102:
+ 1099 0462 C801      		movw r24,r16
+ 1100 0464 B701      		movw r22,r14
+ 1101 0466 0E94 0000 		call timer_set_hw_interval
+ 1103               	.LM103:
+ 1104               	/* #APP */
+ 1105 046a CFBF      		out __SREG__, r28
+ 1106               		
+ 1107               	/* #NOAPP */
+ 1108               	/* epilogue: frame size=0 */
+ 1109 046c CF91      		pop r28
+ 1110 046e 1F91      		pop r17
+ 1111 0470 0F91      		pop r16
+ 1112 0472 FF90      		pop r15
+ 1113 0474 EF90      		pop r14
+ 1114 0476 0895      		ret
+ 1115               	/* epilogue end (size=6) */
+ 1116               	/* function timer_set_hw_top size 76 (65) */
+ 1122               	.Lscope6:
+ 1128               	timer_delta_q_insert:
+ 1130               	.LM104:
+ 1131               	/* prologue: frame size=0 */
+ 1132 0478 DF92      		push r13
+ 1133 047a EF92      		push r14
+ 1134 047c FF92      		push r15
+ 1135 047e 0F93      		push r16
+ 1136 0480 1F93      		push r17
+ 1137 0482 CF93      		push r28
+ 1138 0484 DF93      		push r29
+ 1139               	/* prologue end (size=7) */
+ 1140 0486 EC01      		movw r28,r24
+ 1141 0488 D62E      		mov r13,r22
+ 1143               	.LM105:
+ 1144 048a 80E0      		ldi r24,lo8(deltaq)
+ 1145 048c 90E0      		ldi r25,hi8(deltaq)
+ 1146 048e 0E94 0000 		call list_empty
+ 1147 0492 8130      		cpi r24,lo8(1)
+ 1148 0494 49F4      		brne .L102
+ 1150               	.LM106:
+ 1151 0496 DD20      		tst r13
+ 1152 0498 09F4      		brne .+2
+ 1153 049a 4CC0      		rjmp .L107
+ 1155               	.LM107:
+ 1156 049c 40E0      		ldi r20,lo8(0)
+ 1157 049e 6B85      		ldd r22,Y+11
+ 1158 04a0 7C85      		ldd r23,Y+12
+ 1159 04a2 8D85      		ldd r24,Y+13
+ 1160 04a4 9E85      		ldd r25,Y+14
+ 1161 04a6 44C0      		rjmp .L116
+ 1162               	.L102:
+ 1164               	.LM108:
+ 1165               	/* #APP */
+ 1166 04a8 9FB7      		in r25, __SREG__
+ 1167 04aa F894      		cli
+ 1168               		
+ 1169               	/* #NOAPP */
+ 1170               	.LBB10:
+ 1171               	.LBB11:
+ 1173               	.Ltext3:
+ 1175               	.LM109:
+ 1176 04ac 82B7      		in r24,82-0x20
+ 1177               	.LBE11:
+ 1178               	.LBE10:
+ 1180               	.LM110:
+ 1181 04ae E090 0000 		lds r14,outstanding_ticks
+ 1182 04b2 F090 0000 		lds r15,(outstanding_ticks)+1
+ 1183 04b6 0091 0000 		lds r16,(outstanding_ticks)+2
+ 1184 04ba 1091 0000 		lds r17,(outstanding_ticks)+3
+ 1185 04be E80E      		add r14,r24
+ 1186 04c0 F11C      		adc r15,__zero_reg__
+ 1187 04c2 011D      		adc r16,__zero_reg__
+ 1188 04c4 111D      		adc r17,__zero_reg__
+ 1190               	.Ltext4:
+ 1192               	.LM111:
+ 1193               	/* #APP */
+ 1194 04c6 9FBF      		out __SREG__, r25
+ 1195               		
+ 1197               	.LM112:
+ 1198               	/* #NOAPP */
+ 1199 04c8 DD20      		tst r13
+ 1200 04ca 61F0      		breq .L105
+ 1202               	.LM113:
+ 1203 04cc 8B85      		ldd r24,Y+11
+ 1204 04ce 9C85      		ldd r25,Y+12
+ 1205 04d0 AD85      		ldd r26,Y+13
+ 1206 04d2 BE85      		ldd r27,Y+14
+ 1207 04d4 8E0D      		add r24,r14
+ 1208 04d6 9F1D      		adc r25,r15
+ 1209 04d8 A01F      		adc r26,r16
+ 1210 04da B11F      		adc r27,r17
+ 1211 04dc 8B87      		std Y+11,r24
+ 1212 04de 9C87      		std Y+12,r25
+ 1213 04e0 AD87      		std Y+13,r26
+ 1214 04e2 BE87      		std Y+14,r27
+ 1215               	.L105:
+ 1217               	.LM114:
+ 1218 04e4 E091 0000 		lds r30,deltaq
+ 1219 04e8 F091 0000 		lds r31,(deltaq)+1
+ 1221               	.LM115:
+ 1222 04ec 2B85      		ldd r18,Y+11
+ 1223 04ee 3C85      		ldd r19,Y+12
+ 1224 04f0 4D85      		ldd r20,Y+13
+ 1225 04f2 5E85      		ldd r21,Y+14
+ 1226 04f4 8385      		ldd r24,Z+11
+ 1227 04f6 9485      		ldd r25,Z+12
+ 1228 04f8 A585      		ldd r26,Z+13
+ 1229 04fa B685      		ldd r27,Z+14
+ 1230 04fc 2817      		cp r18,r24
+ 1231 04fe 3907      		cpc r19,r25
+ 1232 0500 4A07      		cpc r20,r26
+ 1233 0502 5B07      		cpc r21,r27
+ 1234 0504 54F5      		brge .L106
+ 1236               	.LM116:
+ 1237 0506 821B      		sub r24,r18
+ 1238 0508 930B      		sbc r25,r19
+ 1239 050a A40B      		sbc r26,r20
+ 1240 050c B50B      		sbc r27,r21
+ 1241 050e 8387      		std Z+11,r24
+ 1242 0510 9487      		std Z+12,r25
+ 1243 0512 A587      		std Z+13,r26
+ 1244 0514 B687      		std Z+14,r27
+ 1246               	.LM117:
+ 1247 0516 DD20      		tst r13
+ 1248 0518 69F0      		breq .L107
+ 1250               	.LM118:
+ 1251 051a 8B85      		ldd r24,Y+11
+ 1252 051c 9C85      		ldd r25,Y+12
+ 1253 051e AD85      		ldd r26,Y+13
+ 1254 0520 BE85      		ldd r27,Y+14
+ 1255 0522 8E19      		sub r24,r14
+ 1256 0524 9F09      		sbc r25,r15
+ 1257 0526 A00B      		sbc r26,r16
+ 1258 0528 B10B      		sbc r27,r17
+ 1259 052a 41E0      		ldi r20,lo8(1)
+ 1260 052c BC01      		movw r22,r24
+ 1261 052e CD01      		movw r24,r26
+ 1262               	.L116:
+ 1263 0530 0E94 0000 		call timer_set_hw_top
+ 1264               	.L107:
+ 1266               	.LM119:
+ 1267 0534 BE01      		movw r22,r28
+ 1268 0536 80E0      		ldi r24,lo8(deltaq)
+ 1269 0538 90E0      		ldi r25,hi8(deltaq)
+ 1270 053a 0E94 0000 		call list_insert_head
+ 1272               	.LM120:
+ 1273 053e 2FC0      		rjmp .L101
+ 1274               	.L115:
+ 1275               	.LBB12:
+ 1277               	.LM121:
+ 1278 0540 821B      		sub r24,r18
+ 1279 0542 930B      		sbc r25,r19
+ 1280 0544 A40B      		sbc r26,r20
+ 1281 0546 B50B      		sbc r27,r21
+ 1282 0548 8387      		std Z+11,r24
+ 1283 054a 9487      		std Z+12,r25
+ 1284 054c A587      		std Z+13,r26
+ 1285 054e B687      		std Z+14,r27
+ 1287               	.LM122:
+ 1288 0550 BE01      		movw r22,r28
+ 1289 0552 CF01      		movw r24,r30
+ 1290 0554 0E94 0000 		call list_insert_before
+ 1292               	.LM123:
+ 1293 0558 22C0      		rjmp .L101
+ 1294               	.L106:
+ 1295               	.LBE12:
+ 1297               	.LM124:
+ 1298 055a 80E0      		ldi r24,hi8(deltaq)
+ 1299 055c E030      		cpi r30,lo8(deltaq)
+ 1300 055e F807      		cpc r31,r24
+ 1301 0560 C9F0      		breq .L114
+ 1302               	.LBB13:
+ 1304               	.LM125:
+ 1305 0562 2B85      		ldd r18,Y+11
+ 1306 0564 3C85      		ldd r19,Y+12
+ 1307 0566 4D85      		ldd r20,Y+13
+ 1308 0568 5E85      		ldd r21,Y+14
+ 1309 056a 8385      		ldd r24,Z+11
+ 1310 056c 9485      		ldd r25,Z+12
+ 1311 056e A585      		ldd r26,Z+13
+ 1312 0570 B685      		ldd r27,Z+14
+ 1313 0572 2817      		cp r18,r24
+ 1314 0574 3907      		cpc r19,r25
+ 1315 0576 4A07      		cpc r20,r26
+ 1316 0578 5B07      		cpc r21,r27
+ 1317 057a 14F3      		brlt .L115
+ 1319               	.LM126:
+ 1320 057c 281B      		sub r18,r24
+ 1321 057e 390B      		sbc r19,r25
+ 1322 0580 4A0B      		sbc r20,r26
+ 1323 0582 5B0B      		sbc r21,r27
+ 1324 0584 2B87      		std Y+11,r18
+ 1325 0586 3C87      		std Y+12,r19
+ 1326 0588 4D87      		std Y+13,r20
+ 1327 058a 5E87      		std Y+14,r21
+ 1328               	.LBE13:
+ 1330               	.LM127:
+ 1331 058c 0190      		ld __tmp_reg__,Z+
+ 1332 058e F081      		ld r31,Z
+ 1333 0590 E02D      		mov r30,__tmp_reg__
+ 1334 0592 E3CF      		rjmp .L106
+ 1335               	.L114:
+ 1337               	.LM128:
+ 1338 0594 BE01      		movw r22,r28
+ 1339 0596 80E0      		ldi r24,lo8(deltaq)
+ 1340 0598 90E0      		ldi r25,hi8(deltaq)
+ 1341 059a 0E94 0000 		call list_insert_tail
+ 1342               	.L101:
+ 1343               	/* epilogue: frame size=0 */
+ 1344 059e DF91      		pop r29
+ 1345 05a0 CF91      		pop r28
+ 1346 05a2 1F91      		pop r17
+ 1347 05a4 0F91      		pop r16
+ 1348 05a6 FF90      		pop r15
+ 1349 05a8 EF90      		pop r14
+ 1350 05aa DF90      		pop r13
+ 1351 05ac 0895      		ret
+ 1352               	/* epilogue end (size=8) */
+ 1353               	/* function timer_delta_q_insert size 162 (147) */
+ 1360               	.Lscope7:
+ 1366               	find_timer_block:
+ 1368               	.LM129:
+ 1369               	/* prologue: frame size=0 */
+ 1370 05ae 1F93      		push r17
+ 1371 05b0 CF93      		push r28
+ 1372               	/* prologue end (size=2) */
+ 1373 05b2 182F      		mov r17,r24
+ 1374 05b4 C62F      		mov r28,r22
+ 1376               	.LM130:
+ 1377 05b6 80E0      		ldi r24,lo8(deltaq)
+ 1378 05b8 90E0      		ldi r25,hi8(deltaq)
+ 1379 05ba 0E94 0000 		call list_empty
+ 1380 05be 8823      		tst r24
+ 1381 05c0 19F0      		breq .L118
+ 1382 05c2 13C0      		rjmp .L124
+ 1383               	.L123:
+ 1385               	.LM131:
+ 1386 05c4 CF01      		movw r24,r30
+ 1387 05c6 13C0      		rjmp .L117
+ 1388               	.L118:
+ 1390               	.LM132:
+ 1391 05c8 E091 0000 		lds r30,deltaq
+ 1392 05cc F091 0000 		lds r31,(deltaq)+1
+ 1393               	.L119:
+ 1395               	.LM133:
+ 1396 05d0 8581      		ldd r24,Z+5
+ 1397 05d2 8117      		cp r24,r17
+ 1398 05d4 19F4      		brne .L122
+ 1399 05d6 8681      		ldd r24,Z+6
+ 1400 05d8 8C17      		cp r24,r28
+ 1401 05da A1F3      		breq .L123
+ 1402               	.L122:
+ 1404               	.LM134:
+ 1405 05dc 0190      		ld __tmp_reg__,Z+
+ 1406 05de F081      		ld r31,Z
+ 1407 05e0 E02D      		mov r30,__tmp_reg__
+ 1409               	.LM135:
+ 1410 05e2 80E0      		ldi r24,hi8(deltaq)
+ 1411 05e4 E030      		cpi r30,lo8(deltaq)
+ 1412 05e6 F807      		cpc r31,r24
+ 1413 05e8 99F7      		brne .L119
+ 1414               	.L124:
+ 1416               	.LM136:
+ 1417 05ea 80E0      		ldi r24,lo8(0)
+ 1418 05ec 90E0      		ldi r25,hi8(0)
+ 1419               	.L117:
+ 1420               	/* epilogue: frame size=0 */
+ 1421 05ee CF91      		pop r28
+ 1422 05f0 1F91      		pop r17
+ 1423 05f2 0895      		ret
+ 1424               	/* epilogue end (size=3) */
+ 1425               	/* function find_timer_block size 35 (30) */
+ 1430               	.Lscope8:
+ 1436               	find_timer_in_periodic_pool:
+ 1438               	.LM137:
+ 1439               	/* prologue: frame size=0 */
+ 1440 05f4 0F93      		push r16
+ 1441 05f6 1F93      		push r17
+ 1442 05f8 CF93      		push r28
+ 1443 05fa DF93      		push r29
+ 1444               	/* prologue end (size=4) */
+ 1445 05fc 082F      		mov r16,r24
+ 1446 05fe 162F      		mov r17,r22
+ 1448               	.LM138:
+ 1449 0600 80E0      		ldi r24,lo8(periodic_pool)
+ 1450 0602 90E0      		ldi r25,hi8(periodic_pool)
+ 1451 0604 0E94 0000 		call list_empty
+ 1452 0608 8823      		tst r24
+ 1453 060a B1F4      		brne .L126
+ 1455               	.LM139:
+ 1456 060c C091 0000 		lds r28,periodic_pool
+ 1457 0610 D091 0000 		lds r29,(periodic_pool)+1
+ 1458               	.L127:
+ 1460               	.LM140:
+ 1461 0614 8D81      		ldd r24,Y+5
+ 1462 0616 8017      		cp r24,r16
+ 1463 0618 41F4      		brne .L130
+ 1464 061a 8E81      		ldd r24,Y+6
+ 1465 061c 8117      		cp r24,r17
+ 1466 061e 29F4      		brne .L130
+ 1468               	.LM141:
+ 1469 0620 CE01      		movw r24,r28
+ 1470 0622 0E94 0000 		call list_remove
+ 1472               	.LM142:
+ 1473 0626 CE01      		movw r24,r28
+ 1474 0628 09C0      		rjmp .L125
+ 1475               	.L130:
+ 1477               	.LM143:
+ 1478 062a 0990      		ld __tmp_reg__,Y+
+ 1479 062c D881      		ld r29,Y
+ 1480 062e C02D      		mov r28,__tmp_reg__
+ 1482               	.LM144:
+ 1483 0630 80E0      		ldi r24,hi8(periodic_pool)
+ 1484 0632 C030      		cpi r28,lo8(periodic_pool)
+ 1485 0634 D807      		cpc r29,r24
+ 1486 0636 71F7      		brne .L127
+ 1487               	.L126:
+ 1489               	.LM145:
+ 1490 0638 80E0      		ldi r24,lo8(0)
+ 1491 063a 90E0      		ldi r25,hi8(0)
+ 1492               	.L125:
+ 1493               	/* epilogue: frame size=0 */
+ 1494 063c DF91      		pop r29
+ 1495 063e CF91      		pop r28
+ 1496 0640 1F91      		pop r17
+ 1497 0642 0F91      		pop r16
+ 1498 0644 0895      		ret
+ 1499               	/* epilogue end (size=5) */
+ 1500               	/* function find_timer_in_periodic_pool size 41 (32) */
+ 1505               	.Lscope9:
+ 1511               	alloc_from_timer_pool:
+ 1513               	.LM146:
+ 1514               	/* prologue: frame size=0 */
+ 1515 0646 0F93      		push r16
+ 1516 0648 1F93      		push r17
+ 1517 064a CF93      		push r28
+ 1518 064c DF93      		push r29
+ 1519               	/* prologue end (size=4) */
+ 1520 064e 082F      		mov r16,r24
+ 1521 0650 162F      		mov r17,r22
+ 1523               	.LM147:
+ 1524 0652 80E0      		ldi r24,lo8(timer_pool)
+ 1525 0654 90E0      		ldi r25,hi8(timer_pool)
+ 1526 0656 0E94 0000 		call list_empty
+ 1527 065a 8823      		tst r24
+ 1528 065c 31F0      		breq .L132
+ 1529 065e 16C0      		rjmp .L138
+ 1530               	.L137:
+ 1532               	.LM148:
+ 1533 0660 CE01      		movw r24,r28
+ 1534 0662 0E94 0000 		call list_remove
+ 1536               	.LM149:
+ 1537 0666 CE01      		movw r24,r28
+ 1538 0668 13C0      		rjmp .L131
+ 1539               	.L132:
+ 1541               	.LM150:
+ 1542 066a C091 0000 		lds r28,timer_pool
+ 1543 066e D091 0000 		lds r29,(timer_pool)+1
+ 1544               	.L133:
+ 1546               	.LM151:
+ 1547 0672 8D81      		ldd r24,Y+5
+ 1548 0674 8017      		cp r24,r16
+ 1549 0676 19F4      		brne .L136
+ 1550 0678 8E81      		ldd r24,Y+6
+ 1551 067a 8117      		cp r24,r17
+ 1552 067c 89F3      		breq .L137
+ 1553               	.L136:
+ 1555               	.LM152:
+ 1556 067e 0990      		ld __tmp_reg__,Y+
+ 1557 0680 D881      		ld r29,Y
+ 1558 0682 C02D      		mov r28,__tmp_reg__
+ 1560               	.LM153:
+ 1561 0684 80E0      		ldi r24,hi8(timer_pool)
+ 1562 0686 C030      		cpi r28,lo8(timer_pool)
+ 1563 0688 D807      		cpc r29,r24
+ 1564 068a 99F7      		brne .L133
+ 1565               	.L138:
+ 1567               	.LM154:
+ 1568 068c 80E0      		ldi r24,lo8(0)
+ 1569 068e 90E0      		ldi r25,hi8(0)
+ 1570               	.L131:
+ 1571               	/* epilogue: frame size=0 */
+ 1572 0690 DF91      		pop r29
+ 1573 0692 CF91      		pop r28
+ 1574 0694 1F91      		pop r17
+ 1575 0696 0F91      		pop r16
+ 1576 0698 0895      		ret
+ 1577               	/* epilogue end (size=5) */
+ 1578               	/* function alloc_from_timer_pool size 42 (33) */
+ 1583               	.Lscope10:
+ 1588               	.global	ker_timer_stop
+ 1590               	ker_timer_stop:
+ 1592               	.LM155:
+ 1593               	/* prologue: frame size=0 */
+ 1594 069a 0F93      		push r16
+ 1595 069c 1F93      		push r17
+ 1596 069e CF93      		push r28
+ 1597 06a0 DF93      		push r29
+ 1598               	/* prologue end (size=4) */
+ 1599 06a2 082F      		mov r16,r24
+ 1600 06a4 162F      		mov r17,r22
+ 1602               	.LM156:
+ 1603 06a6 0E94 0000 		call find_timer_in_periodic_pool
+ 1604 06aa EC01      		movw r28,r24
+ 1606               	.LM157:
+ 1607 06ac 892B      		or r24,r25
+ 1608 06ae 61F4      		brne .L140
+ 1610               	.LM158:
+ 1611 06b0 612F      		mov r22,r17
+ 1612 06b2 802F      		mov r24,r16
+ 1613 06b4 0E94 0000 		call find_timer_block
+ 1614 06b8 EC01      		movw r28,r24
+ 1616               	.LM159:
+ 1617 06ba 0097      		sbiw r24,0
+ 1618 06bc 19F4      		brne .L141
+ 1620               	.LM160:
+ 1621 06be 8AEE      		ldi r24,lo8(-22)
+ 1622 06c0 9FEF      		ldi r25,hi8(-22)
+ 1623 06c2 09C0      		rjmp .L139
+ 1624               	.L141:
+ 1626               	.LM161:
+ 1627 06c4 0E94 0000 		call timer_remove_timer
+ 1628               	.L140:
+ 1630               	.LM162:
+ 1631 06c8 BE01      		movw r22,r28
+ 1632 06ca 80E0      		ldi r24,lo8(timer_pool)
+ 1633 06cc 90E0      		ldi r25,hi8(timer_pool)
+ 1634 06ce 0E94 0000 		call list_insert_tail
+ 1636               	.LM163:
+ 1637 06d2 80E0      		ldi r24,lo8(0)
+ 1638 06d4 90E0      		ldi r25,hi8(0)
+ 1639               	.L139:
+ 1640               	/* epilogue: frame size=0 */
+ 1641 06d6 DF91      		pop r29
+ 1642 06d8 CF91      		pop r28
+ 1643 06da 1F91      		pop r17
+ 1644 06dc 0F91      		pop r16
+ 1645 06de 0895      		ret
+ 1646               	/* epilogue end (size=5) */
+ 1647               	/* function ker_timer_stop size 35 (26) */
+ 1652               	.Lscope11:
+ 1658               	.global	ker_timer_init
+ 1660               	ker_timer_init:
+ 1662               	.LM164:
+ 1663               	/* prologue: frame size=0 */
+ 1664 06e0 FF92      		push r15
+ 1665 06e2 0F93      		push r16
+ 1666 06e4 1F93      		push r17
+ 1667 06e6 CF93      		push r28
+ 1668 06e8 DF93      		push r29
+ 1669               	/* prologue end (size=5) */
+ 1670 06ea 182F      		mov r17,r24
+ 1671 06ec 062F      		mov r16,r22
+ 1672 06ee F42E      		mov r15,r20
+ 1674               	.LM165:
+ 1675 06f0 0E94 0000 		call find_timer_in_periodic_pool
+ 1676 06f4 EC01      		movw r28,r24
+ 1678               	.LM166:
+ 1679 06f6 892B      		or r24,r25
+ 1680 06f8 09F0      		breq .+2
+ 1681 06fa 40C0      		rjmp .L158
+ 1683               	.LM167:
+ 1684 06fc 602F      		mov r22,r16
+ 1685 06fe 812F      		mov r24,r17
+ 1686 0700 0E94 0000 		call find_timer_block
+ 1687 0704 EC01      		movw r28,r24
+ 1689               	.LM168:
+ 1690 0706 892B      		or r24,r25
+ 1691 0708 31F0      		breq .L145
+ 1693               	.LM169:
+ 1694 070a 602F      		mov r22,r16
+ 1695 070c 812F      		mov r24,r17
+ 1696 070e 0E94 0000 		call ker_timer_stop
+ 1698               	.LM170:
+ 1699 0712 FC82      		std Y+4,r15
+ 1700 0714 39C0      		rjmp .L157
+ 1701               	.L145:
+ 1703               	.LM171:
+ 1704 0716 602F      		mov r22,r16
+ 1705 0718 812F      		mov r24,r17
+ 1706 071a 0E94 0000 		call alloc_from_timer_pool
+ 1707 071e EC01      		movw r28,r24
+ 1709               	.LM172:
+ 1710 0720 892B      		or r24,r25
+ 1711 0722 51F5      		brne .L146
+ 1712               	.LBB14:
+ 1713               	.LBB15:
+ 1715               	.LM173:
+ 1716 0724 80E0      		ldi r24,lo8(prealloc_timer_pool)
+ 1717 0726 90E0      		ldi r25,hi8(prealloc_timer_pool)
+ 1718 0728 0E94 0000 		call list_empty
+ 1719 072c 8823      		tst r24
+ 1720 072e 31F0      		breq .L147
+ 1721 0730 03C0      		rjmp .L156
+ 1722               	.L155:
+ 1724               	.LM174:
+ 1725 0732 CE01      		movw r24,r28
+ 1726 0734 0E94 0000 		call list_remove
+ 1727               	.L156:
+ 1728 0738 BE01      		movw r22,r28
+ 1729 073a 10C0      		rjmp .L148
+ 1730               	.L147:
+ 1732               	.LM175:
+ 1733 073c C091 0000 		lds r28,prealloc_timer_pool
+ 1734 0740 D091 0000 		lds r29,(prealloc_timer_pool)+1
+ 1735               	.L149:
+ 1737               	.LM176:
+ 1738 0744 8D81      		ldd r24,Y+5
+ 1739 0746 8117      		cp r24,r17
+ 1740 0748 A1F3      		breq .L155
+ 1742               	.LM177:
+ 1743 074a 0990      		ld __tmp_reg__,Y+
+ 1744 074c D881      		ld r29,Y
+ 1745 074e C02D      		mov r28,__tmp_reg__
+ 1747               	.LM178:
+ 1748 0750 80E0      		ldi r24,hi8(prealloc_timer_pool)
+ 1749 0752 C030      		cpi r28,lo8(prealloc_timer_pool)
+ 1750 0754 D807      		cpc r29,r24
+ 1751 0756 B1F7      		brne .L149
+ 1752 0758 60E0      		ldi r22,lo8(0)
+ 1753 075a 70E0      		ldi r23,hi8(0)
+ 1754               	.L148:
+ 1755               	.LBE15:
+ 1756               	.LBE14:
+ 1758               	.LM179:
+ 1759 075c EB01      		movw r28,r22
+ 1761               	.LM180:
+ 1762 075e 672B      		or r22,r23
+ 1763 0760 31F4      		brne .L153
+ 1765               	.LM181:
+ 1766 0762 64E0      		ldi r22,lo8(4)
+ 1767 0764 80E0      		ldi r24,lo8(timer_slab)
+ 1768 0766 90E0      		ldi r25,hi8(timer_slab)
+ 1769 0768 0E94 0000 		call ker_slab_alloc
+ 1770 076c EC01      		movw r28,r24
+ 1771               	.L153:
+ 1773               	.LM182:
+ 1774 076e 2097      		sbiw r28,0
+ 1775 0770 19F4      		brne .L146
+ 1777               	.LM183:
+ 1778 0772 84EF      		ldi r24,lo8(-12)
+ 1779 0774 9FEF      		ldi r25,hi8(-12)
+ 1780 0776 0AC0      		rjmp .L143
+ 1781               	.L146:
+ 1783               	.LM184:
+ 1784 0778 1D83      		std Y+5,r17
+ 1786               	.LM185:
+ 1787 077a 0E83      		std Y+6,r16
+ 1788               	.L158:
+ 1790               	.LM186:
+ 1791 077c FC82      		std Y+4,r15
+ 1793               	.LM187:
+ 1794 077e BE01      		movw r22,r28
+ 1795 0780 80E0      		ldi r24,lo8(timer_pool)
+ 1796 0782 90E0      		ldi r25,hi8(timer_pool)
+ 1797 0784 0E94 0000 		call list_insert_tail
+ 1798               	.L157:
+ 1800               	.LM188:
+ 1801 0788 80E0      		ldi r24,lo8(0)
+ 1802 078a 90E0      		ldi r25,hi8(0)
+ 1803               	.L143:
+ 1804               	/* epilogue: frame size=0 */
+ 1805 078c DF91      		pop r29
+ 1806 078e CF91      		pop r28
+ 1807 0790 1F91      		pop r17
+ 1808 0792 0F91      		pop r16
+ 1809 0794 FF90      		pop r15
+ 1810 0796 0895      		ret
+ 1811               	/* epilogue end (size=6) */
+ 1812               	/* function ker_timer_init size 92 (81) */
+ 1820               	.Lscope12:
+ 1827               	.global	ker_permanent_timer_init
+ 1829               	ker_permanent_timer_init:
+ 1831               	.LM189:
+ 1832               	/* prologue: frame size=0 */
+ 1833               	/* prologue end (size=0) */
+ 1834 0798 FC01      		movw r30,r24
+ 1835 079a 822F      		mov r24,r18
+ 1837               	.LM190:
+ 1838 079c 6583      		std Z+5,r22
+ 1840               	.LM191:
+ 1841 079e 4683      		std Z+6,r20
+ 1843               	.LM192:
+ 1844 07a0 8460      		ori r24,lo8(4)
+ 1845 07a2 8483      		std Z+4,r24
+ 1847               	.LM193:
+ 1848 07a4 BF01      		movw r22,r30
+ 1849 07a6 80E0      		ldi r24,lo8(timer_pool)
+ 1850 07a8 90E0      		ldi r25,hi8(timer_pool)
+ 1851 07aa 0E94 0000 		call list_insert_tail
+ 1853               	.LM194:
+ 1854 07ae 80E0      		ldi r24,lo8(0)
+ 1855 07b0 90E0      		ldi r25,hi8(0)
+ 1856               	/* epilogue: frame size=0 */
+ 1857 07b2 0895      		ret
+ 1858               	/* epilogue end (size=1) */
+ 1859               	/* function ker_permanent_timer_init size 14 (13) */
+ 1861               	.Lscope13:
+ 1864               	.global	timer_gc
+ 1866               	timer_gc:
+ 1868               	.LM195:
+ 1869               	/* prologue: frame size=0 */
+ 1870 07b4 CF93      		push r28
+ 1871 07b6 DF93      		push r29
+ 1872               	/* prologue end (size=2) */
+ 1874               	.LM196:
+ 1875 07b8 C091 0000 		lds r28,deltaq
+ 1876 07bc D091 0000 		lds r29,(deltaq)+1
+ 1877               	.L189:
+ 1879               	.LM197:
+ 1880 07c0 80E0      		ldi r24,hi8(deltaq)
+ 1881 07c2 C030      		cpi r28,lo8(deltaq)
+ 1882 07c4 D807      		cpc r29,r24
+ 1883 07c6 61F0      		breq .L182
+ 1885               	.LM198:
+ 1886 07c8 8C81      		ldd r24,Y+4
+ 1887 07ca 82FD      		sbrc r24,2
+ 1888 07cc 05C0      		rjmp .L163
+ 1890               	.LM199:
+ 1891 07ce BE01      		movw r22,r28
+ 1892 07d0 80E0      		ldi r24,lo8(timer_slab)
+ 1893 07d2 90E0      		ldi r25,hi8(timer_slab)
+ 1894 07d4 0E94 0000 		call slab_gc_mark
+ 1895               	.L163:
+ 1897               	.LM200:
+ 1898 07d8 0990      		ld __tmp_reg__,Y+
+ 1899 07da D881      		ld r29,Y
+ 1900 07dc C02D      		mov r28,__tmp_reg__
+ 1901 07de F0CF      		rjmp .L189
+ 1902               	.L182:
+ 1904               	.LM201:
+ 1905 07e0 C091 0000 		lds r28,timer_pool
+ 1906 07e4 D091 0000 		lds r29,(timer_pool)+1
+ 1907               	.L190:
+ 1908 07e8 80E0      		ldi r24,hi8(timer_pool)
+ 1909 07ea C030      		cpi r28,lo8(timer_pool)
+ 1910 07ec D807      		cpc r29,r24
+ 1911 07ee 61F0      		breq .L184
+ 1913               	.LM202:
+ 1914 07f0 8C81      		ldd r24,Y+4
+ 1915 07f2 82FD      		sbrc r24,2
+ 1916 07f4 05C0      		rjmp .L168
+ 1918               	.LM203:
+ 1919 07f6 BE01      		movw r22,r28
+ 1920 07f8 80E0      		ldi r24,lo8(timer_slab)
+ 1921 07fa 90E0      		ldi r25,hi8(timer_slab)
+ 1922 07fc 0E94 0000 		call slab_gc_mark
+ 1923               	.L168:
+ 1925               	.LM204:
+ 1926 0800 0990      		ld __tmp_reg__,Y+
+ 1927 0802 D881      		ld r29,Y
+ 1928 0804 C02D      		mov r28,__tmp_reg__
+ 1929 0806 F0CF      		rjmp .L190
+ 1930               	.L184:
+ 1932               	.LM205:
+ 1933 0808 C091 0000 		lds r28,prealloc_timer_pool
+ 1934 080c D091 0000 		lds r29,(prealloc_timer_pool)+1
+ 1935               	.L191:
+ 1936 0810 80E0      		ldi r24,hi8(prealloc_timer_pool)
+ 1937 0812 C030      		cpi r28,lo8(prealloc_timer_pool)
+ 1938 0814 D807      		cpc r29,r24
+ 1939 0816 61F0      		breq .L186
+ 1941               	.LM206:
+ 1942 0818 8C81      		ldd r24,Y+4
+ 1943 081a 82FD      		sbrc r24,2
+ 1944 081c 05C0      		rjmp .L173
+ 1946               	.LM207:
+ 1947 081e BE01      		movw r22,r28
+ 1948 0820 80E0      		ldi r24,lo8(timer_slab)
+ 1949 0822 90E0      		ldi r25,hi8(timer_slab)
+ 1950 0824 0E94 0000 		call slab_gc_mark
+ 1951               	.L173:
+ 1953               	.LM208:
+ 1954 0828 0990      		ld __tmp_reg__,Y+
+ 1955 082a D881      		ld r29,Y
+ 1956 082c C02D      		mov r28,__tmp_reg__
+ 1957 082e F0CF      		rjmp .L191
+ 1958               	.L186:
+ 1960               	.LM209:
+ 1961 0830 C091 0000 		lds r28,periodic_pool
+ 1962 0834 D091 0000 		lds r29,(periodic_pool)+1
+ 1963               	.L192:
+ 1964 0838 80E0      		ldi r24,hi8(periodic_pool)
+ 1965 083a C030      		cpi r28,lo8(periodic_pool)
+ 1966 083c D807      		cpc r29,r24
+ 1967 083e 61F0      		breq .L188
+ 1969               	.LM210:
+ 1970 0840 8C81      		ldd r24,Y+4
+ 1971 0842 82FD      		sbrc r24,2
+ 1972 0844 05C0      		rjmp .L178
+ 1974               	.LM211:
+ 1975 0846 BE01      		movw r22,r28
+ 1976 0848 80E0      		ldi r24,lo8(timer_slab)
+ 1977 084a 90E0      		ldi r25,hi8(timer_slab)
+ 1978 084c 0E94 0000 		call slab_gc_mark
+ 1979               	.L178:
+ 1981               	.LM212:
+ 1982 0850 0990      		ld __tmp_reg__,Y+
+ 1983 0852 D881      		ld r29,Y
+ 1984 0854 C02D      		mov r28,__tmp_reg__
+ 1985 0856 F0CF      		rjmp .L192
+ 1986               	.L188:
+ 1988               	.LM213:
+ 1989 0858 64E0      		ldi r22,lo8(4)
+ 1990 085a 80E0      		ldi r24,lo8(timer_slab)
+ 1991 085c 90E0      		ldi r25,hi8(timer_slab)
+ 1992 085e 0E94 0000 		call slab_gc
+ 1994               	.LM214:
+ 1995 0862 84E0      		ldi r24,lo8(4)
+ 1996 0864 0E94 0000 		call malloc_gc
+ 1997               	/* epilogue: frame size=0 */
+ 1998 0868 DF91      		pop r29
+ 1999 086a CF91      		pop r28
+ 2000 086c 0895      		ret
+ 2001               	/* epilogue end (size=3) */
+ 2002               	/* function timer_gc size 93 (88) */
+ 2007               	.Lscope14:
+ 2013               	.global	ker_timer_start
+ 2015               	ker_timer_start:
+ 2017               	.LM215:
+ 2018               	/* prologue: frame size=0 */
+ 2019 086e EF92      		push r14
+ 2020 0870 FF92      		push r15
+ 2021 0872 0F93      		push r16
+ 2022 0874 1F93      		push r17
+ 2023               	/* prologue end (size=4) */
+ 2024 0876 7901      		movw r14,r18
+ 2025 0878 8A01      		movw r16,r20
+ 2027               	.LM216:
+ 2028 087a 0E94 0000 		call alloc_from_timer_pool
+ 2029 087e FC01      		movw r30,r24
+ 2031               	.LM217:
+ 2032 0880 0097      		sbiw r24,0
+ 2033 0882 19F4      		brne .L194
+ 2035               	.LM218:
+ 2036 0884 8AEE      		ldi r24,lo8(-22)
+ 2037 0886 9FEF      		ldi r25,hi8(-22)
+ 2038 0888 0DC0      		rjmp .L193
+ 2039               	.L194:
+ 2041               	.LM219:
+ 2042 088a E782      		std Z+7,r14
+ 2043 088c F086      		std Z+8,r15
+ 2044 088e 0187      		std Z+9,r16
+ 2045 0890 1287      		std Z+10,r17
+ 2047               	.LM220:
+ 2048 0892 E386      		std Z+11,r14
+ 2049 0894 F486      		std Z+12,r15
+ 2050 0896 0587      		std Z+13,r16
+ 2051 0898 1687      		std Z+14,r17
+ 2053               	.LM221:
+ 2054 089a 61E0      		ldi r22,lo8(1)
+ 2055 089c 0E94 0000 		call timer_delta_q_insert
+ 2057               	.LM222:
+ 2058 08a0 80E0      		ldi r24,lo8(0)
+ 2059 08a2 90E0      		ldi r25,hi8(0)
+ 2060               	.L193:
+ 2061               	/* epilogue: frame size=0 */
+ 2062 08a4 1F91      		pop r17
+ 2063 08a6 0F91      		pop r16
+ 2064 08a8 FF90      		pop r15
+ 2065 08aa EF90      		pop r14
+ 2066 08ac 0895      		ret
+ 2067               	/* epilogue end (size=5) */
+ 2068               	/* function ker_timer_start size 32 (23) */
+ 2073               	.Lscope15:
+ 2078               	.global	ker_timer_stop_and_release
+ 2080               	ker_timer_stop_and_release:
+ 2082               	.LM223:
+ 2083               	/* prologue: frame size=0 */
+ 2084 08ae 0F93      		push r16
+ 2085 08b0 1F93      		push r17
+ 2086               	/* prologue end (size=2) */
+ 2087 08b2 082F      		mov r16,r24
+ 2088 08b4 162F      		mov r17,r22
+ 2090               	.LM224:
+ 2091 08b6 0E94 0000 		call ker_timer_stop
+ 2093               	.LM225:
+ 2094 08ba 612F      		mov r22,r17
+ 2095 08bc 802F      		mov r24,r16
+ 2096 08be 0E94 0000 		call alloc_from_timer_pool
+ 2097 08c2 BC01      		movw r22,r24
+ 2099               	.LM226:
+ 2100 08c4 892B      		or r24,r25
+ 2101 08c6 19F4      		brne .L196
+ 2103               	.LM227:
+ 2104 08c8 8AEE      		ldi r24,lo8(-22)
+ 2105 08ca 9FEF      		ldi r25,hi8(-22)
+ 2106 08cc 06C0      		rjmp .L195
+ 2107               	.L196:
+ 2109               	.LM228:
+ 2110 08ce 80E0      		ldi r24,lo8(timer_slab)
+ 2111 08d0 90E0      		ldi r25,hi8(timer_slab)
+ 2112 08d2 0E94 0000 		call ker_slab_free
+ 2114               	.LM229:
+ 2115 08d6 80E0      		ldi r24,lo8(0)
+ 2116 08d8 90E0      		ldi r25,hi8(0)
+ 2117               	.L195:
+ 2118               	/* epilogue: frame size=0 */
+ 2119 08da 1F91      		pop r17
+ 2120 08dc 0F91      		pop r16
+ 2121 08de 0895      		ret
+ 2122               	/* epilogue end (size=3) */
+ 2123               	/* function ker_timer_stop_and_release size 25 (20) */
+ 2128               	.Lscope16:
+ 2134               	.global	ker_timer_restart
+ 2136               	ker_timer_restart:
+ 2138               	.LM230:
+ 2139               	/* prologue: frame size=0 */
+ 2140 08e0 CF92      		push r12
+ 2141 08e2 DF92      		push r13
+ 2142 08e4 EF92      		push r14
+ 2143 08e6 FF92      		push r15
+ 2144 08e8 0F93      		push r16
+ 2145 08ea 1F93      		push r17
+ 2146 08ec CF93      		push r28
+ 2147 08ee DF93      		push r29
+ 2148               	/* prologue end (size=8) */
+ 2149 08f0 C82E      		mov r12,r24
+ 2150 08f2 D62E      		mov r13,r22
+ 2151 08f4 7901      		movw r14,r18
+ 2152 08f6 8A01      		movw r16,r20
+ 2154               	.LM231:
+ 2155 08f8 0E94 0000 		call find_timer_in_periodic_pool
+ 2156 08fc EC01      		movw r28,r24
+ 2158               	.LM232:
+ 2159 08fe 892B      		or r24,r25
+ 2160 0900 79F4      		brne .L198
+ 2162               	.LM233:
+ 2163 0902 6D2D      		mov r22,r13
+ 2164 0904 8C2D      		mov r24,r12
+ 2165 0906 0E94 0000 		call find_timer_block
+ 2166 090a EC01      		movw r28,r24
+ 2168               	.LM234:
+ 2169 090c 0097      		sbiw r24,0
+ 2170 090e 19F0      		breq .L199
+ 2172               	.LM235:
+ 2173 0910 0E94 0000 		call timer_remove_timer
+ 2174 0914 05C0      		rjmp .L198
+ 2175               	.L199:
+ 2177               	.LM236:
+ 2178 0916 6D2D      		mov r22,r13
+ 2179 0918 8C2D      		mov r24,r12
+ 2180 091a 0E94 0000 		call alloc_from_timer_pool
+ 2181 091e EC01      		movw r28,r24
+ 2182               	.L198:
+ 2184               	.LM237:
+ 2185 0920 2097      		sbiw r28,0
+ 2186 0922 19F4      		brne .L201
+ 2188               	.LM238:
+ 2189 0924 8AEE      		ldi r24,lo8(-22)
+ 2190 0926 9FEF      		ldi r25,hi8(-22)
+ 2191 0928 25C0      		rjmp .L197
+ 2192               	.L201:
+ 2194               	.LM239:
+ 2195 092a 1E14      		cp __zero_reg__,r14
+ 2196 092c 1F04      		cpc __zero_reg__,r15
+ 2197 092e 1006      		cpc __zero_reg__,r16
+ 2198 0930 1106      		cpc __zero_reg__,r17
+ 2199 0932 24F0      		brlt .L202
+ 2201               	.LM240:
+ 2202 0934 EF80      		ldd r14,Y+7
+ 2203 0936 F884      		ldd r15,Y+8
+ 2204 0938 0985      		ldd r16,Y+9
+ 2205 093a 1A85      		ldd r17,Y+10
+ 2206               	.L202:
+ 2208               	.LM241:
+ 2209 093c 85E0      		ldi r24,lo8(5)
+ 2210 093e E816      		cp r14,r24
+ 2211 0940 F104      		cpc r15,__zero_reg__
+ 2212 0942 0105      		cpc r16,__zero_reg__
+ 2213 0944 1105      		cpc r17,__zero_reg__
+ 2214 0946 44F4      		brge .L203
+ 2216               	.LM242:
+ 2217 0948 BE01      		movw r22,r28
+ 2218 094a 80E0      		ldi r24,lo8(timer_pool)
+ 2219 094c 90E0      		ldi r25,hi8(timer_pool)
+ 2220 094e 0E94 0000 		call list_insert_tail
+ 2222               	.LM243:
+ 2223 0952 8FEF      		ldi r24,lo8(-1)
+ 2224 0954 9FEF      		ldi r25,hi8(-1)
+ 2225 0956 0EC0      		rjmp .L197
+ 2226               	.L203:
+ 2228               	.LM244:
+ 2229 0958 EF82      		std Y+7,r14
+ 2230 095a F886      		std Y+8,r15
+ 2231 095c 0987      		std Y+9,r16
+ 2232 095e 1A87      		std Y+10,r17
+ 2234               	.LM245:
+ 2235 0960 EB86      		std Y+11,r14
+ 2236 0962 FC86      		std Y+12,r15
+ 2237 0964 0D87      		std Y+13,r16
+ 2238 0966 1E87      		std Y+14,r17
+ 2240               	.LM246:
+ 2241 0968 61E0      		ldi r22,lo8(1)
+ 2242 096a CE01      		movw r24,r28
+ 2243 096c 0E94 0000 		call timer_delta_q_insert
+ 2245               	.LM247:
+ 2246 0970 80E0      		ldi r24,lo8(0)
+ 2247 0972 90E0      		ldi r25,hi8(0)
+ 2248               	.L197:
+ 2249               	/* epilogue: frame size=0 */
+ 2250 0974 DF91      		pop r29
+ 2251 0976 CF91      		pop r28
+ 2252 0978 1F91      		pop r17
+ 2253 097a 0F91      		pop r16
+ 2254 097c FF90      		pop r15
+ 2255 097e EF90      		pop r14
+ 2256 0980 DF90      		pop r13
+ 2257 0982 CF90      		pop r12
+ 2258 0984 0895      		ret
+ 2259               	/* epilogue end (size=9) */
+ 2260               	/* function ker_timer_restart size 83 (66) */
+ 2265               	.Lscope17:
+ 2271               	.global	ker_sys_timer_start
+ 2273               	ker_sys_timer_start:
+ 2275               	.LM248:
+ 2276               	/* prologue: frame size=0 */
+ 2277 0986 CF92      		push r12
+ 2278 0988 DF92      		push r13
+ 2279 098a EF92      		push r14
+ 2280 098c FF92      		push r15
+ 2281 098e 0F93      		push r16
+ 2282 0990 1F93      		push r17
+ 2283 0992 CF93      		push r28
+ 2284               	/* prologue end (size=7) */
+ 2285 0994 082F      		mov r16,r24
+ 2286 0996 6A01      		movw r12,r20
+ 2287 0998 7B01      		movw r14,r22
+ 2288 099a 122F      		mov r17,r18
+ 2290               	.LM249:
+ 2291 099c 0E94 0000 		call ker_get_current_pid
+ 2292 09a0 C82F      		mov r28,r24
+ 2294               	.LM250:
+ 2295 09a2 412F      		mov r20,r17
+ 2296 09a4 602F      		mov r22,r16
+ 2297 09a6 0E94 0000 		call ker_timer_init
+ 2298 09aa 8823      		tst r24
+ 2299 09ac 41F4      		brne .L206
+ 2301               	.LM251:
+ 2302 09ae A701      		movw r20,r14
+ 2303 09b0 9601      		movw r18,r12
+ 2304 09b2 602F      		mov r22,r16
+ 2305 09b4 8C2F      		mov r24,r28
+ 2306 09b6 0E94 0000 		call ker_timer_start
+ 2307 09ba 8823      		tst r24
+ 2308 09bc 39F0      		breq .L205
+ 2309               	.L206:
+ 2311               	.LM252:
+ 2312 09be 8C2F      		mov r24,r28
+ 2313 09c0 0E94 0000 		call ker_mod_panic
+ 2314 09c4 9927      		clr r25
+ 2315 09c6 87FD      		sbrc r24,7
+ 2316 09c8 9095      		com r25
+ 2317 09ca 02C0      		rjmp .L204
+ 2318               	.L205:
+ 2320               	.LM253:
+ 2321 09cc 80E0      		ldi r24,lo8(0)
+ 2322 09ce 90E0      		ldi r25,hi8(0)
+ 2323               	.L204:
+ 2324               	/* epilogue: frame size=0 */
+ 2325 09d0 CF91      		pop r28
+ 2326 09d2 1F91      		pop r17
+ 2327 09d4 0F91      		pop r16
+ 2328 09d6 FF90      		pop r15
+ 2329 09d8 EF90      		pop r14
+ 2330 09da DF90      		pop r13
+ 2331 09dc CF90      		pop r12
+ 2332 09de 0895      		ret
+ 2333               	/* epilogue end (size=8) */
+ 2334               	/* function ker_sys_timer_start size 45 (30) */
+ 2339               	.Lscope18:
+ 2344               	.global	ker_sys_timer_restart
+ 2346               	ker_sys_timer_restart:
+ 2348               	.LM254:
+ 2349               	/* prologue: frame size=0 */
+ 2350 09e0 DF92      		push r13
+ 2351 09e2 EF92      		push r14
+ 2352 09e4 FF92      		push r15
+ 2353 09e6 0F93      		push r16
+ 2354 09e8 1F93      		push r17
+ 2355 09ea CF93      		push r28
+ 2356               	/* prologue end (size=6) */
+ 2357 09ec D82E      		mov r13,r24
+ 2358 09ee 7A01      		movw r14,r20
+ 2359 09f0 8B01      		movw r16,r22
+ 2361               	.LM255:
+ 2362 09f2 0E94 0000 		call ker_get_current_pid
+ 2363 09f6 C82F      		mov r28,r24
+ 2365               	.LM256:
+ 2366 09f8 A801      		movw r20,r16
+ 2367 09fa 9701      		movw r18,r14
+ 2368 09fc 6D2D      		mov r22,r13
+ 2369 09fe 0E94 0000 		call ker_timer_restart
+ 2370 0a02 8823      		tst r24
+ 2371 0a04 39F0      		breq .L208
+ 2373               	.LM257:
+ 2374 0a06 8C2F      		mov r24,r28
+ 2375 0a08 0E94 0000 		call ker_mod_panic
+ 2376 0a0c 9927      		clr r25
+ 2377 0a0e 87FD      		sbrc r24,7
+ 2378 0a10 9095      		com r25
+ 2379 0a12 02C0      		rjmp .L207
+ 2380               	.L208:
+ 2382               	.LM258:
+ 2383 0a14 80E0      		ldi r24,lo8(0)
+ 2384 0a16 90E0      		ldi r25,hi8(0)
+ 2385               	.L207:
+ 2386               	/* epilogue: frame size=0 */
+ 2387 0a18 CF91      		pop r28
+ 2388 0a1a 1F91      		pop r17
+ 2389 0a1c 0F91      		pop r16
+ 2390 0a1e FF90      		pop r15
+ 2391 0a20 EF90      		pop r14
+ 2392 0a22 DF90      		pop r13
+ 2393 0a24 0895      		ret
+ 2394               	/* epilogue end (size=7) */
+ 2395               	/* function ker_sys_timer_restart size 35 (22) */
+ 2400               	.Lscope19:
+ 2404               	.global	ker_sys_timer_stop
+ 2406               	ker_sys_timer_stop:
+ 2408               	.LM259:
+ 2409               	/* prologue: frame size=0 */
+ 2410 0a26 1F93      		push r17
+ 2411               	/* prologue end (size=1) */
+ 2412 0a28 182F      		mov r17,r24
+ 2414               	.LM260:
+ 2415 0a2a 0E94 0000 		call ker_get_current_pid
+ 2417               	.LM261:
+ 2418 0a2e 612F      		mov r22,r17
+ 2419 0a30 0E94 0000 		call ker_timer_stop_and_release
+ 2421               	.LM262:
+ 2422 0a34 9927      		clr r25
+ 2423 0a36 87FD      		sbrc r24,7
+ 2424 0a38 9095      		com r25
+ 2425               	/* epilogue: frame size=0 */
+ 2426 0a3a 1F91      		pop r17
+ 2427 0a3c 0895      		ret
+ 2428               	/* epilogue end (size=2) */
+ 2429               	/* function ker_sys_timer_stop size 12 (9) */
+ 2431               	.Lscope20:
+ 2435               	soft_interrupt:
+ 2437               	.LM263:
+ 2438               	/* prologue: frame size=0 */
+ 2439 0a3e BF92      		push r11
+ 2440 0a40 CF92      		push r12
+ 2441 0a42 DF92      		push r13
+ 2442 0a44 EF92      		push r14
+ 2443 0a46 FF92      		push r15
+ 2444 0a48 0F93      		push r16
+ 2445 0a4a 1F93      		push r17
+ 2446 0a4c CF93      		push r28
+ 2447 0a4e DF93      		push r29
+ 2448               	/* prologue end (size=9) */
+ 2449               	.LBB16:
+ 2450               	.LBB17:
+ 2452               	.LM264:
+ 2453               	/* #APP */
+ 2454 0a50 8FB7      		in r24, __SREG__
+ 2455 0a52 F894      		cli
+ 2456               		
+ 2458               	.LM265:
+ 2459               	/* #NOAPP */
+ 2460 0a54 E090 0000 		lds r14,outstanding_ticks
+ 2461 0a58 F090 0000 		lds r15,(outstanding_ticks)+1
+ 2462 0a5c 0091 0000 		lds r16,(outstanding_ticks)+2
+ 2463 0a60 1091 0000 		lds r17,(outstanding_ticks)+3
+ 2465               	.LM266:
+ 2466 0a64 1092 0000 		sts outstanding_ticks,__zero_reg__
+ 2467 0a68 1092 0000 		sts (outstanding_ticks)+1,__zero_reg__
+ 2468 0a6c 1092 0000 		sts (outstanding_ticks)+2,__zero_reg__
+ 2469 0a70 1092 0000 		sts (outstanding_ticks)+3,__zero_reg__
+ 2471               	.LM267:
+ 2472               	/* #APP */
+ 2473 0a74 8FBF      		out __SREG__, r24
+ 2474               		
+ 2476               	.LM268:
+ 2477               	/* #NOAPP */
+ 2478 0a76 80E0      		ldi r24,lo8(deltaq)
+ 2479 0a78 90E0      		ldi r25,hi8(deltaq)
+ 2480 0a7a 0E94 0000 		call list_empty
+ 2481 0a7e 8130      		cpi r24,lo8(1)
+ 2482 0a80 09F4      		brne .+2
+ 2483 0a82 74C0      		rjmp .L219
+ 2485               	.LM269:
+ 2486 0a84 E091 0000 		lds r30,deltaq
+ 2487 0a88 F091 0000 		lds r31,(deltaq)+1
+ 2488               	.L244:
+ 2489 0a8c 80E0      		ldi r24,hi8(deltaq)
+ 2490 0a8e E030      		cpi r30,lo8(deltaq)
+ 2491 0a90 F807      		cpc r31,r24
+ 2492 0a92 09F4      		brne .+2
+ 2493 0a94 6BC0      		rjmp .L219
+ 2494               	.LBB18:
+ 2496               	.LM270:
+ 2497 0a96 8385      		ldd r24,Z+11
+ 2498 0a98 9485      		ldd r25,Z+12
+ 2499 0a9a A585      		ldd r26,Z+13
+ 2500 0a9c B685      		ldd r27,Z+14
+ 2501 0a9e 9C01      		movw r18,r24
+ 2502 0aa0 AD01      		movw r20,r26
+ 2503 0aa2 2E19      		sub r18,r14
+ 2504 0aa4 3F09      		sbc r19,r15
+ 2505 0aa6 400B      		sbc r20,r16
+ 2506 0aa8 510B      		sbc r21,r17
+ 2507 0aaa 8E15      		cp r24,r14
+ 2508 0aac 9F05      		cpc r25,r15
+ 2509 0aae A007      		cpc r26,r16
+ 2510 0ab0 B107      		cpc r27,r17
+ 2511 0ab2 0CF0      		brlt .+2
+ 2512 0ab4 ABC0      		rjmp .L242
+ 2513               	.LBB19:
+ 2515               	.LM271:
+ 2516 0ab6 2387      		std Z+11,r18
+ 2517 0ab8 3487      		std Z+12,r19
+ 2518 0aba 4587      		std Z+13,r20
+ 2519 0abc 5687      		std Z+14,r21
+ 2521               	.LM272:
+ 2522 0abe E81A      		sub r14,r24
+ 2523 0ac0 F90A      		sbc r15,r25
+ 2524 0ac2 0A0B      		sbc r16,r26
+ 2525 0ac4 1B0B      		sbc r17,r27
+ 2526               	.LBE19:
+ 2527               	.LBE18:
+ 2529               	.LM273:
+ 2530 0ac6 0190      		ld __tmp_reg__,Z+
+ 2531 0ac8 F081      		ld r31,Z
+ 2532 0aca E02D      		mov r30,__tmp_reg__
+ 2533 0acc DFCF      		rjmp .L244
+ 2534               	.L230:
+ 2535               	.LBE17:
+ 2536               	.LBE16:
+ 2537               	.LBB20:
+ 2539               	.LM274:
+ 2540 0ace C091 0000 		lds r28,deltaq
+ 2541 0ad2 D091 0000 		lds r29,(deltaq)+1
+ 2543               	.LM275:
+ 2544 0ad6 8B85      		ldd r24,Y+11
+ 2545 0ad8 9C85      		ldd r25,Y+12
+ 2546 0ada AD85      		ldd r26,Y+13
+ 2547 0adc BE85      		ldd r27,Y+14
+ 2548 0ade 1816      		cp __zero_reg__,r24
+ 2549 0ae0 1906      		cpc __zero_reg__,r25
+ 2550 0ae2 1A06      		cpc __zero_reg__,r26
+ 2551 0ae4 1B06      		cpc __zero_reg__,r27
+ 2552 0ae6 0CF4      		brge .+2
+ 2553 0ae8 56C0      		rjmp .L231
+ 2554               	.LBB21:
+ 2556               	.LM276:
+ 2557 0aea BD80      		ldd r11,Y+5
+ 2559               	.LM277:
+ 2560 0aec CE80      		ldd r12,Y+6
+ 2562               	.LM278:
+ 2563 0aee 80E0      		ldi r24,lo8(deltaq)
+ 2564 0af0 90E0      		ldi r25,hi8(deltaq)
+ 2565 0af2 0E94 0000 		call list_remove_head
+ 2567               	.LM279:
+ 2568 0af6 8C81      		ldd r24,Y+4
+ 2569 0af8 81FD      		sbrc r24,1
+ 2570 0afa 03C0      		rjmp .L222
+ 2572               	.LM280:
+ 2573 0afc 40E4      		ldi r20,lo8(64)
+ 2574 0afe D42E      		mov r13,r20
+ 2575 0b00 01C0      		rjmp .L223
+ 2576               	.L222:
+ 2578               	.LM281:
+ 2579 0b02 D12E      		mov r13,r17
+ 2580               	.L223:
+ 2582               	.LM282:
+ 2583 0b04 80FD      		sbrc r24,0
+ 2584 0b06 22C0      		rjmp .L224
+ 2586               	.LM283:
+ 2587 0b08 2B85      		ldd r18,Y+11
+ 2588 0b0a 3C85      		ldd r19,Y+12
+ 2589 0b0c 4D85      		ldd r20,Y+13
+ 2590 0b0e 5E85      		ldd r21,Y+14
+ 2591 0b10 1216      		cp __zero_reg__,r18
+ 2592 0b12 1306      		cpc __zero_reg__,r19
+ 2593 0b14 1406      		cpc __zero_reg__,r20
+ 2594 0b16 1506      		cpc __zero_reg__,r21
+ 2595 0b18 ACF0      		brlt .L241
+ 2596 0b1a EF80      		ldd r14,Y+7
+ 2597 0b1c F884      		ldd r15,Y+8
+ 2598 0b1e 0985      		ldd r16,Y+9
+ 2599 0b20 1A85      		ldd r17,Y+10
+ 2600               	.L227:
+ 2601 0b22 DA01      		movw r26,r20
+ 2602 0b24 C901      		movw r24,r18
+ 2603 0b26 8E0D      		add r24,r14
+ 2604 0b28 9F1D      		adc r25,r15
+ 2605 0b2a A01F      		adc r26,r16
+ 2606 0b2c B11F      		adc r27,r17
+ 2607 0b2e 9C01      		movw r18,r24
+ 2608 0b30 AD01      		movw r20,r26
+ 2609 0b32 1816      		cp __zero_reg__,r24
+ 2610 0b34 1906      		cpc __zero_reg__,r25
+ 2611 0b36 1A06      		cpc __zero_reg__,r26
+ 2612 0b38 1B06      		cpc __zero_reg__,r27
+ 2613 0b3a 9CF7      		brge .L227
+ 2614 0b3c 8B87      		std Y+11,r24
+ 2615 0b3e 9C87      		std Y+12,r25
+ 2616 0b40 AD87      		std Y+13,r26
+ 2617 0b42 BE87      		std Y+14,r27
+ 2618               	.L241:
+ 2620               	.LM284:
+ 2621 0b44 BE01      		movw r22,r28
+ 2622 0b46 80E0      		ldi r24,lo8(periodic_pool)
+ 2623 0b48 90E0      		ldi r25,hi8(periodic_pool)
+ 2624 0b4a 03C0      		rjmp .L245
+ 2625               	.L224:
+ 2627               	.LM285:
+ 2628 0b4c BE01      		movw r22,r28
+ 2629 0b4e 80E0      		ldi r24,lo8(timer_pool)
+ 2630 0b50 90E0      		ldi r25,hi8(timer_pool)
+ 2631               	.L245:
+ 2632 0b52 0E94 0000 		call list_insert_tail
+ 2634               	.LM286:
+ 2635 0b56 8D2D      		mov r24,r13
+ 2636 0b58 9927      		clr r25
+ 2637 0b5a 7C01      		movw r14,r24
+ 2638 0b5c 00E0      		ldi r16,lo8(0)
+ 2639 0b5e 10E0      		ldi r17,hi8(0)
+ 2640 0b60 2C2D      		mov r18,r12
+ 2641 0b62 42E0      		ldi r20,lo8(2)
+ 2642 0b64 64E0      		ldi r22,lo8(4)
+ 2643 0b66 8B2D      		mov r24,r11
+ 2644 0b68 0E94 0000 		call sched_dispatch_short_message
+ 2645               	.L219:
+ 2646               	.LBE21:
+ 2647               	.LBE20:
+ 2649               	.LM287:
+ 2650 0b6c 80E0      		ldi r24,lo8(deltaq)
+ 2651 0b6e 90E0      		ldi r25,hi8(deltaq)
+ 2652 0b70 0E94 0000 		call list_empty
+ 2653 0b74 182F      		mov r17,r24
+ 2654 0b76 8823      		tst r24
+ 2655 0b78 09F4      		brne .+2
+ 2656 0b7a A9CF      		rjmp .L230
+ 2658               	.LM288:
+ 2659 0b7c 0CC0      		rjmp .L231
+ 2660               	.L233:
+ 2661               	.LBB22:
+ 2663               	.LM289:
+ 2664 0b7e 0091 0000 		lds r16,periodic_pool
+ 2665 0b82 1091 0000 		lds r17,(periodic_pool)+1
+ 2667               	.LM290:
+ 2668 0b86 80E0      		ldi r24,lo8(periodic_pool)
+ 2669 0b88 90E0      		ldi r25,hi8(periodic_pool)
+ 2670 0b8a 0E94 0000 		call list_remove_head
+ 2672               	.LM291:
+ 2673 0b8e 6C2F      		mov r22,r28
+ 2674 0b90 C801      		movw r24,r16
+ 2675 0b92 0E94 0000 		call timer_delta_q_insert
+ 2676               	.L231:
+ 2677               	.LBE22:
+ 2678 0b96 80E0      		ldi r24,lo8(periodic_pool)
+ 2679 0b98 90E0      		ldi r25,hi8(periodic_pool)
+ 2680 0b9a 0E94 0000 		call list_empty
+ 2681 0b9e C82F      		mov r28,r24
+ 2682 0ba0 8823      		tst r24
+ 2683 0ba2 69F3      		breq .L233
+ 2685               	.LM292:
+ 2686 0ba4 80E0      		ldi r24,lo8(deltaq)
+ 2687 0ba6 90E0      		ldi r25,hi8(deltaq)
+ 2688 0ba8 0E94 0000 		call list_empty
+ 2689 0bac 8823      		tst r24
+ 2690 0bae 09F0      		breq .+2
+ 2691 0bb0 39C0      		rjmp .L234
+ 2692               	.LBB23:
+ 2694               	.LM293:
+ 2695 0bb2 E091 0000 		lds r30,deltaq
+ 2696 0bb6 F091 0000 		lds r31,(deltaq)+1
+ 2698               	.LM294:
+ 2699               	/* #APP */
+ 2700 0bba CFB7      		in r28, __SREG__
+ 2701 0bbc F894      		cli
+ 2702               		
+ 2703               	/* #NOAPP */
+ 2704               	.LBB24:
+ 2705               	.LBB25:
+ 2707               	.Ltext5:
+ 2709               	.LM295:
+ 2710 0bbe 82B7      		in r24,82-0x20
+ 2711               	.LBE25:
+ 2712               	.LBE24:
+ 2714               	.LM296:
+ 2715 0bc0 2091 0000 		lds r18,outstanding_ticks
+ 2716 0bc4 3091 0000 		lds r19,(outstanding_ticks)+1
+ 2717 0bc8 4091 0000 		lds r20,(outstanding_ticks)+2
+ 2718 0bcc 5091 0000 		lds r21,(outstanding_ticks)+3
+ 2719 0bd0 281B      		sub r18,r24
+ 2720 0bd2 3109      		sbc r19,__zero_reg__
+ 2721 0bd4 4109      		sbc r20,__zero_reg__
+ 2722 0bd6 5109      		sbc r21,__zero_reg__
+ 2724               	.Ltext6:
+ 2726               	.LM297:
+ 2727 0bd8 E384      		ldd r14,Z+11
+ 2728 0bda F484      		ldd r15,Z+12
+ 2729 0bdc 0585      		ldd r16,Z+13
+ 2730 0bde 1685      		ldd r17,Z+14
+ 2731 0be0 D801      		movw r26,r16
+ 2732 0be2 C701      		movw r24,r14
+ 2733 0be4 821B      		sub r24,r18
+ 2734 0be6 930B      		sbc r25,r19
+ 2735 0be8 A40B      		sbc r26,r20
+ 2736 0bea B50B      		sbc r27,r21
+ 2737 0bec 1816      		cp __zero_reg__,r24
+ 2738 0bee 1906      		cpc __zero_reg__,r25
+ 2739 0bf0 1A06      		cpc __zero_reg__,r26
+ 2740 0bf2 1B06      		cpc __zero_reg__,r27
+ 2741 0bf4 84F4      		brge .L236
+ 2743               	.LM298:
+ 2744               	/* #APP */
+ 2745 0bf6 CFBF      		out __SREG__, r28
+ 2746               		
+ 2748               	.LM299:
+ 2749               	/* #NOAPP */
+ 2750 0bf8 E21A      		sub r14,r18
+ 2751 0bfa F30A      		sbc r15,r19
+ 2752 0bfc 040B      		sbc r16,r20
+ 2753 0bfe 150B      		sbc r17,r21
+ 2754 0c00 41E0      		ldi r20,lo8(1)
+ 2755 0c02 C801      		movw r24,r16
+ 2756 0c04 B701      		movw r22,r14
+ 2757 0c06 0E94 0000 		call timer_set_hw_top
+ 2758 0c0a 16C0      		rjmp .L210
+ 2759               	.L242:
+ 2760               	.LBE23:
+ 2761               	.LBB26:
+ 2762               	.LBB27:
+ 2763               	.LBB28:
+ 2765               	.LM300:
+ 2766 0c0c 2387      		std Z+11,r18
+ 2767 0c0e 3487      		std Z+12,r19
+ 2768 0c10 4587      		std Z+13,r20
+ 2769 0c12 5687      		std Z+14,r21
+ 2770 0c14 ABCF      		rjmp .L219
+ 2771               	.L236:
+ 2772               	.LBE28:
+ 2773               	.LBE27:
+ 2774               	.LBE26:
+ 2775               	.LBB29:
+ 2777               	.LM301:
+ 2778               	/* #APP */
+ 2779 0c16 CFBF      		out __SREG__, r28
+ 2780               		
+ 2782               	.LM302:
+ 2783               	/* #NOAPP */
+ 2784 0c18 60E0      		ldi r22,lo8(pm(soft_interrupt))
+ 2785 0c1a 70E0      		ldi r23,hi8(pm(soft_interrupt))
+ 2786 0c1c 80E0      		ldi r24,lo8(0)
+ 2787 0c1e 0E94 0000 		call sched_add_interrupt
+ 2788               	.LBE29:
+ 2789 0c22 0AC0      		rjmp .L210
+ 2790               	.L234:
+ 2792               	.LM303:
+ 2793               	/* #APP */
+ 2794 0c24 CFB7      		in r28, __SREG__
+ 2795 0c26 F894      		cli
+ 2796               		
+ 2798               	.LM304:
+ 2799               	/* #NOAPP */
+ 2800 0c28 40E0      		ldi r20,lo8(0)
+ 2801 0c2a 6AEF      		ldi r22,lo8(250)
+ 2802 0c2c 70E0      		ldi r23,hi8(250)
+ 2803 0c2e 80E0      		ldi r24,hlo8(250)
+ 2804 0c30 90E0      		ldi r25,hhi8(250)
+ 2805 0c32 0E94 0000 		call timer_set_hw_top
+ 2807               	.LM305:
+ 2808               	/* #APP */
+ 2809 0c36 CFBF      		out __SREG__, r28
+ 2810               		
+ 2811               	/* #NOAPP */
+ 2812               	.L210:
+ 2813               	/* epilogue: frame size=0 */
+ 2814 0c38 DF91      		pop r29
+ 2815 0c3a CF91      		pop r28
+ 2816 0c3c 1F91      		pop r17
+ 2817 0c3e 0F91      		pop r16
+ 2818 0c40 FF90      		pop r15
+ 2819 0c42 EF90      		pop r14
+ 2820 0c44 DF90      		pop r13
+ 2821 0c46 CF90      		pop r12
+ 2822 0c48 BF90      		pop r11
+ 2823 0c4a 0895      		ret
+ 2824               	/* epilogue end (size=10) */
+ 2825               	/* function soft_interrupt size 288 (269) */
+ 2869               	.Lscope21:
+ 2875               	.global	timer_realtime_start
+ 2877               	timer_realtime_start:
+ 2879               	.LM306:
+ 2880               	/* prologue: frame size=0 */
+ 2881 0c4c 6F92      		push r6
+ 2882 0c4e 7F92      		push r7
+ 2883 0c50 8F92      		push r8
+ 2884 0c52 9F92      		push r9
+ 2885 0c54 AF92      		push r10
+ 2886 0c56 BF92      		push r11
+ 2887 0c58 DF92      		push r13
+ 2888 0c5a EF92      		push r14
+ 2889 0c5c FF92      		push r15
+ 2890 0c5e 0F93      		push r16
+ 2891 0c60 1F93      		push r17
+ 2892 0c62 CF93      		push r28
+ 2893 0c64 DF93      		push r29
+ 2894               	/* prologue end (size=13) */
+ 2895 0c66 8C01      		movw r16,r24
+ 2896 0c68 4B01      		movw r8,r22
+ 2897 0c6a 3A01      		movw r6,r20
+ 2899               	.LM307:
+ 2900               	/* #APP */
+ 2901 0c6c DFB6      		in r13, __SREG__
+ 2902 0c6e F894      		cli
+ 2903               		
+ 2905               	.LM308:
+ 2906               	/* #NOAPP */
+ 2907 0c70 8091 0000 		lds r24,num_realtime_clock
+ 2908 0c74 8430      		cpi r24,lo8(4)
+ 2909 0c76 11F4      		brne .L247
+ 2911               	.LM309:
+ 2912               	/* #APP */
+ 2913 0c78 DFBE      		out __SREG__, r13
+ 2914               		
+ 2915               	/* #NOAPP */
+ 2916 0c7a 54C0      		rjmp .L265
+ 2917               	.L247:
+ 2919               	.LM310:
+ 2920 0c7c 40E0      		ldi r20,lo8(0)
+ 2921 0c7e EE24      		clr r14
+ 2922 0c80 FF24      		clr r15
+ 2923 0c82 9701      		movw r18,r14
+ 2924 0c84 5701      		movw r10,r14
+ 2925               	.L260:
+ 2927               	.LM311:
+ 2928 0c86 F901      		movw r30,r18
+ 2929 0c88 EA0D      		add r30,r10
+ 2930 0c8a FB1D      		adc r31,r11
+ 2931 0c8c E050      		subi r30,lo8(-(realtime))
+ 2932 0c8e F040      		sbci r31,hi8(-(realtime))
+ 2933 0c90 8481      		ldd r24,Z+4
+ 2934 0c92 9581      		ldd r25,Z+5
+ 2935 0c94 892B      		or r24,r25
+ 2936 0c96 C1F5      		brne .L250
+ 2937               	.LBB30:
+ 2938               	.LBB31:
+ 2940               	.LM312:
+ 2941 0c98 80E0      		ldi r24,lo8(deltaq)
+ 2942 0c9a 90E0      		ldi r25,hi8(deltaq)
+ 2943 0c9c 0E94 0000 		call list_empty
+ 2944 0ca0 8130      		cpi r24,lo8(1)
+ 2945 0ca2 29F4      		brne .L252
+ 2947               	.LM313:
+ 2948 0ca4 40E0      		ldi r20,lo8(0)
+ 2949 0ca6 B801      		movw r22,r16
+ 2950 0ca8 8827      		clr r24
+ 2951 0caa 9927      		clr r25
+ 2952 0cac 17C0      		rjmp .L264
+ 2953               	.L252:
+ 2954               	.LBB32:
+ 2955               	.LBB33:
+ 2956               	.LBB34:
+ 2958               	.Ltext7:
+ 2960               	.LM314:
+ 2961 0cae 81B7      		in r24,81-0x20
+ 2962               	.LBE34:
+ 2963               	.LBE33:
+ 2964 0cb0 8F5F      		subi r24,lo8(-(1))
+ 2965               	.LBB35:
+ 2966               	.LBB36:
+ 2968               	.LM315:
+ 2969 0cb2 22B7      		in r18,82-0x20
+ 2970               	.LBE36:
+ 2971               	.LBE35:
+ 2973               	.Ltext8:
+ 2975               	.LM316:
+ 2976 0cb4 9927      		clr r25
+ 2977 0cb6 821B      		sub r24,r18
+ 2978 0cb8 9109      		sbc r25,__zero_reg__
+ 2979 0cba 8017      		cp r24,r16
+ 2980 0cbc 9107      		cpc r25,r17
+ 2981 0cbe 80F0      		brlo .L259
+ 2983               	.LM317:
+ 2984 0cc0 80E0      		ldi r24,lo8(deltaq)
+ 2985 0cc2 90E0      		ldi r25,hi8(deltaq)
+ 2986 0cc4 0E94 0000 		call list_empty
+ 2987 0cc8 D801      		movw r26,r16
+ 2988 0cca CC27      		clr r28
+ 2989 0ccc DD27      		clr r29
+ 2990 0cce 8130      		cpi r24,lo8(1)
+ 2991 0cd0 11F4      		brne .L257
+ 2993               	.LM318:
+ 2994 0cd2 40E0      		ldi r20,lo8(0)
+ 2995 0cd4 01C0      		rjmp .L263
+ 2996               	.L257:
+ 2998               	.LM319:
+ 2999 0cd6 41E0      		ldi r20,lo8(1)
+ 3000               	.L263:
+ 3001 0cd8 BD01      		movw r22,r26
+ 3002 0cda CE01      		movw r24,r28
+ 3003               	.L264:
+ 3004 0cdc 0E94 0000 		call timer_set_hw_top
+ 3005               	.L259:
+ 3006               	.LBE32:
+ 3007               	.LBE31:
+ 3008               	.LBE30:
+ 3010               	.LM320:
+ 3011 0ce0 8091 0000 		lds r24,num_realtime_clock
+ 3012 0ce4 8F5F      		subi r24,lo8(-(1))
+ 3013 0ce6 8093 0000 		sts num_realtime_clock,r24
+ 3015               	.LM321:
+ 3016 0cea F701      		movw r30,r14
+ 3017 0cec EA0D      		add r30,r10
+ 3018 0cee FB1D      		adc r31,r11
+ 3019 0cf0 E050      		subi r30,lo8(-(realtime))
+ 3020 0cf2 F040      		sbci r31,hi8(-(realtime))
+ 3021 0cf4 0083      		st Z,r16
+ 3022 0cf6 1183      		std Z+1,r17
+ 3024               	.LM322:
+ 3025 0cf8 8282      		std Z+2,r8
+ 3026 0cfa 9382      		std Z+3,r9
+ 3028               	.LM323:
+ 3029 0cfc 6482      		std Z+4,r6
+ 3030 0cfe 7582      		std Z+5,r7
+ 3032               	.LM324:
+ 3033               	/* #APP */
+ 3034 0d00 DFBE      		out __SREG__, r13
+ 3035               		
+ 3037               	.LM325:
+ 3038               	/* #NOAPP */
+ 3039 0d02 80E0      		ldi r24,lo8(0)
+ 3040 0d04 90E0      		ldi r25,hi8(0)
+ 3041 0d06 10C0      		rjmp .L246
+ 3042               	.L250:
+ 3044               	.LM326:
+ 3045 0d08 4F5F      		subi r20,lo8(-(1))
+ 3046 0d0a 0894      		sec
+ 3047 0d0c A11C      		adc r10,__zero_reg__
+ 3048 0d0e B11C      		adc r11,__zero_reg__
+ 3049 0d10 2B5F      		subi r18,lo8(-(5))
+ 3050 0d12 3F4F      		sbci r19,hi8(-(5))
+ 3051 0d14 85E0      		ldi r24,lo8(5)
+ 3052 0d16 90E0      		ldi r25,hi8(5)
+ 3053 0d18 E80E      		add r14,r24
+ 3054 0d1a F91E      		adc r15,r25
+ 3055 0d1c 4430      		cpi r20,lo8(4)
+ 3056 0d1e 08F4      		brsh .+2
+ 3057 0d20 B2CF      		rjmp .L260
+ 3059               	.LM327:
+ 3060               	/* #APP */
+ 3061 0d22 DFBE      		out __SREG__, r13
+ 3062               		
+ 3063               	/* #NOAPP */
+ 3064               	.L265:
+ 3066               	.LM328:
+ 3067 0d24 84EF      		ldi r24,lo8(-12)
+ 3068 0d26 9FEF      		ldi r25,hi8(-12)
+ 3069               	.L246:
+ 3070               	/* epilogue: frame size=0 */
+ 3071 0d28 DF91      		pop r29
+ 3072 0d2a CF91      		pop r28
+ 3073 0d2c 1F91      		pop r17
+ 3074 0d2e 0F91      		pop r16
+ 3075 0d30 FF90      		pop r15
+ 3076 0d32 EF90      		pop r14
+ 3077 0d34 DF90      		pop r13
+ 3078 0d36 BF90      		pop r11
+ 3079 0d38 AF90      		pop r10
+ 3080 0d3a 9F90      		pop r9
+ 3081 0d3c 8F90      		pop r8
+ 3082 0d3e 7F90      		pop r7
+ 3083 0d40 6F90      		pop r6
+ 3084 0d42 0895      		ret
+ 3085               	/* epilogue end (size=14) */
+ 3086               	/* function timer_realtime_start size 137 (110) */
+ 3092               	.Lscope22:
+ 3096               	.global	timer_realtime_stop
+ 3098               	timer_realtime_stop:
+ 3100               	.LM329:
+ 3101               	/* prologue: frame size=0 */
+ 3102               	/* prologue end (size=0) */
+ 3103 0d44 DC01      		movw r26,r24
+ 3105               	.LM330:
+ 3106               	/* #APP */
+ 3107 0d46 6FB7      		in r22, __SREG__
+ 3108 0d48 F894      		cli
+ 3109               		
+ 3111               	.LM331:
+ 3112               	/* #NOAPP */
+ 3113 0d4a 70E0      		ldi r23,lo8(0)
+ 3114 0d4c 20E0      		ldi r18,lo8(0)
+ 3115 0d4e 30E0      		ldi r19,hi8(0)
+ 3116 0d50 A901      		movw r20,r18
+ 3117               	.L271:
+ 3119               	.LM332:
+ 3120 0d52 F901      		movw r30,r18
+ 3121 0d54 E40F      		add r30,r20
+ 3122 0d56 F51F      		adc r31,r21
+ 3123 0d58 E050      		subi r30,lo8(-(realtime))
+ 3124 0d5a F040      		sbci r31,hi8(-(realtime))
+ 3125 0d5c 8481      		ldd r24,Z+4
+ 3126 0d5e 9581      		ldd r25,Z+5
+ 3127 0d60 8A17      		cp r24,r26
+ 3128 0d62 9B07      		cpc r25,r27
+ 3129 0d64 59F4      		brne .L269
+ 3131               	.LM333:
+ 3132 0d66 1482      		std Z+4,__zero_reg__
+ 3133 0d68 1582      		std Z+5,__zero_reg__
+ 3135               	.LM334:
+ 3136 0d6a 8091 0000 		lds r24,num_realtime_clock
+ 3137 0d6e 8150      		subi r24,lo8(-(-1))
+ 3138 0d70 8093 0000 		sts num_realtime_clock,r24
+ 3140               	.LM335:
+ 3141               	/* #APP */
+ 3142 0d74 6FBF      		out __SREG__, r22
+ 3143               		
+ 3145               	.LM336:
+ 3146               	/* #NOAPP */
+ 3147 0d76 80E0      		ldi r24,lo8(0)
+ 3148 0d78 90E0      		ldi r25,hi8(0)
+ 3149 0d7a 0895      		ret
+ 3150               	.L269:
+ 3152               	.LM337:
+ 3153 0d7c 7F5F      		subi r23,lo8(-(1))
+ 3154 0d7e 4F5F      		subi r20,lo8(-(1))
+ 3155 0d80 5F4F      		sbci r21,hi8(-(1))
+ 3156 0d82 2B5F      		subi r18,lo8(-(5))
+ 3157 0d84 3F4F      		sbci r19,hi8(-(5))
+ 3158 0d86 7430      		cpi r23,lo8(4)
+ 3159 0d88 20F3      		brlo .L271
+ 3161               	.LM338:
+ 3162               	/* #APP */
+ 3163 0d8a 6FBF      		out __SREG__, r22
+ 3164               		
+ 3166               	.LM339:
+ 3167               	/* #NOAPP */
+ 3168 0d8c 8AEE      		ldi r24,lo8(-22)
+ 3169 0d8e 9FEF      		ldi r25,hi8(-22)
+ 3171               	.LM340:
+ 3172 0d90 0895      		ret
+ 3173               	/* epilogue: frame size=0 */
+ 3174 0d92 0895      		ret
+ 3175               	/* epilogue end (size=1) */
+ 3176               	/* function timer_realtime_stop size 50 (49) */
+ 3182               	.Lscope23:
+ 3185               	.global	__vector_15
+ 3187               	__vector_15:
+ 931:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 932:/Users/Administrator/sos-2x/kernel/sos_timer.c **** timer_interrupt()
+ 933:/Users/Administrator/sos-2x/kernel/sos_timer.c **** {
+ 3189               	.LM341:
+ 3190               	/* prologue: frame size=0 */
+ 3191 0d94 1F92      		push __zero_reg__
+ 3192 0d96 0F92      		push __tmp_reg__
+ 3193 0d98 0FB6      		in __tmp_reg__,__SREG__
+ 3194 0d9a 0F92      		push __tmp_reg__
+ 3195 0d9c 1124      		clr __zero_reg__
+ 3196 0d9e 2F93      		push r18
+ 3197 0da0 3F93      		push r19
+ 3198 0da2 4F93      		push r20
+ 3199 0da4 5F93      		push r21
+ 3200 0da6 6F93      		push r22
+ 3201 0da8 7F93      		push r23
+ 3202 0daa 8F93      		push r24
+ 3203 0dac 9F93      		push r25
+ 3204 0dae AF93      		push r26
+ 3205 0db0 BF93      		push r27
+ 3206 0db2 CF93      		push r28
+ 3207 0db4 DF93      		push r29
+ 3208 0db6 EF93      		push r30
+ 3209 0db8 FF93      		push r31
+ 3210               	/* prologue end (size=19) */
+ 3211               	.LBB37:
+ 3212               	.LBB38:
+ 3214               	.Ltext9:
+ 3216               	.LM342:
+ 3217 0dba 81B7      		in r24,81-0x20
+ 3218 0dbc 8F5F      		subi r24,lo8(-(1))
+ 3219 0dbe C82F      		mov r28,r24
+ 3220 0dc0 DD27      		clr r29
+ 3221               	.LBE38:
+ 3222               	.LBE37:
+ 3224               	.Ltext10:
+ 934:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #ifdef SOS_USE_PREEMPTION
+ 935:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   uint8_t cnt = timer_getInterval();
+ 936:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 937:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   timer_update_delta(cnt);
+ 938:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   while(list_empty(&deltaq) == false) {
+ 939:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	sos_timer_t *h = (sos_timer_t*)(deltaq.l_next);         
+ 940:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	if(h->delta <= 0) {
+ 941:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  sos_pid_t pid = h->pid;
+ 942:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  uint8_t tid = h->tid;
+ 943:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  MsgParam *p;
+ 944:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  Message *msg;
+ 945:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  pri_t pid_pri = get_module_priority(pid);
+ 946:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 947:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  list_remove_head(&deltaq);
+ 948:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  
+ 949:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  if (((h->type) & ONE_SHOT_TIMER_MASK) == 0){
+ 950:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		//! periocic timer
+ 951:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		while(h->delta <= 0) {
+ 952:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		  // make sure it is positive
+ 953:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		  h->delta += h->ticks;
+ 954:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		}
+ 955:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		list_insert_tail(&periodic_pool, (list_t*) h);
+ 956:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		
+ 957:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  } else {
+ 958:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		list_insert_tail(&timer_pool, (list_link_t*)h);
+ 959:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  }
+ 960:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+ 961:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  // If priority is higher than current, msg_queue and preemption point is ok,
+ 962:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  // dispatch now
+ 963:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  if((GET_PREEMPTION_STATUS() == ENABLED) && (pid_pri > curr_pri) &&
+ 964:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		 ((schedpq.head == NULL) || (pid_pri > schedpq.head->priority)) &&
+ 965:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		 (preemption_point(pid) == 1)) {
+ 966:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		ENABLE_GLOBAL_INTERRUPTS();
+ 967:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		sched_dispatch_short_message(pid, TIMER_PID, MSG_TIMER_TIMEOUT,
+ 968:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 								   tid, 0, 0);
+ 969:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  }
+ 970:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  else {
+ 971:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		ENABLE_GLOBAL_INTERRUPTS();
+ 972:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		// Queue the msg
+ 973:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		msg = msg_create();
+ 974:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		if (msg != NULL) {
+ 975:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		  msg->did = pid;
+ 976:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		  msg->sid = TIMER_PID;
+ 977:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		  msg->type = MSG_TIMER_TIMEOUT;
+ 978:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		  msg->flag = 0;
+ 979:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		  msg->priority = pid_pri;
+ 980:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		  p = (MsgParam*)(msg->data);
+ 981:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		  p->byte = tid;
+ 982:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		  p->word = 0;
+ 983:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		  mq_enqueue(&schedpq, msg);
+ 984:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		}
+ 985:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  }
+ 986:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  DISABLE_GLOBAL_INTERRUPTS();
+ 987:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	} else {
+ 988:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  break;
+ 989:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	}
+ 990:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   }
+ 991:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   
+ 992:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   while(list_empty(&periodic_pool) == false) {
+ 993:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	list_link_t *link = periodic_pool.l_next;
+ 994:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	list_remove_head(&periodic_pool);
+ 995:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	timer_delta_q_insert((sos_timer_t*)link, false);
+ 996:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   }
+ 997:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   
+ 998:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   if(list_empty(&deltaq) == false) {
+ 999:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	sos_timer_t *h = (sos_timer_t*)(deltaq.l_next);
+1000:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	int32_t hw_cnt;
+1001:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	hw_cnt = -(timer_hardware_get_counter());
+1002:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	if( h->delta - hw_cnt > 0) {
+1003:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	  timer_set_hw_top(h->delta - hw_cnt, true);
+1004:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	}
+1005:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   } 
+1006:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   else {
+1007:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	timer_set_hw_top(MAX_SLEEP_INTERVAL, false);
+1008:/Users/Administrator/sos-2x/kernel/sos_timer.c ****   }
+1009:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+1010:/Users/Administrator/sos-2x/kernel/sos_timer.c **** #else
+1011:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	uint8_t cnt = timer_getInterval();
+1012:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	outstanding_ticks += cnt;
+ 3226               	.LM343:
+ 3227 0dc2 8091 0000 		lds r24,outstanding_ticks
+ 3228 0dc6 9091 0000 		lds r25,(outstanding_ticks)+1
+ 3229 0dca A091 0000 		lds r26,(outstanding_ticks)+2
+ 3230 0dce B091 0000 		lds r27,(outstanding_ticks)+3
+ 3231 0dd2 8C0F      		add r24,r28
+ 3232 0dd4 911D      		adc r25,__zero_reg__
+ 3233 0dd6 A11D      		adc r26,__zero_reg__
+ 3234 0dd8 B11D      		adc r27,__zero_reg__
+ 3235 0dda 8093 0000 		sts outstanding_ticks,r24
+ 3236 0dde 9093 0000 		sts (outstanding_ticks)+1,r25
+ 3237 0de2 A093 0000 		sts (outstanding_ticks)+2,r26
+ 3238 0de6 B093 0000 		sts (outstanding_ticks)+3,r27
+1013:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	sched_add_interrupt(SCHED_TIMER_INT, soft_interrupt);
+ 3240               	.LM344:
+ 3241 0dea 60E0      		ldi r22,lo8(pm(soft_interrupt))
+ 3242 0dec 70E0      		ldi r23,hi8(pm(soft_interrupt))
+ 3243 0dee 80E0      		ldi r24,lo8(0)
+ 3244 0df0 0E94 0000 		call sched_add_interrupt
+1014:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+1015:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 
+1016:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 	if( num_realtime_clock > 0 ) {
+ 3246               	.LM345:
+ 3247 0df4 8091 0000 		lds r24,num_realtime_clock
+ 3248 0df8 8823      		tst r24
+ 3249 0dfa 49F0      		breq .L274
+1017:/Users/Administrator/sos-2x/kernel/sos_timer.c **** 		timer_set_hw_interval(	timer_update_realtime_clock(cnt) );
+ 3251               	.LM346:
+ 3252 0dfc 8C2F      		mov r24,r28
+ 3253 0dfe 0E94 0000 		call timer_update_realtime_clock
+ 3254 0e02 AA27      		clr r26
+ 3255 0e04 BB27      		clr r27
+ 3256 0e06 BC01      		movw r22,r24
+ 3257 0e08 CD01      		movw r24,r26
+ 3258 0e0a 0E94 0000 		call timer_set_hw_interval
+ 3259               	.L274:
+ 3260               	/* epilogue: frame size=0 */
+ 3261 0e0e FF91      		pop r31
+ 3262 0e10 EF91      		pop r30
+ 3263 0e12 DF91      		pop r29
+ 3264 0e14 CF91      		pop r28
+ 3265 0e16 BF91      		pop r27
+ 3266 0e18 AF91      		pop r26
+ 3267 0e1a 9F91      		pop r25
+ 3268 0e1c 8F91      		pop r24
+ 3269 0e1e 7F91      		pop r23
+ 3270 0e20 6F91      		pop r22
+ 3271 0e22 5F91      		pop r21
+ 3272 0e24 4F91      		pop r20
+ 3273 0e26 3F91      		pop r19
+ 3274 0e28 2F91      		pop r18
+ 3275 0e2a 0F90      		pop __tmp_reg__
+ 3276 0e2c 0FBE      		out __SREG__,__tmp_reg__
+ 3277 0e2e 0F90      		pop __tmp_reg__
+ 3278 0e30 1F90      		pop __zero_reg__
+ 3279 0e32 1895      		reti
+ 3280               	/* epilogue end (size=19) */
+ 3281               	/* function __vector_15 size 80 (42) */
+ 3286               	.Lscope24:
+ 3288               		.lcomm deltaq,4
+ 3289               		.lcomm timer_pool,4
+ 3290               		.lcomm prealloc_timer_pool,4
+ 3291               		.lcomm periodic_pool,4
+ 3292               		.lcomm realtime,24
+ 3293               		.lcomm timer_slab,6
+ 3302               		.text
+ 3304               	Letext:
+ 3305               	/* File "/Users/Administrator/sos-2x/kernel/sos_timer.c": code 1881 = 0x0759 (1558), prologues 152,
+DEFINED SYMBOLS
+                            *ABS*:00000000 sos_timer.c
+                            *ABS*:0000003f __SREG__
+                            *ABS*:0000003e __SP_H__
+                            *ABS*:0000003d __SP_L__
+                            *ABS*:00000000 __tmp_reg__
+                            *ABS*:00000001 __zero_reg__
+                             .bss:00000000 num_realtime_clock
+/var/tmp//cc0w5FgW.s:198    .bss:00000001 outstanding_ticks
+/var/tmp//cc0w5FgW.s:203    .text:00000000 timer_init
+/var/tmp//cc0w5FgW.s:199    .bss:00000005 deltaq
+/var/tmp//cc0w5FgW.s:3288   .bss:00000009 timer_pool
+/var/tmp//cc0w5FgW.s:3289   .bss:0000000d prealloc_timer_pool
+/var/tmp//cc0w5FgW.s:3290   .bss:00000011 periodic_pool
+/var/tmp//cc0w5FgW.s:3291   .bss:00000015 realtime
+/var/tmp//cc0w5FgW.s:3292   .bss:0000002d timer_slab
+/var/tmp//cc0w5FgW.s:275    .text:0000005a timer_remove_timer
+/var/tmp//cc0w5FgW.s:354    .text:000000b8 timer_remove_all
+/var/tmp//cc0w5FgW.s:571    .text:000001ac timer_preallocate
+/var/tmp//cc0w5FgW.s:754    .text:00000296 timer_set_hw_interval
+/var/tmp//cc0w5FgW.s:810    .text:000002d0 timer_update_realtime_clock
+/var/tmp//cc0w5FgW.s:1014   .text:000003ee timer_set_hw_top
+/var/tmp//cc0w5FgW.s:1128   .text:00000478 timer_delta_q_insert
+/var/tmp//cc0w5FgW.s:1366   .text:000005ae find_timer_block
+/var/tmp//cc0w5FgW.s:1436   .text:000005f4 find_timer_in_periodic_pool
+/var/tmp//cc0w5FgW.s:1511   .text:00000646 alloc_from_timer_pool
+/var/tmp//cc0w5FgW.s:1590   .text:0000069a ker_timer_stop
+/var/tmp//cc0w5FgW.s:1660   .text:000006e0 ker_timer_init
+/var/tmp//cc0w5FgW.s:1829   .text:00000798 ker_permanent_timer_init
+/var/tmp//cc0w5FgW.s:1866   .text:000007b4 timer_gc
+/var/tmp//cc0w5FgW.s:2015   .text:0000086e ker_timer_start
+/var/tmp//cc0w5FgW.s:2080   .text:000008ae ker_timer_stop_and_release
+/var/tmp//cc0w5FgW.s:2136   .text:000008e0 ker_timer_restart
+/var/tmp//cc0w5FgW.s:2273   .text:00000986 ker_sys_timer_start
+/var/tmp//cc0w5FgW.s:2346   .text:000009e0 ker_sys_timer_restart
+/var/tmp//cc0w5FgW.s:2406   .text:00000a26 ker_sys_timer_stop
+/var/tmp//cc0w5FgW.s:2435   .text:00000a3e soft_interrupt
+/var/tmp//cc0w5FgW.s:2877   .text:00000c4c timer_realtime_start
+/var/tmp//cc0w5FgW.s:3098   .text:00000d44 timer_realtime_stop
+/var/tmp//cc0w5FgW.s:3187   .text:00000d94 __vector_15
+/var/tmp//cc0w5FgW.s:3304   .text:00000e34 Letext
+
+UNDEFINED SYMBOLS
+__do_copy_data
+__do_clear_bss
+list_init
+ker_slab_init
+list_remove
+ker_slab_free
+ker_slab_alloc
+list_insert_tail
+timer_setInterval
+list_empty
+list_insert_head
+list_insert_before
+slab_gc_mark
+slab_gc
+malloc_gc
+ker_get_current_pid
+ker_mod_panic
+list_remove_head
+sched_dispatch_short_message
+sched_add_interrupt

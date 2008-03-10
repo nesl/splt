@@ -1,0 +1,1087 @@
+   1               		.file	"rfidtag.c"
+   2               		.arch atmega128
+   3               	__SREG__ = 0x3f
+   4               	__SP_H__ = 0x3e
+   5               	__SP_L__ = 0x3d
+   6               	__tmp_reg__ = 0
+   7               	__zero_reg__ = 1
+   8               		.global __do_copy_data
+   9               		.global __do_clear_bss
+  12               		.text
+  13               	.Ltext0:
+ 295               		.section	.progmem.data,"a",@progbits
+ 298               	mod_header:
+ 299 0000 0B00      		.word	11
+ 300 0002 80        		.byte	-128
+ 301 0003 00        		.skip 1,0
+ 302 0004 01        		.byte	1
+ 303 0005 00        		.byte	0
+ 304 0006 0000      		.skip 2,0
+ 305 0008 8000      		.word	128
+ 306 000a 01        		.byte	1
+ 307 000b 02        		.byte	2
+ 308 000c 0000      		.skip 2,0
+ 309 000e 0000      		.word	pm(rfidtag_msg_handler)
+ 310 0010 0000      		.word	pm(error_8)
+ 311 0012 4376 7630 		.ascii	"Cvv0"
+ 312 0016 8D        		.byte	-115
+ 313 0017 01        		.byte	1
+ 314               		.text
+ 319               	rfidtag_msg_handler:
+   1:../../modules/activeRFIDtag/rfidtag.c **** 
+   2:../../modules/activeRFIDtag/rfidtag.c **** #include <sys_module.h>
+   3:../../modules/activeRFIDtag/rfidtag.c **** 
+   4:../../modules/activeRFIDtag/rfidtag.c **** //#define LED_DEBUG
+   5:../../modules/activeRFIDtag/rfidtag.c **** #include <led_dbg.h>
+   6:../../modules/activeRFIDtag/rfidtag.c **** 
+   7:../../modules/activeRFIDtag/rfidtag.c **** #include "activeRFID.h"
+   8:../../modules/activeRFIDtag/rfidtag.c **** #include "splt.h"
+   9:../../modules/activeRFIDtag/rfidtag.c **** #include <routing/tree_routing/tree_routing.h>
+  10:../../modules/activeRFIDtag/rfidtag.c **** #include <module.h>
+  11:../../modules/activeRFIDtag/rfidtag.c **** 
+  12:../../modules/activeRFIDtag/rfidtag.c **** #define aRFID_TIMER_INTERVAL	2048L
+  13:../../modules/activeRFIDtag/rfidtag.c **** #define aRFID_TID		0
+  14:../../modules/activeRFIDtag/rfidtag.c **** 
+  15:../../modules/activeRFIDtag/rfidtag.c **** #define MSG_RFID_COMMAND (MOD_MSG_START+2)
+  16:../../modules/activeRFIDtag/rfidtag.c **** #define MSG_RFID_RESPONSE (MOD_MSG_START+3)
+  17:../../modules/activeRFIDtag/rfidtag.c **** #define MSG_RFID_TAG (MOD_MSG_START+4)
+  18:../../modules/activeRFIDtag/rfidtag.c **** 
+  19:../../modules/activeRFIDtag/rfidtag.c **** 
+  20:../../modules/activeRFIDtag/rfidtag.c **** typedef struct {
+  21:../../modules/activeRFIDtag/rfidtag.c ****   func_cb_ptr get_hdr_size;
+  22:../../modules/activeRFIDtag/rfidtag.c ****   uint8_t hdr_size;
+  23:../../modules/activeRFIDtag/rfidtag.c ****   uint32_t seq_no;
+  24:../../modules/activeRFIDtag/rfidtag.c ****   uint16_t counter;
+  25:../../modules/activeRFIDtag/rfidtag.c ****   uint8_t pid;
+  26:../../modules/activeRFIDtag/rfidtag.c ****   uint8_t state;
+  27:../../modules/activeRFIDtag/rfidtag.c **** } app_state_t;
+  28:../../modules/activeRFIDtag/rfidtag.c **** 
+  29:../../modules/activeRFIDtag/rfidtag.c **** /**
+  30:../../modules/activeRFIDtag/rfidtag.c ****  * Rfid Reader module
+  31:../../modules/activeRFIDtag/rfidtag.c ****  */
+  32:../../modules/activeRFIDtag/rfidtag.c **** 
+  33:../../modules/activeRFIDtag/rfidtag.c **** static int8_t rfidtag_msg_handler(void *start, Message *e);
+  34:../../modules/activeRFIDtag/rfidtag.c **** 
+  35:../../modules/activeRFIDtag/rfidtag.c **** static const mod_header_t mod_header SOS_MODULE_HEADER = {
+  36:../../modules/activeRFIDtag/rfidtag.c ****   .mod_id         = DFLT_APP_ID0,
+  37:../../modules/activeRFIDtag/rfidtag.c ****   .state_size     = sizeof(app_state_t),
+  38:../../modules/activeRFIDtag/rfidtag.c ****   .num_sub_func   = 1,
+  39:../../modules/activeRFIDtag/rfidtag.c ****   .num_prov_func  = 0,
+  40:../../modules/activeRFIDtag/rfidtag.c ****   .platform_type  = HW_TYPE /* or PLATFORM_ANY */,
+  41:../../modules/activeRFIDtag/rfidtag.c ****   .processor_type = MCU_TYPE,
+  42:../../modules/activeRFIDtag/rfidtag.c ****   .code_id        = ehtons(DFLT_APP_ID0),
+  43:../../modules/activeRFIDtag/rfidtag.c ****   .module_handler = rfidtag_msg_handler,
+  44:../../modules/activeRFIDtag/rfidtag.c ****   .funct = {
+  45:../../modules/activeRFIDtag/rfidtag.c ****     [0] = {error_8, "Cvv0", TREE_ROUTING_PID, MOD_GET_HDR_SIZE_FID},
+  46:../../modules/activeRFIDtag/rfidtag.c ****   },
+  47:../../modules/activeRFIDtag/rfidtag.c **** };
+  48:../../modules/activeRFIDtag/rfidtag.c **** 
+  49:../../modules/activeRFIDtag/rfidtag.c **** 
+  50:../../modules/activeRFIDtag/rfidtag.c **** 
+  51:../../modules/activeRFIDtag/rfidtag.c **** static int8_t rfidtag_msg_handler(void *state, Message *msg)
+  52:../../modules/activeRFIDtag/rfidtag.c **** {
+ 321               	.LM1:
+ 322               	/* prologue: frame size=0 */
+ 323 0000 EF92      		push r14
+ 324 0002 FF92      		push r15
+ 325 0004 0F93      		push r16
+ 326 0006 1F93      		push r17
+ 327 0008 CF93      		push r28
+ 328 000a DF93      		push r29
+ 329               	/* prologue end (size=6) */
+ 330 000c FC01      		movw r30,r24
+ 331 000e DB01      		movw r26,r22
+  53:../../modules/activeRFIDtag/rfidtag.c ****   app_state_t *s = (app_state_t*)state;
+  54:../../modules/activeRFIDtag/rfidtag.c **** 
+  55:../../modules/activeRFIDtag/rfidtag.c ****   switch (msg->type){
+ 333               	.LM2:
+ 334 0010 EB01      		movw r28,r22
+ 335 0012 8E81      		ldd r24,Y+6
+ 336 0014 9927      		clr r25
+ 337 0016 8230      		cpi r24,2
+ 338 0018 9105      		cpc r25,__zero_reg__
+ 339 001a A9F0      		breq .L6
+ 341               	.LM3:
+ 342 001c 8330      		cpi r24,3
+ 343 001e 9105      		cpc r25,__zero_reg__
+ 344 0020 1CF4      		brge .L13
+ 345 0022 892B      		or r24,r25
+ 346 0024 21F0      		breq .L3
+ 347 0026 29C0      		rjmp .L12
+ 348               	.L13:
+ 349 0028 0697      		sbiw r24,6
+ 350 002a 51F1      		breq .L2
+ 351 002c 26C0      		rjmp .L12
+ 352               	.L3:
+  56:../../modules/activeRFIDtag/rfidtag.c ****     case MSG_INIT:
+  57:../../modules/activeRFIDtag/rfidtag.c ****       {
+  58:../../modules/activeRFIDtag/rfidtag.c ****         s->pid = msg->did;
+ 354               	.LM4:
+ 355 002e 8C91      		ld r24,X
+ 356 0030 8187      		std Z+9,r24
+  59:../../modules/activeRFIDtag/rfidtag.c ****         s->state = 0;
+ 358               	.LM5:
+ 359 0032 1286      		std Z+10,__zero_reg__
+ 360               	.LBB2:
+ 361               	.LBB3:
+ 363               	.Ltext1:
+   1:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /**
+   2:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \mainpage [SOS System API]
+   3:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+   4:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * Provided here is the documentation for the system API provided by the SOS
+   5:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * kernel for user modules.
+   6:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+   7:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * The link below will take you back to the main SOS documentation website:
+   8:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+   9:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * https://projects.nesl.ucla.edu/public/sos-2x/
+  10:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  */
+  11:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+  12:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #ifndef __SYS_MODULE_H__
+  13:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #define __SYS_MODULE_H__
+  14:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+  15:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #ifndef _MODULE_
+  16:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #include <sos.h>
+  17:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #endif
+  18:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+  19:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #include <sos_info.h>
+  20:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #include <sos_types.h>
+  21:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #include <sos_module_types.h>
+  22:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #include <sos_timer.h>
+  23:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #include <pid.h>
+  24:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #include <stddef.h>
+  25:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #include <kertable_conf.h>  // for get_kertable_entry()
+  26:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #include <sos_error_types.h>
+  27:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #include <codemem.h>
+  28:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #include <sos_shm.h>
+  29:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #include <error_type.h>
+  30:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+  31:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #include <sensor_system.h>
+  32:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+  33:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #include <sys_module_proc.h>
+  34:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #include <sys_module_plat.h>
+  35:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+  36:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #ifndef SYS_JUMP_TBL_START
+  37:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /// \cond NOTYPEDEF
+  38:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+  39:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /*
+  40:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * This section is required for simulation target as it does not
+  41:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * use system jump table. Instead it uses direct function calls.
+  42:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  */
+  43:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+  44:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** void* ker_sys_malloc(uint16_t size);
+  45:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** void* ker_sys_realloc(void* pntr, uint16_t newSize);
+  46:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** void ker_sys_free(void *pntr);
+  47:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** void* ker_sys_msg_take_data(Message *msg);
+  48:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** int8_t ker_sys_timer_start(uint8_t tid, int32_t interval, uint8_t type);
+  49:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** int8_t ker_sys_timer_restart(uint8_t tid, int32_t interval);
+  50:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** int8_t ker_sys_timer_stop(uint8_t tid);
+  51:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** int8_t ker_sys_post(sos_pid_t did, uint8_t type, uint8_t size, 
+  52:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 		    void *data, uint16_t flag);
+  53:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** int8_t ker_sys_post_link(sos_pid_t dst_mod_id, uint8_t type,
+  54:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****     uint8_t size, void *data, uint16_t flag, uint16_t dst_node_addr);
+  55:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** int8_t ker_sys_post_value(sos_pid_t dst_mod_id,
+  56:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****                 uint8_t type, uint32_t data, uint16_t flag);
+  57:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** int8_t post_longer(sos_pid_t did, sos_pid_t sid, uint8_t type, uint8_t len,
+  58:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 				   void *data, uint16_t flag, uint16_t saddr);
+  59:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** uint8_t ker_hw_type();
+  60:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** uint16_t ker_id();
+  61:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** uint16_t ker_rand();
+  62:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** uint32_t ker_systime32();
+  63:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+  64:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** int8_t ker_sensor_get_data(uint8_t sensor_id);
+  65:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** int8_t ker_sensor_register(sos_pid_t calling_id, 
+  66:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****         uint8_t sensor_id, 
+  67:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****         uint8_t sensor_fid, void *ctx);
+  68:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** int8_t ker_sensor_deregister(sos_pid_t calling_id, uint8_t sensor_id);
+  69:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** int8_t ker_sensor_enable(uint8_t sensor_id);
+  70:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** int8_t ker_sensor_disable(uint8_t sensor_id);
+  71:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** int8_t ker_sensor_data_ready(uint8_t sensor_id, uint16_t sensor_data, uint8_t status);
+  72:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** int8_t ker_sensor_control(uint8_t sensor_id, void* sensor_new_state);
+  73:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+  74:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** int8_t ker_sys_sensor_driver_register(sensor_id_t sensor, uint8_t sensor_control_fid);
+  75:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** int8_t ker_sys_sensor_driver_deregister(sensor_id_t sensor);
+  76:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** int8_t ker_sys_sensor_start_sampling(sensor_id_t *sensors, unsigned int num_sensors, 
+  77:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 						sample_context_t *param, void *context);
+  78:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** int8_t ker_sys_sensor_stop_sampling(sensor_id_t sensor); 
+  79:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+  80:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** int8_t ker_i2c_reserve_bus(uint8_t calling_id, uint8_t ownAddress, uint8_t flags);
+  81:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** int8_t ker_i2c_release_bus(uint8_t calling_id);
+  82:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** int8_t ker_i2c_send_data(
+  83:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 		uint8_t dest_addr,
+  84:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 		uint8_t *buff,
+  85:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 		uint8_t msg_size,
+  86:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 		uint8_t calling_id);
+  87:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** int8_t ker_i2c_read_data(uint8_t dest_addr, uint8_t read_size, uint8_t calling_id);
+  88:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+  89:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+  90:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** int8_t ker_led(uint8_t op);
+  91:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** void* ker_sys_get_module_state( void );
+  92:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** int8_t ker_sys_fntable_subscribe( sos_pid_t pub_pid, uint8_t fid, uint8_t table_index );
+  93:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** int8_t ker_sys_change_own( void* ptr );
+  94:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** int8_t ker_sys_codemem_read(codemem_t h, void *buf, uint16_t nbytes, uint16_t offset);
+  95:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** int8_t ker_sys_shm_open( sos_shm_t name, void *shm );
+  96:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** int8_t ker_sys_shm_update( sos_shm_t name, void *shm );
+  97:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** int8_t ker_sys_shm_close( sos_shm_t name );
+  98:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** void* ker_sys_shm_get( sos_shm_t name );
+  99:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** int8_t ker_sys_shm_wait( sos_shm_t name );
+ 100:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** int8_t ker_sys_shm_stopwait( sos_shm_t name );
+ 101:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** sos_pid_t ker_get_current_pid( void );
+ 102:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** sos_pid_t ker_get_caller_pid( void );
+ 103:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** int8_t ker_sys_routing_register( uint8_t fid );
+ 104:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 105:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** int8_t ker_adc_proc_bindPort(uint8_t port, uint8_t adcPort, sos_pid_t calling_id, uint8_t cb_fid);
+ 106:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** int8_t ker_adc_proc_unbindPort(uint8_t port, sos_pid_t pid);
+ 107:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** int8_t ker_adc_proc_getData(uint8_t port, uint8_t flags);
+ 108:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 109:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #ifdef SOS_SIM
+ 110:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #ifdef _MODULE_
+ 111:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #include <hardware_types.h>
+ 112:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** extern sos_pid_t ker_get_current_pid( void );
+ 113:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** extern uint16_t node_address;
+ 114:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #endif
+ 115:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #endif
+ 116:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /// \endcond 
+ 117:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #endif
+ 118:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 119:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 120:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /**
+ 121:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \defgroup system_api SOS System API
+ 122:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  */
+ 123:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 124:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /**
+ 125:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \ingroup system_api
+ 126:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \defgroup malloc Memory Allocation
+ 127:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * Functions for memory management
+ 128:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * @{
+ 129:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  */
+ 130:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 131:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /// \cond NOTYPEDEF
+ 132:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** typedef void *  (* sys_malloc_ker_func_t)( uint16_t size );
+ 133:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /// \endcond
+ 134:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 135:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /**
+ 136:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * Allocate memory
+ 137:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 138:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param size Number of bytes to allocate
+ 139:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 140:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \return Pointer to memory 
+ 141:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 142:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \note
+ 143:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * A call to sys_malloc will either return a valid pointer or, upon failure,
+ 144:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * cause the system to enter a ``panic'' mode.  The default panic mode
+ 145:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * suspends all node operations and sends a panic message out via: LEDs,
+ 146:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * radio, and UART.
+ 147:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 148:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * Remember to either store, free, or SOS_RELEASE any dynamically allocated
+ 149:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * memory.  Leaky motes sink boats!  Or is that lips...
+ 150:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 151:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  */
+ 152:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** static inline void *  sys_malloc( uint16_t size )
+ 153:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** {
+ 154:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #ifdef SYS_JUMP_TBL_START
+ 155:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 	return ((sys_malloc_ker_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*1))(size); 
+ 156:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #else
+ 157:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 	return ker_sys_malloc( size );
+ 158:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #endif
+ 159:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** }
+ 160:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 161:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /// \cond NOTYPEDEF
+ 162:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** typedef void *  (* sys_realloc_ker_func_t)( void *  ptr, uint16_t newSize );
+ 163:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /// \endcond
+ 164:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 165:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /**
+ 166:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * Reallocate dynamic memory
+ 167:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * 
+ 168:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param ptr Pointer to the currently held block of memory
+ 169:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 170:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param newSize Number of bytes to be allocated
+ 171:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 172:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \return Pointer to the reallocated memory.
+ 173:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 174:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * This function is a slightly optimized way to extend the size of a buffer.
+ 175:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * If it can, the function will simply extend the current block of memory so
+ 176:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * that no data needs to be copied and return the ptr passed in.  If that
+ 177:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * fails the kernel will attempt to allocate a fresh larger buffer, copy the
+ 178:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * data over, and return a pointer to this new buffer.  If neither of these
+ 179:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * two succeed, the function will enter ``panic'' mode.
+ 180:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 181:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \note Returns a NULL if unable to reallocate but the original pointer is
+ 182:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * still valid.
+ 183:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 184:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  */
+ 185:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** static inline void *  sys_realloc( void *  ptr, uint16_t newSize )
+ 186:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** {
+ 187:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #ifdef SYS_JUMP_TBL_START                                                               
+ 188:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 	return ((sys_realloc_ker_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*2))( ptr, newSize );        
+ 189:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #else
+ 190:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 	return ker_sys_realloc( ptr, newSize );
+ 191:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #endif
+ 192:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** } 
+ 193:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 194:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 195:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /// \cond NOTYPEDEF                                             
+ 196:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** typedef void (* sys_free_ker_func_t)( void *  ptr );            
+ 197:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /// \endcond  
+ 198:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /**
+ 199:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 200:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * Free memory
+ 201:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 202:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param ptr Pointer to the data that should be freed
+ 203:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 204:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  */
+ 205:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** static inline void sys_free( void *  ptr )                      
+ 206:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** {                                          
+ 207:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #ifdef SYS_JUMP_TBL_START 
+ 208:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 	((sys_free_ker_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*3))( ptr );  
+ 209:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #else
+ 210:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 	ker_sys_free( ptr );
+ 211:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #endif
+ 212:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** }   
+ 213:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 214:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /// \cond NOTYPEDEF                                             
+ 215:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** typedef void *  (* sys_msg_take_data_ker_func_t)( Message *  msg );
+ 216:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /// \endcond        
+ 217:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /**
+ 218:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 219:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * Claim the data payload of a message
+ 220:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 221:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param msg Pointer to message structure carrying data to claim 
+ 222:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 223:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \return Pointer to memory
+ 224:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 225:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * This function allows you to claim the data in an in coming message.  This
+ 226:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * is often called from the message handler function of a module.  Module
+ 227:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * writers can treat this function in a manner very similar to the
+ 228:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * sys_malloc() function.
+ 229:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 230:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \n If a module does not call this function, the msg->data field may be
+ 231:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * released by the kernel or another module after the current function ends.
+ 232:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * This can make for very difficult to track bugs.
+ 233:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 234:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \n The lower level behavior of this function is based upon if the
+ 235:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * ::SOS_MSG_RELEASE flag was set by the call to post(), or one if its
+ 236:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * variations, that generated the message.
+ 237:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 238:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \li If ::SOS_MSG_RELEASE was set then this function takes control of the
+ 239:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * data released into the data payload of the message
+ 240:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 241:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \li If ::SOS_MSG_RELEASE was NOT set then this function attempts to
+ 242:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * allocate a new buffer of the same size and create a deep copy of the data
+ 243:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * payload
+ 244:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 245:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \note A call to sys_msg_take_data will either return a valid pointer or,
+ 246:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * upon failure, cause the system to enter a ``panic'' mode.  The default
+ 247:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * panic mode suspends all node operations and sends a panic message out via:
+ 248:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * LEDs, radio, and UART.
+ 249:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 250:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  */
+ 251:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** static inline void *  sys_msg_take_data( Message *  msg )       
+ 252:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** {
+ 253:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #ifdef SYS_JUMP_TBL_START                                                               
+ 254:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 	return ((sys_msg_take_data_ker_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*4))( msg );           
+ 255:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #else
+ 256:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 	return ker_sys_msg_take_data( msg );
+ 257:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #endif
+ 258:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** }
+ 259:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 260:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /* @} */
+ 261:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 262:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 263:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 264:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /**
+ 265:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \ingroup system_api
+ 266:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \defgroup timer Timer
+ 267:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * Functions to work with software timers in the system.
+ 268:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 269:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * @{
+ 270:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  */
+ 271:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /// \cond NOTYPEDEF                                             
+ 272:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** typedef int8_t (* sys_timer_start_ker_func_t)( uint8_t tid, int32_t interval, uint8_t type );
+ 273:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /// \endcond  
+ 274:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 275:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /**
+ 276:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * Start a timer
+ 277:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * 
+ 278:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param tid Timer ID. This ID has to be defined by the caller.
+ 279:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * 
+ 280:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param interval The timeout interval specified in ticks of duration (1/1024) sec.
+ 281:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 282:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param type Timer type - Periodic or One Shot (Defined in sos_timer.h)
+ 283:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * 
+ 284:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \return SOS_OK upon success, else -EINVAL
+ 285:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 286:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * in a failure with error code -EINVAL.
+ 287:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * 
+ 288:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  */
+ 289:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** static inline int8_t sys_timer_start( uint8_t tid, int32_t interval, uint8_t type )
+ 290:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** {
+ 291:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #ifdef SYS_JUMP_TBL_START
+ 292:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 	return ((sys_timer_start_ker_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*5))( tid, interval, type
+ 365               	.LM6:
+ 366 0034 2285      		ldd r18,Z+10
+ 367 0036 40E0      		ldi r20,lo8(2048)
+ 368 0038 58E0      		ldi r21,hi8(2048)
+ 369 003a 60E0      		ldi r22,hlo8(2048)
+ 370 003c 70E0      		ldi r23,hhi8(2048)
+ 371 003e 822F      		mov r24,r18
+ 372 0040 0E94 5000 		call 160
+ 373               	.LBE3:
+ 374               	.LBE2:
+ 376               	.Ltext2:
+  60:../../modules/activeRFIDtag/rfidtag.c ****         DEBUG("Rfidtag Start\n");
+  61:../../modules/activeRFIDtag/rfidtag.c **** 
+  62:../../modules/activeRFIDtag/rfidtag.c **** 	sys_timer_start(aRFID_TID,aRFID_TIMER_INTERVAL,TIMER_REPEAT);	
+  63:../../modules/activeRFIDtag/rfidtag.c ****         break;
+ 378               	.LM7:
+ 379 0044 1DC0      		rjmp .L2
+ 380               	.L6:
+ 381               	.LBB4:
+ 382               	.LBB5:
+ 383               	.LBB6:
+ 385               	.Ltext3:
+ 293:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #else
+ 294:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 	return ker_sys_timer_start( tid, interval, type );
+ 295:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #endif
+ 296:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** }
+ 297:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 298:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 299:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /// \cond NOTYPEDEF                                             
+ 300:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** typedef int8_t (* sys_timer_restart_ker_func_t)( uint8_t tid, int32_t interval );
+ 301:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /// \endcond    
+ 302:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /**
+ 303:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * Restart a timer
+ 304:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 305:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param tid Timer ID. This ID has to be defined by the caller.
+ 306:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * 
+ 307:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param interval The timeout interval specified in ticks of duration (1/1024) sec.
+ 308:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * 
+ 309:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 310:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \return SOS_OK upon success, else -EINVAL
+ 311:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 312:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \warning Re-starting a timer without initializing it will result 
+ 313:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * in a failure with error code -EINVAL.
+ 314:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 315:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \note
+ 316:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * 
+ 317:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * 
+ 318:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \li A running timer is stopped and re-started with the new parameters.
+ 319:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * 
+ 320:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \li If the timer is not running, it is started.
+ 321:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * 
+ 322:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  */
+ 323:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** static inline int8_t sys_timer_restart( uint8_t tid, int32_t interval )
+ 324:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** {    
+ 325:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #ifdef SYS_JUMP_TBL_START
+ 326:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 	return ((sys_timer_restart_ker_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*6))( tid, interval );
+ 327:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #else
+ 328:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 	return ker_sys_timer_restart( tid, interval );
+ 329:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #endif
+ 330:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** }
+ 331:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 332:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 333:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /// \cond NOTYPEDEF                                             
+ 334:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** typedef int8_t (* sys_timer_stop_ker_func_t)( uint8_t tid );    
+ 335:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /// \endcond         
+ 336:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /**
+ 337:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * Stop a running timer
+ 338:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 339:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param tid Timer ID. This ID has to be defined by the caller.
+ 340:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 341:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \return SOS_OK on success, else -EINVAL
+ 342:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 343:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \warning Stopping a timer that is not running or that is 
+ 344:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * not initialized  will result in a failure with error code -EINVAL.
+ 345:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 346:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  */
+ 347:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** static inline int8_t sys_timer_stop( uint8_t tid ) 
+ 348:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** {
+ 349:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #ifdef SYS_JUMP_TBL_START
+ 350:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 	return ((sys_timer_stop_ker_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*7))( tid );
+ 351:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #else
+ 352:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 	return ker_sys_timer_stop( tid );
+ 353:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #endif
+ 354:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** }   
+ 355:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /* @} */
+ 356:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 357:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 358:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /**
+ 359:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \ingroup system_api
+ 360:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \defgroup message Messaging
+ 361:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * Functions to send and receive SOS Messages
+ 362:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * @{
+ 363:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  */
+ 364:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 365:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /// \cond NOTYPEDEF                                             
+ 366:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** typedef int8_t (* sys_post_ker_func_t)( sos_pid_t dst_mod_id, uint8_t type, uint8_t size, void *  d
+ 367:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /// \endcond         
+ 368:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 369:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /** Post a message with payload to a module
+ 370:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 371:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param dst_mod_id ID of the destination module
+ 372:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 373:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param type Unique message identifier. Kernel message types are defined in
+ 374:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * message_types.h
+ 375:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 376:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param size Size of the payload (in bytes) that is being dispatched as a
+ 377:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * part of the message
+ 378:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 379:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param *data Pointer to the payload buffer that is dispatched in the
+ 380:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * message.
+ 381:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 382:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param flag Control scheduler priority, memory management properties of
+ 383:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * payload.  Check message_types.h
+ 384:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 385:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \return SOS_OK on success, -ENOMEM on failure
+ 386:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 387:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \warning MESSAGE PAYLOAD SHOULD NEVER BE ALLOCATED FROM THE STACK.
+ 388:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 389:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \note Important information about message flags
+ 390:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * 
+ 391:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 392:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \li ::SOS_MSG_RELEASE flag should be set if the source module wishes to
+ 393:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * transfer ownership of the message payload to the destination module.
+ 394:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 395:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \li ::SOS_MSG_RELIABLE flag is set if the source module wishes to receive
+ 396:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * notification regarding the success/failure of message delivery to the
+ 397:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * destination module.  The notification message has the type
+ 398:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * ::MSG_PKT_SENDDONE and its payload contains the original message. The flag
+ 399:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * field of the notification message has the value ::SOS_MSG_SEND_FAIL if the
+ 400:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * message was not successfully delivered. The flag field is set to 0 upon
+ 401:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * successful delivery.
+ 402:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 403:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \li ::SOS_MSG_HIGH_PRIORITY flag is set to insert the message in a high
+ 404:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * priority queue.  The high priority queue is serviced before the low
+ 405:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * priority queue.
+ 406:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 407:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  */
+ 408:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** static inline int8_t sys_post( sos_pid_t dst_mod_id, uint8_t type, uint8_t size, void *  data, uint
+ 409:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** {
+ 410:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #ifdef SYS_JUMP_TBL_START                                              
+ 411:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****   return ((sys_post_ker_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*8))( dst_mod_id, type, size, d
+ 412:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #else  //SYS_JUMP_TBL_START
+ 413:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****   return ker_sys_post( dst_mod_id, type, size, data, flag );
+ 414:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #endif  //SYS_JUMP_TBL_START
+ 415:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** }             
+ 416:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 417:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 418:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /// \cond NOTYPEDEF                                             
+ 419:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** typedef int8_t (* sys_post_raw_t)(sos_pid_t dst_mod_id,
+ 420:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****         sos_pid_t src_mod_id, 
+ 421:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****         uint8_t type, 
+ 422:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****         uint8_t size,
+ 423:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****         void *data, 
+ 424:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****         uint16_t flag, 
+ 425:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****         uint16_t saddr);
+ 426:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /// \endcond         
+ 427:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 428:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 429:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /** System call providing full control over message posting.
+ 430:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 431:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param dst_mod_id ID of the destination module
+ 432:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * 
+ 433:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param src_mod_id ID of the destination module
+ 434:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 435:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param type Unique message identifier. Kernel message types are defined
+ 436:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * in message_types.h
+ 437:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 438:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param size Size of the payload (in bytes) that is being dispatched as a
+ 439:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * part of the message
+ 440:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 441:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param *data Pointer to the payload buffer that is dispatched in the
+ 442:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * message.
+ 443:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 444:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param flag Control scheduler priority, memory management properties of
+ 445:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * payload.  Check message_types.h
+ 446:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 447:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param saddr Explicitly list the source address that should be set for
+ 448:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * this message.
+ 449:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 450:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \note This call is used primarily by routing layers presenting the view
+ 451:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * that a message came directly from an arbritrary node.  General messaging
+ 452:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * can use the simpler sys_post API.
+ 453:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 454:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \return SOS_OK on success, -ENOMEM on failure
+ 455:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  */
+ 456:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 457:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** static inline int8_t sys_post_raw( sos_pid_t dst_mod_id, sos_pid_t src_mod_id, uint8_t type, uint8_
+ 458:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** {
+ 459:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #ifdef SYS_JUMP_TBL_START                                              
+ 460:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****   return ((sys_post_raw_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*43))( dst_mod_id, src_mod_id, type,
+ 461:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #else  //SYS_JUMP_TBL_START
+ 462:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****   return post_longer( dst_mod_id, src_mod_id, type, size, data, flag, saddr );
+ 463:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #endif  //SYS_JUMP_TBL_START
+ 464:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** }             
+ 465:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 466:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 467:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /// \cond NOTYPEDEF
+ 468:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** typedef int8_t (* sys_post_link_ker_func_t)( sos_pid_t dst_mod_id, uint8_t type, uint8_t size, void
+ 469:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /// \endcond
+ 470:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 471:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 472:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /**
+ 473:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * Post message with paylaod over different network link.
+ 474:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 475:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \warning
+ 476:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *<STRONG>THIS IS NOT A STANDARD INTERFACE. DO NOT USE THIS IN THE MODULE.<br>
+ 477:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * INSTEAD USE sys_post_net, sys_post_uart OR sys_post_i2c.</STRONG>
+ 478:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  */
+ 479:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** static inline int8_t sys_post_link( sos_pid_t dst_mod_id, uint8_t type, uint8_t size, void *  data,
+ 480:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** {
+ 481:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #ifdef SYS_JUMP_TBL_START 
+ 482:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 	return ((sys_post_link_ker_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*9))( dst_mod_id, type, siz
+ 483:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #else
+ 484:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 	return ker_sys_post_link( dst_mod_id, type, size, data, flag, dst_node_addr );
+ 485:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #endif
+ 486:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** }
+ 487:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 488:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 489:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /** 
+ 490:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * Post a message with payload over network
+ 491:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 492:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param dst_mod_id ID of the destination module
+ 493:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 494:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param type Unique message identifier. Kernel message types are defined in
+ 495:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * message_types.h
+ 496:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 497:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param size Size of the payload (in bytes) that is being dispatched as a
+ 498:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * part of the message
+ 499:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 500:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param *data Pointer to the payload buffer that is dispatched in the
+ 501:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * message.
+ 502:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 503:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param flag Control scheduler priority, memory management properties of
+ 504:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * payload.  Check message_types.h
+ 505:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 506:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param dst_node_addr Destination node address
+ 507:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * 
+ 508:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \return SOS_OK on success, -ENOMEM on failure
+ 509:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 510:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * Other than directing the message the radio, this message is the same as
+ 511:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * sys_post
+ 512:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 513:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  */
+ 514:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #define sys_post_net(dst_mod_id, type, size, data, flag, dst_node_addr)   sys_post_link((dst_mod_id
+ 515:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 516:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 517:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /** 
+ 518:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * Post a message with payload over UART 
+ 519:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 520:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param dst_mod_id ID of the destination module
+ 521:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 522:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param type Unique message identifier. Kernel message types are defined in
+ 523:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * message_types.h
+ 524:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 525:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param size Size of the payload (in bytes) that is being dispatched as a
+ 526:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * part of the message
+ 527:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 528:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param *data Pointer to the payload buffer that is dispatched in the
+ 529:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * message.
+ 530:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 531:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param flag Control scheduler priority, memory management properties of
+ 532:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * payload.  Check message_types.h
+ 533:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 534:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param dst_node_addr Destination node address
+ 535:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 536:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \return SOS_OK on success, -ENOMEM on failure
+ 537:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 538:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * Other than directing the message the UART, this message is the same as
+ 539:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * sys_post
+ 540:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 541:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  */
+ 542:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #define sys_post_uart(dst_mod_id, type, size, data, flag, dst_node_addr)   sys_post_link((dst_mod_i
+ 543:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 544:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /** 
+ 545:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * Post a message with payload over I2C 
+ 546:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 547:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param dst_mod_id ID of the destination module
+ 548:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 549:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param type Unique message identifier. Kernel message types are defined in
+ 550:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * message_types.h
+ 551:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 552:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param size Size of the payload (in bytes) that is being dispatched as a
+ 553:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * part of the message
+ 554:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 555:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param *data Pointer to the payload buffer that is dispatched in the
+ 556:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * message.
+ 557:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 558:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param flag Control scheduler priority, memory management properties of
+ 559:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * payload.  Check message_types.h
+ 560:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 561:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param dst_node_addr Destination node address
+ 562:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 563:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \return SOS_OK on success, -ENOMEM on failure
+ 564:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 565:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * Other than directing the message the the I2C, this message is the same as
+ 566:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * sys_post
+ 567:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 568:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  */
+ 569:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #define sys_post_i2c(dst_mod_id, type, size, data, flag, dst_node_addr)   sys_post_link((dst_mod_id
+ 570:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 571:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /// \cond NOTYPEDEF                                             
+ 572:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** typedef int8_t (* sys_post_value_ker_func_t)( sos_pid_t dst_mod_id, uint8_t type, uint32_t data, ui
+ 573:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /// \endcond
+ 574:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 575:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /**
+ 576:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *  Post up to 4 bytes by value
+ 577:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 578:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param dst_mod_id ID of the destination module
+ 579:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 580:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param type Unique message identifier. Kernel message types are defined in
+ 581:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * message_types.h
+ 582:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 583:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param data Data to send directly in the message
+ 584:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 585:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param flag Control scheduler priority, memory management properties of
+ 586:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * payload.  Check message_types.h
+ 587:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 588:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \return SOS_OK on success, -ENOMEM on failure
+ 589:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 590:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \note This call is used to dispatch messages which have a very small
+ 591:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * payloads by value.  Single values can be passed directily (with a type
+ 592:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * cast).  Multiple small values can be passed, but the end user must pack and
+ 593:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * unpack this data by hand.
+ 594:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 595:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  */
+ 596:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** static inline int8_t sys_post_value( sos_pid_t dst_mod_id, uint8_t type, uint32_t data, uint16_t fl
+ 597:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** {
+ 598:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #ifdef SYS_JUMP_TBL_START
+ 599:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 	return ((sys_post_value_ker_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*10))( dst_mod_id, type, d
+ 600:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #else
+ 601:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 	return ker_sys_post_value( dst_mod_id, type, data, flag );
+ 602:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #endif
+ 603:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** }
+ 604:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /* @} */
+ 605:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 606:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /**
+ 607:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \ingroup system_api
+ 608:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \defgroup nodeInfo Node Info
+ 609:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * Functions that provide information about a node.
+ 610:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * @{
+ 611:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  */
+ 612:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /// \cond NOTYPEDEF                                             
+ 613:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** typedef uint16_t (* sys_hw_type_ker_func_t)( void );             
+ 614:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /// \endcond    
+ 615:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /**
+ 616:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * Node hardware type
+ 617:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * 
+ 618:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \return ID of hardware type
+ 619:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 620:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * Returns an ID describing the hardware type of the node.  Common hardware
+ 621:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * types include:
+ 622:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * 
+ 623:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * 
+ 624:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \li Mica2 -> 1
+ 625:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * 
+ 626:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \li MicaZ -> 2
+ 627:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * 
+ 628:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \li Tmote -> 6
+ 629:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * 
+ 630:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * 
+ 631:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * The detailed listing of hardware types is available in sos_info.h
+ 632:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 633:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  */
+ 634:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** static inline uint16_t sys_hw_type( void )                       
+ 635:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** {
+ 636:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #ifdef SYS_JUMP_TBL_START                                                               
+ 637:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 	return ((sys_hw_type_ker_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*11))( );                    
+ 638:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #else
+ 639:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 	return ker_hw_type();
+ 640:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #endif
+ 641:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** }     
+ 642:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 643:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /// \cond NOTYPEDEF                                             
+ 644:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** typedef uint16_t (* sys_id_ker_func_t)( void );                  
+ 645:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /// \endcond    
+ 646:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /**
+ 647:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * 
+ 648:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * Node ID
+ 649:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 650:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \return ID of the node
+ 651:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 652:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * Returns the node's ID.  This ID, much like an IP address, is the identifier
+ 653:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * for the node in the network.  A node's ID is set at compile time by
+ 654:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * specifying:
+ 655:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * 
+ 656:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \verbatim make mica2 install ADDRESS=<node_address> \endverbatim
+ 657:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 658:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * when building the image for the node.  The address is explicitly set in the
+ 659:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * binary loaded onto the node using $(ROOTDIR)/tools/admin/set-mote-id
+ 660:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * utility.
+ 661:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 662:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  */
+ 663:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** static inline uint16_t sys_id( void )
+ 664:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** {
+ 665:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #ifdef SYS_JUMP_TBL_START
+ 666:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 	return ((sys_id_ker_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*12))( );
+ 667:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #else
+ 668:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 	return ker_id();
+ 669:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #endif
+ 670:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** }
+ 671:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 672:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /* @} */
+ 673:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 674:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /**
+ 675:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \ingroup system_api
+ 676:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \defgroup random Random Numbers
+ 677:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * Functions to generate random numbers.
+ 678:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * @{
+ 679:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  */
+ 680:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /// \cond NOTYPEDEF
+ 681:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** typedef uint16_t (* sys_rand_ker_func_t)( void );
+ 682:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /// \endcond
+ 683:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 684:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /**
+ 685:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 686:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * Random number
+ 687:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 688:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \return Pseudo-random number
+ 689:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 690:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * Very simple random number generator.
+ 691:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 692:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  */
+ 693:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** static inline uint16_t sys_rand( void )
+ 694:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** {
+ 695:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #ifdef SYS_JUMP_TBL_START
+ 696:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 	return ((sys_rand_ker_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*13))();
+ 697:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #else
+ 698:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 	return ker_rand();
+ 699:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #endif
+ 700:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** }
+ 701:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /* @} */
+ 702:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 703:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /**
+ 704:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \ingroup system_api
+ 705:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \defgroup sysTime System Time
+ 706:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * Functions to access the node system time
+ 707:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * @{
+ 708:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  */
+ 709:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /// \cond NOTYPEDEF
+ 710:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** typedef uint32_t (* sys_time32_ker_func_t)( void );
+ 711:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /// \endcond
+ 712:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /**
+ 713:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 714:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * Get CPU "time"
+ 715:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 716:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \return Current CPU clock value
+ 717:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 718:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  */
+ 719:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** static inline uint32_t sys_time32( void )    
+ 720:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** {
+ 721:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #ifdef SYS_JUMP_TBL_START
+ 722:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 	return ((sys_time32_ker_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*14))( );
+ 723:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #else
+ 724:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 	return ker_systime32();
+ 725:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #endif
+ 726:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** }
+ 727:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /* @} */
+ 728:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 729:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /**
+ 730:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \ingroup system_api
+ 731:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \defgroup sensing Sensing
+ 732:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * Function to sample sensor readings
+ 733:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 734:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * @{
+ 735:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  */
+ 736:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /// \cond NOTYPEDEF
+ 737:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** typedef int8_t (* sys_sensor_get_data_ker_func_t)( uint8_t sensor_id );
+ 738:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /// \endcond
+ 739:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /**
+ 740:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * Get sensor readings
+ 741:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \return SOS_OK for success.  The reading will appear as message typed MSG_DATA_READY.
+ 742:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  */
+ 743:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** static inline int8_t sys_sensor_get_data( uint8_t sensor_id )
+ 744:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** {
+ 745:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #ifdef SYS_JUMP_TBL_START
+ 746:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 	return ((sys_sensor_get_data_ker_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*15))( sensor_id );
+ 747:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #else
+ 748:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 	return ker_sensor_get_data( sensor_id );
+ 749:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #endif
+ 750:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** }
+ 751:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /* @} */
+ 752:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 753:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /**
+ 754:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \ingroup system_api
+ 755:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \defgroup leds LED functions
+ 756:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 757:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * @{
+ 758:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  */
+ 759:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 760:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /// \cond NOTYPEDEF
+ 761:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /**
+ 762:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * Function for setting leds for debugging
+ 763:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  */
+ 764:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** typedef void (* sys_led_ker_func_t)( uint8_t op );
+ 765:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /// \endcond
+ 766:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 
+ 767:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** /**
+ 768:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 769:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * LEDs
+ 770:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 771:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \param op Bitmask used to turn on and off LEDs.
+ 772:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \return Zero
+ 773:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * 
+ 774:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * Legal values of op on the mica2 node incnlude:
+ 775:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * 
+ 776:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \li LED_RED_ON
+ 777:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \li LED_GREEN_ON
+ 778:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \li LED_YELLOW_ON
+ 779:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \li LED_RED_OFF
+ 780:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \li LED_GREEN_OFF
+ 781:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \li LED_YELLOW_OFF
+ 782:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \li LED_RED_TOGGLE
+ 783:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \li LED_GREEN_TOGGLE
+ 784:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  * \li LED_YELLOW_TOGGLE
+ 785:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 786:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  *
+ 787:/Users/Administrator/sos-2x/kernel/include/sys_module.h ****  */
+ 788:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** static inline void sys_led( uint8_t op )
+ 789:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** {
+ 790:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** #ifdef SYS_JUMP_TBL_START
+ 791:/Users/Administrator/sos-2x/kernel/include/sys_module.h **** 	((sys_led_ker_func_t)(SYS_JUMP_TBL_START+SYS_JUMP_TBL_SIZE*16))( op );
+ 387               	.LM8:
+ 388 0046 89E0      		ldi r24,lo8(9)
+ 389 0048 0E94 6600 		call 204
+ 390               	.LBE6:
+ 391               	.LBE5:
+ 392               	.LBB7:
+ 393               	.LBB8:
+ 395               	.LM9:
+ 396 004c 0E94 5E00 		call 188
+ 397 0050 8C01      		movw r16,r24
+ 398               	.LBE8:
+ 399               	.LBE7:
+ 400               	.LBB9:
+ 401               	.LBB10:
+ 403               	.LM10:
+ 404 0052 81E0      		ldi r24,lo8(1)
+ 405 0054 90E0      		ldi r25,hi8(1)
+ 406 0056 0E94 4800 		call 144
+ 407 005a FC01      		movw r30,r24
+ 408               	.LBE10:
+ 409               	.LBE9:
+ 411               	.Ltext4:
+  64:../../modules/activeRFIDtag/rfidtag.c ****       }
+  65:../../modules/activeRFIDtag/rfidtag.c **** 
+  66:../../modules/activeRFIDtag/rfidtag.c **** 
+  67:../../modules/activeRFIDtag/rfidtag.c ****     case MSG_FINAL:
+  68:../../modules/activeRFIDtag/rfidtag.c ****       {
+  69:../../modules/activeRFIDtag/rfidtag.c ****         DEBUG("Rfid Stop\n");
+  70:../../modules/activeRFIDtag/rfidtag.c ****         break;
+  71:../../modules/activeRFIDtag/rfidtag.c ****       }
+  72:../../modules/activeRFIDtag/rfidtag.c **** 
+  73:../../modules/activeRFIDtag/rfidtag.c ****     case MSG_TIMER_TIMEOUT:
+  74:../../modules/activeRFIDtag/rfidtag.c **** 	{
+  75:../../modules/activeRFIDtag/rfidtag.c **** 		sys_led(LED_YELLOW_TOGGLE);
+  76:../../modules/activeRFIDtag/rfidtag.c **** 		uint8_t *address;
+  77:../../modules/activeRFIDtag/rfidtag.c **** 		uint8_t data;
+  78:../../modules/activeRFIDtag/rfidtag.c **** 		data = sys_id();
+  79:../../modules/activeRFIDtag/rfidtag.c **** 		address = sys_malloc(sizeof(uint8_t));
+  80:../../modules/activeRFIDtag/rfidtag.c **** 		if (address !=NULL)
+ 413               	.LM11:
+ 414 005c 892B      		or r24,r25
+ 415 005e 81F0      		breq .L2
+  81:../../modules/activeRFIDtag/rfidtag.c **** 		{
+  82:../../modules/activeRFIDtag/rfidtag.c **** 			*address = data;
+ 417               	.LM12:
+ 418 0060 0083      		st Z,r16
+ 419               	.LBB11:
+ 420               	.LBB12:
+ 422               	.Ltext5:
+ 424               	.LM13:
+ 425 0062 8FEF      		ldi r24,lo8(-1)
+ 426 0064 E82E      		mov r14,r24
+ 427 0066 F82E      		mov r15,r24
+ 428 0068 0CE0      		ldi r16,lo8(524)
+ 429 006a 12E0      		ldi r17,hi8(524)
+ 430 006c 9F01      		movw r18,r30
+ 431 006e 41E0      		ldi r20,lo8(1)
+ 432 0070 64E2      		ldi r22,lo8(36)
+ 433 0072 82E8      		ldi r24,lo8(-126)
+ 434 0074 0E94 5800 		call 176
+ 435               	.LBE12:
+ 436               	.LBE11:
+ 438               	.Ltext6:
+  83:../../modules/activeRFIDtag/rfidtag.c **** 			sys_post_net(DFLT_APP_ID2, MSG_RFID_TAG, 1, (void*)address, SOS_MSG_RELEASE | SOS_MSG_RELIABLE, 
+  84:../../modules/activeRFIDtag/rfidtag.c **** 		}
+  85:../../modules/activeRFIDtag/rfidtag.c **** 		break;
+ 440               	.LM14:
+ 441 0078 03C0      		rjmp .L2
+ 442               	.L12:
+ 443               	.LBE4:
+  86:../../modules/activeRFIDtag/rfidtag.c **** 	}
+  87:../../modules/activeRFIDtag/rfidtag.c ****     default:
+  88:../../modules/activeRFIDtag/rfidtag.c ****       return -EINVAL;
+ 445               	.LM15:
+ 446 007a 8AEE      		ldi r24,lo8(-22)
+ 447 007c 9FEF      		ldi r25,hi8(-22)
+ 448 007e 02C0      		rjmp .L1
+ 449               	.L2:
+  89:../../modules/activeRFIDtag/rfidtag.c ****   }
+  90:../../modules/activeRFIDtag/rfidtag.c **** 
+  91:../../modules/activeRFIDtag/rfidtag.c ****   return SOS_OK;
+ 451               	.LM16:
+ 452 0080 80E0      		ldi r24,lo8(0)
+ 453 0082 90E0      		ldi r25,hi8(0)
+ 454               	.L1:
+ 455               	/* epilogue: frame size=0 */
+ 456 0084 DF91      		pop r29
+ 457 0086 CF91      		pop r28
+ 458 0088 1F91      		pop r17
+ 459 008a 0F91      		pop r16
+ 460 008c FF90      		pop r15
+ 461 008e EF90      		pop r14
+ 462 0090 0895      		ret
+ 463               	/* epilogue end (size=7) */
+ 464               	/* function rfidtag_msg_handler size 74 (61) */
+ 466               	.Lscope0:
+ 469               	.global	rfidtag_get_header
+ 471               	rfidtag_get_header:
+  92:../../modules/activeRFIDtag/rfidtag.c **** }
+  93:../../modules/activeRFIDtag/rfidtag.c **** 
+  94:../../modules/activeRFIDtag/rfidtag.c **** 
+  95:../../modules/activeRFIDtag/rfidtag.c **** 
+  96:../../modules/activeRFIDtag/rfidtag.c **** 
+  97:../../modules/activeRFIDtag/rfidtag.c **** 
+  98:../../modules/activeRFIDtag/rfidtag.c **** 
+  99:../../modules/activeRFIDtag/rfidtag.c **** #ifndef _MODULE_
+ 100:../../modules/activeRFIDtag/rfidtag.c **** mod_header_ptr rfidtag_get_header()
+ 101:../../modules/activeRFIDtag/rfidtag.c **** {
+ 473               	.LM17:
+ 474               	/* prologue: frame size=0 */
+ 475               	/* prologue end (size=0) */
+ 102:../../modules/activeRFIDtag/rfidtag.c ****   return sos_get_header_address(mod_header);
+ 477               	.LM18:
+ 478 0092 80E0      		ldi r24,lo8(mod_header)
+ 479 0094 90E0      		ldi r25,hi8(mod_header)
+ 480 0096 AA27      		clr r26
+ 481 0098 97FD      		sbrc r25,7
+ 482 009a A095      		com r26
+ 483 009c BA2F      		mov r27,r26
+ 484 009e B695      		lsr r27
+ 485 00a0 A795      		ror r26
+ 486 00a2 9795      		ror r25
+ 487 00a4 8795      		ror r24
+ 488               	/* epilogue: frame size=0 */
+ 489 00a6 0895      		ret
+ 490               	/* epilogue end (size=1) */
+ 491               	/* function rfidtag_get_header size 11 (10) */
+ 493               	.Lscope1:
+ 496               		.text
+ 498               	Letext:
+ 499               	/* File "../../modules/activeRFIDtag/rfidtag.c": code   85 = 0x0055 (  71), prologues   6, epilogue
+DEFINED SYMBOLS
+                            *ABS*:00000000 rfidtag.c
+                            *ABS*:0000003f __SREG__
+                            *ABS*:0000003e __SP_H__
+                            *ABS*:0000003d __SP_L__
+                            *ABS*:00000000 __tmp_reg__
+                            *ABS*:00000001 __zero_reg__
+/var/tmp//ccyjxcMq.s:298    .progmem.data:00000000 mod_header
+/var/tmp//ccyjxcMq.s:319    .text:00000000 rfidtag_msg_handler
+/var/tmp//ccyjxcMq.s:471    .text:00000092 rfidtag_get_header
+/var/tmp//ccyjxcMq.s:498    .text:000000a8 Letext
+
+UNDEFINED SYMBOLS
+__do_copy_data
+__do_clear_bss
+error_8

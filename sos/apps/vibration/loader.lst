@@ -1,0 +1,2363 @@
+   1               		.file	"loader.c"
+   2               		.arch atmega128
+   3               	__SREG__ = 0x3f
+   4               	__SP_H__ = 0x3e
+   5               	__SP_L__ = 0x3d
+   6               	__tmp_reg__ = 0
+   7               	__zero_reg__ = 1
+   8               		.global __do_copy_data
+   9               		.global __do_clear_bss
+  12               		.text
+  13               	.Ltext0:
+ 287               		.section	.progmem.data,"a",@progbits
+ 290               	mod_header:
+ 291 0000 0000      		.word	0
+ 292 0002 11        		.byte	17
+ 293 0003 00        		.byte	0
+ 294 0004 00        		.byte	0
+ 295 0005 00        		.byte	0
+ 296 0006 0000 0000 		.skip 8,0
+ 296      0000 0000 
+ 297 000e 0000      		.word	pm(loader_handler)
+ 298               		.text
+ 302               	restartInterval:
+   1:/Users/Administrator/sos-2x/extensions/loader/loader.c **** /* -*- Mode: C; tab-width:4 -*- */
+   2:/Users/Administrator/sos-2x/extensions/loader/loader.c **** /* ex: set ts=4 shiftwidth=4 softtabstop=4 cindent: */
+   3:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #include <module.h>
+   4:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #include <sos.h>
+   5:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #include <sos_sched.h>
+   6:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #include <sos_module_fetcher.h>
+   7:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #include <sos_shm.h>
+   8:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+   9:/Users/Administrator/sos-2x/extensions/loader/loader.c **** // for low level memory i/o
+  10:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #include <hardware_proc.h>
+  11:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+  12:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #ifdef LOADER_NET_EXPERIMENT
+  13:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #include <led.h>
+  14:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #endif
+  15:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+  16:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #include "loader.h"
+  17:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+  18:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #ifdef SOS_SIM
+  19:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #include <sim_interface.h>
+  20:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #endif
+  21:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+  22:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #ifdef MINIELF_LOADER
+  23:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #include <melfloader.h>
+  24:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #endif
+  25:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+  26:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #ifdef SOS_SFI
+  27:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #include <sos_mod_verify.h>
+  28:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #include <sfi_jumptable.h>
+  29:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #include <sfi_exception.h>
+  30:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #endif
+  31:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+  32:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #define LED_DEBUG
+  33:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #include <led_dbg.h>
+  34:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+  35:/Users/Administrator/sos-2x/extensions/loader/loader.c **** /**
+  36:/Users/Administrator/sos-2x/extensions/loader/loader.c ****  * Configurable parameters
+  37:/Users/Administrator/sos-2x/extensions/loader/loader.c ****  */
+  38:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #ifndef SOS_DEBUG_DFT_LOADER
+  39:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #undef DEBUG
+  40:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #define DEBUG(...)
+  41:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #undef DEBUG_PID
+  42:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #define DEBUG_PID(...)
+  43:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #endif
+  44:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+  45:/Users/Administrator/sos-2x/extensions/loader/loader.c **** enum {
+  46:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	TOU_INTERVAL     =   1L * 1024L,    // 1 second
+  47:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	TOU_MAX          =   10,            
+  48:/Users/Administrator/sos-2x/extensions/loader/loader.c ****    	OVERHEARD_K      =   1,             	
+  49:/Users/Administrator/sos-2x/extensions/loader/loader.c **** };
+  50:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+  51:/Users/Administrator/sos-2x/extensions/loader/loader.c **** enum {
+  52:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	MAINTAIN     = 0,
+  53:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	SEND_DATA    = 1,        //!< sending data
+  54:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	SEND_ADV     = 2,        //!< sending old adv
+  55:/Users/Administrator/sos-2x/extensions/loader/loader.c **** };
+  56:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+  57:/Users/Administrator/sos-2x/extensions/loader/loader.c **** enum {
+  58:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	NEW_OP_OK            = 0,
+  59:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	NEW_OP_BLOCKED,
+  60:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	NEW_OP_FAILED,
+  61:/Users/Administrator/sos-2x/extensions/loader/loader.c **** };
+  62:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+  63:/Users/Administrator/sos-2x/extensions/loader/loader.c **** static int8_t loader_handler(void *state, Message *msg);
+  64:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+  65:/Users/Administrator/sos-2x/extensions/loader/loader.c **** static mod_header_t mod_header SOS_MODULE_HEADER =
+  66:/Users/Administrator/sos-2x/extensions/loader/loader.c **** {
+  67:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	.mod_id             = KER_DFT_LOADER_PID,
+  68:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	.state_size         = 0,
+  69:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	.num_timers         = 0,
+  70:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	.num_sub_func       = 0,
+  71:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	.num_prov_func      = 0,
+  72:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	.module_handler     = loader_handler,
+  73:/Users/Administrator/sos-2x/extensions/loader/loader.c **** };
+  74:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+  75:/Users/Administrator/sos-2x/extensions/loader/loader.c **** /**
+  76:/Users/Administrator/sos-2x/extensions/loader/loader.c ****  * Timer TIDs
+  77:/Users/Administrator/sos-2x/extensions/loader/loader.c ****  */
+  78:/Users/Administrator/sos-2x/extensions/loader/loader.c **** enum {
+  79:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	TOU_TID   = 0,
+  80:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	TRAN_TID  = 1,
+  81:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	DATA_TID  = 2,
+  82:/Users/Administrator/sos-2x/extensions/loader/loader.c **** };
+  83:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+  84:/Users/Administrator/sos-2x/extensions/loader/loader.c **** /**
+  85:/Users/Administrator/sos-2x/extensions/loader/loader.c ****  * State
+  86:/Users/Administrator/sos-2x/extensions/loader/loader.c ****  */
+  87:/Users/Administrator/sos-2x/extensions/loader/loader.c **** typedef struct {
+  88:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	sos_timer_t tou_timer;
+  89:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	sos_timer_t tran_timer;
+  90:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	sos_timer_t data_timer;
+  91:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	uint8_t     tou;	
+  92:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	uint8_t     net_state;
+  93:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	uint8_t     tran_count;
+  94:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	uint8_t     data_count;
+  95:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	uint16_t    recent_neighbor;
+  96:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	uint8_t     blocked;
+  97:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+  98:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	msg_version_data_t *version_data;
+  99:/Users/Administrator/sos-2x/extensions/loader/loader.c **** } dft_loader_t;
+ 100:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 101:/Users/Administrator/sos-2x/extensions/loader/loader.c **** /*
+ 102:/Users/Administrator/sos-2x/extensions/loader/loader.c ****  * Forward declaration
+ 103:/Users/Administrator/sos-2x/extensions/loader/loader.c ****  */
+ 104:/Users/Administrator/sos-2x/extensions/loader/loader.c **** static void process_version_data(msg_version_data_t *v, uint16_t saddr );
+ 105:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 106:/Users/Administrator/sos-2x/extensions/loader/loader.c **** /*
+ 107:/Users/Administrator/sos-2x/extensions/loader/loader.c ****  * State data
+ 108:/Users/Administrator/sos-2x/extensions/loader/loader.c ****  */
+ 109:/Users/Administrator/sos-2x/extensions/loader/loader.c **** static dft_loader_t  st;
+ 110:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 111:/Users/Administrator/sos-2x/extensions/loader/loader.c **** static void block_protocol()
+ 112:/Users/Administrator/sos-2x/extensions/loader/loader.c **** {
+ 113:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	st.blocked = 1;
+ 114:/Users/Administrator/sos-2x/extensions/loader/loader.c **** }
+ 115:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 116:/Users/Administrator/sos-2x/extensions/loader/loader.c **** static void restartInterval( uint8_t new_tou )
+ 117:/Users/Administrator/sos-2x/extensions/loader/loader.c **** {
+ 304               	.LM1:
+ 305               	/* prologue: frame size=0 */
+ 306 0000 EF92      		push r14
+ 307 0002 FF92      		push r15
+ 308 0004 0F93      		push r16
+ 309 0006 1F93      		push r17
+ 310               	/* prologue end (size=4) */
+ 311 0008 182F      		mov r17,r24
+ 118:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	int32_t tou_interval = 0;
+ 119:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	int32_t rand_val = 0;
+ 120:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	ker_timer_stop( KER_DFT_LOADER_PID, TOU_TID  );	
+ 313               	.LM2:
+ 314 000a 60E0      		ldi r22,lo8(0)
+ 315 000c 81E1      		ldi r24,lo8(17)
+ 316 000e 0E94 0000 		call ker_timer_stop
+ 121:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	ker_timer_stop( KER_DFT_LOADER_PID, TRAN_TID );	
+ 318               	.LM3:
+ 319 0012 61E0      		ldi r22,lo8(1)
+ 320 0014 81E1      		ldi r24,lo8(17)
+ 321 0016 0E94 0000 		call ker_timer_stop
+ 122:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	ker_timer_stop( KER_DFT_LOADER_PID, DATA_TID );	
+ 323               	.LM4:
+ 324 001a 62E0      		ldi r22,lo8(2)
+ 325 001c 81E1      		ldi r24,lo8(17)
+ 326 001e 0E94 0000 		call ker_timer_stop
+ 123:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 124:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	if ( new_tou < TOU_MAX ) {
+ 328               	.LM5:
+ 329 0022 1A30      		cpi r17,lo8(10)
+ 330 0024 18F4      		brsh .L2
+ 125:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		st.tou = new_tou;
+ 332               	.LM6:
+ 333 0026 1093 0000 		sts st+48,r17
+ 334 002a 03C0      		rjmp .L3
+ 335               	.L2:
+ 126:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	} else {
+ 127:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		st.tou = TOU_MAX;
+ 337               	.LM7:
+ 338 002c 8AE0      		ldi r24,lo8(10)
+ 339 002e 8093 0000 		sts st+48,r24
+ 340               	.L3:
+ 128:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	}
+ 129:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	st.tran_count = 0;
+ 342               	.LM8:
+ 343 0032 1092 0000 		sts st+50,__zero_reg__
+ 130:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	st.data_count = 0;
+ 345               	.LM9:
+ 346 0036 1092 0000 		sts st+51,__zero_reg__
+ 131:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 132:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	tou_interval = TOU_INTERVAL * (1L << st.tou);
+ 348               	.LM10:
+ 349 003a E12C      		mov r14,__zero_reg__
+ 350 003c 44E0      		ldi r20,hi8(1024)
+ 351 003e F42E      		mov r15,r20
+ 352 0040 012D      		mov r16,__zero_reg__
+ 353 0042 112D      		mov r17,__zero_reg__
+ 354 0044 0090 0000 		lds r0,st+48
+ 355 0048 04C0      		rjmp 2f
+ 356 004a EE0C      	1:	lsl r14
+ 357 004c FF1C      		rol r15
+ 358 004e 001F      		rol r16
+ 359 0050 111F      		rol r17
+ 360 0052 0A94      	2:	dec r0
+ 361 0054 D2F7      		brpl 1b
+ 133:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	
+ 134:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	ker_timer_start( KER_DFT_LOADER_PID, TOU_TID, tou_interval );
+ 363               	.LM11:
+ 364 0056 A801      		movw r20,r16
+ 365 0058 9701      		movw r18,r14
+ 366 005a 6091 0000 		lds r22,st+50
+ 367 005e 81E1      		ldi r24,lo8(17)
+ 368 0060 0E94 0000 		call ker_timer_start
+ 135:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	if ( st.net_state & SEND_DATA ) {
+ 370               	.LM12:
+ 371 0064 8091 0000 		lds r24,st+49
+ 372 0068 80FF      		sbrs r24,0
+ 373 006a 21C0      		rjmp .L4
+ 136:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		//! pick random timeout between tou_interval / 2 and tou_interval
+ 137:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		rand_val = ker_rand() % (tou_interval / 2);
+ 375               	.LM13:
+ 376 006c 0E94 0000 		call ker_rand
+ 377 0070 9C01      		movw r18,r24
+ 378 0072 4427      		clr r20
+ 379 0074 5527      		clr r21
+ 380 0076 CA01      		movw r24,r20
+ 381 0078 B901      		movw r22,r18
+ 382 007a A801      		movw r20,r16
+ 383 007c 9701      		movw r18,r14
+ 384 007e 17FF      		sbrs r17,7
+ 385 0080 04C0      		rjmp .L5
+ 386 0082 2F5F      		subi r18,lo8(-(1))
+ 387 0084 3F4F      		sbci r19,hi8(-(1))
+ 388 0086 4F4F      		sbci r20,hlo8(-(1))
+ 389 0088 5F4F      		sbci r21,hhi8(-(1))
+ 390               	.L5:
+ 391 008a 7901      		movw r14,r18
+ 392 008c 8A01      		movw r16,r20
+ 393 008e 1595      		asr r17
+ 394 0090 0795      		ror r16
+ 395 0092 F794      		ror r15
+ 396 0094 E794      		ror r14
+ 397 0096 A801      		movw r20,r16
+ 398 0098 9701      		movw r18,r14
+ 399 009a 0E94 0000 		call __divmodsi4
+ 400 009e 9B01      		movw r18,r22
+ 401 00a0 AC01      		movw r20,r24
+ 138:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		rand_val += (tou_interval / 2);
+ 403               	.LM14:
+ 404 00a2 2E0D      		add r18,r14
+ 405 00a4 3F1D      		adc r19,r15
+ 406 00a6 401F      		adc r20,r16
+ 407 00a8 511F      		adc r21,r17
+ 139:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		ker_timer_start( KER_DFT_LOADER_PID, DATA_TID, rand_val );
+ 409               	.LM15:
+ 410 00aa 62E0      		ldi r22,lo8(2)
+ 411 00ac 20C0      		rjmp .L10
+ 412               	.L4:
+ 140:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	} else {
+ 141:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		//! pick random timeout between tou_interval / 2 and tou_interval
+ 142:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		rand_val = ker_rand() % (tou_interval / 2);
+ 414               	.LM16:
+ 415 00ae 0E94 0000 		call ker_rand
+ 416 00b2 9C01      		movw r18,r24
+ 417 00b4 4427      		clr r20
+ 418 00b6 5527      		clr r21
+ 419 00b8 CA01      		movw r24,r20
+ 420 00ba B901      		movw r22,r18
+ 421 00bc A801      		movw r20,r16
+ 422 00be 9701      		movw r18,r14
+ 423 00c0 17FF      		sbrs r17,7
+ 424 00c2 04C0      		rjmp .L8
+ 425 00c4 2F5F      		subi r18,lo8(-(1))
+ 426 00c6 3F4F      		sbci r19,hi8(-(1))
+ 427 00c8 4F4F      		sbci r20,hlo8(-(1))
+ 428 00ca 5F4F      		sbci r21,hhi8(-(1))
+ 429               	.L8:
+ 430 00cc 7901      		movw r14,r18
+ 431 00ce 8A01      		movw r16,r20
+ 432 00d0 1595      		asr r17
+ 433 00d2 0795      		ror r16
+ 434 00d4 F794      		ror r15
+ 435 00d6 E794      		ror r14
+ 436 00d8 A801      		movw r20,r16
+ 437 00da 9701      		movw r18,r14
+ 438 00dc 0E94 0000 		call __divmodsi4
+ 439 00e0 9B01      		movw r18,r22
+ 440 00e2 AC01      		movw r20,r24
+ 143:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		rand_val += (tou_interval / 2);
+ 442               	.LM17:
+ 443 00e4 2E0D      		add r18,r14
+ 444 00e6 3F1D      		adc r19,r15
+ 445 00e8 401F      		adc r20,r16
+ 446 00ea 511F      		adc r21,r17
+ 144:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		ker_timer_start( KER_DFT_LOADER_PID, TRAN_TID, rand_val );
+ 448               	.LM18:
+ 449 00ec 61E0      		ldi r22,lo8(1)
+ 450               	.L10:
+ 451 00ee 81E1      		ldi r24,lo8(17)
+ 452 00f0 0E94 0000 		call ker_timer_start
+ 453               	/* epilogue: frame size=0 */
+ 454 00f4 1F91      		pop r17
+ 455 00f6 0F91      		pop r16
+ 456 00f8 FF90      		pop r15
+ 457 00fa EF90      		pop r14
+ 458 00fc 0895      		ret
+ 459               	/* epilogue end (size=5) */
+ 460               	/* function restartInterval size 127 (118) */
+ 466               	.Lscope0:
+ 472               	process_version_data:
+ 145:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	}
+ 146:/Users/Administrator/sos-2x/extensions/loader/loader.c **** }	
+ 147:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 148:/Users/Administrator/sos-2x/extensions/loader/loader.c **** static int8_t handle_timeout( Message *msg )
+ 149:/Users/Administrator/sos-2x/extensions/loader/loader.c **** {
+ 150:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	MsgParam* params = ( MsgParam * )( msg->data );
+ 151:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 152:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	switch( params->byte ) {
+ 153:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		case TOU_TID:
+ 154:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		{
+ 155:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			if( st.net_state != MAINTAIN ) {
+ 156:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 				restartInterval( 0 );
+ 157:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			} else {
+ 158:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 				restartInterval( st.tou + 1 );
+ 159:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			}
+ 160:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			break;
+ 161:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		}
+ 162:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		case TRAN_TID:
+ 163:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		{
+ 164:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			/*
+ 165:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			 * Transmit Version number
+ 166:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			 */
+ 167:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			if( st.blocked == 0 ) {
+ 168:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			version_t *v;
+ 169:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			v = ker_malloc( sizeof(version_t), KER_DFT_LOADER_PID );
+ 170:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			if( v == NULL ) return -ENOMEM;
+ 171:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			*v = version_hton(st.version_data->version);
+ 172:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			
+ 173:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			post_link(KER_DFT_LOADER_PID, KER_DFT_LOADER_PID, 
+ 174:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 					MSG_VERSION_ADV, sizeof(version_t), v, 
+ 175:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 					SOS_MSG_RELEASE | SOS_MSG_ALL_LINK_IO, 
+ 176:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 					BCAST_ADDRESS);
+ 177:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			}
+ 178:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			break;
+ 179:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		}
+ 180:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		case DATA_TID:
+ 181:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		{
+ 182:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			msg_version_data_t *d;
+ 183:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			
+ 184:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			d = (msg_version_data_t *) ker_malloc(
+ 185:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 				sizeof( msg_version_data_t ), 
+ 186:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 				KER_DFT_LOADER_PID);
+ 187:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 188:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			if( d != NULL ) {
+ 189:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 				memcpy(d, st.version_data, sizeof( msg_version_data_t ));
+ 190:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 191:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 				d->version = version_hton( st.version_data->version );
+ 192:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 				
+ 193:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 				post_link(KER_DFT_LOADER_PID, KER_DFT_LOADER_PID, 
+ 194:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 						MSG_VERSION_DATA, 
+ 195:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 						sizeof( msg_version_data_t ),
+ 196:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 						d, 
+ 197:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 						SOS_MSG_RELEASE | SOS_MSG_ALL_LINK_IO, 
+ 198:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 						BCAST_ADDRESS);
+ 199:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			}
+ 200:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			st.net_state &= ~SEND_DATA;
+ 201:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			break;
+ 202:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		}
+ 203:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	}
+ 204:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	return SOS_OK;
+ 205:/Users/Administrator/sos-2x/extensions/loader/loader.c **** }
+ 206:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 207:/Users/Administrator/sos-2x/extensions/loader/loader.c **** static int8_t handle_version_adv( Message *msg )
+ 208:/Users/Administrator/sos-2x/extensions/loader/loader.c **** {
+ 209:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	msg_version_adv_t *pkt = (msg_version_adv_t *) msg->data;
+ 210:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 211:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	if( pkt->version > st.version_data->version ) {
+ 212:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		// Someone has new version, tell them we don't have quickly...
+ 213:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		restartInterval( 0 );
+ 214:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	} else if( pkt->version < st.version_data->version ) {
+ 215:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		if( ( st.net_state & SEND_DATA ) == 0 ) {
+ 216:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			st.net_state |= SEND_DATA;
+ 217:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			restartInterval( 0 );
+ 218:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		} 
+ 219:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	} else {
+ 220:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		st.tran_count += 1;
+ 221:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		if( st.tran_count >= OVERHEARD_K ) {
+ 222:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			ker_timer_stop( KER_DFT_LOADER_PID, TRAN_TID ); 
+ 223:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		}
+ 224:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	}
+ 225:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	return SOS_OK;
+ 226:/Users/Administrator/sos-2x/extensions/loader/loader.c **** }
+ 227:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 228:/Users/Administrator/sos-2x/extensions/loader/loader.c **** static int8_t handle_version_data( Message *msg ) 
+ 229:/Users/Administrator/sos-2x/extensions/loader/loader.c **** {
+ 230:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	msg_version_data_t *pkt = (msg_version_data_t *) msg->data;
+ 231:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 232:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	if( st.net_state & SEND_DATA ) {
+ 233:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		/*
+ 234:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		 * We have data to send
+ 235:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		 */
+ 236:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		if( pkt->version == st.version_data->version) {
+ 237:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			st.data_count ++;
+ 238:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			if( st.data_count >= OVERHEARD_K ) {
+ 239:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 				st.net_state &= ~SEND_DATA;
+ 240:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 				ker_timer_stop( KER_DFT_LOADER_PID, DATA_TID );
+ 241:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			}
+ 242:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			return SOS_OK;
+ 243:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		}
+ 244:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	}
+ 245:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	if( pkt->version > st.version_data->version ) {
+ 246:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		restartInterval( 0 );
+ 247:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		ker_free(st.version_data);
+ 248:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		st.version_data = (msg_version_data_t*) ker_msg_take_data(KER_DFT_LOADER_PID, msg);
+ 249:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		process_version_data( st.version_data, msg->saddr );
+ 250:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	}
+ 251:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	return SOS_OK;
+ 252:/Users/Administrator/sos-2x/extensions/loader/loader.c **** }
+ 253:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 254:/Users/Administrator/sos-2x/extensions/loader/loader.c **** static int8_t request_new_module(sos_shm_t key, loader_cam_t *cam, uint8_t size, uint16_t saddr, ui
+ 255:/Users/Administrator/sos-2x/extensions/loader/loader.c **** {
+ 256:/Users/Administrator/sos-2x/extensions/loader/loader.c ****   cam->code_size = size; 
+ 257:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	cam->fetcher.fetchtype = type;
+ 258:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	cam->fetcher.cm = ker_codemem_alloc(
+ 259:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			size * LOADER_SIZE_MULTIPLIER, 
+ 260:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			CODEMEM_TYPE_EXECUTABLE);
+ 261:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	DEBUG_PID( KER_DFT_LOADER_PID, "request new module with size = %d\n", 
+ 262:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			size * LOADER_SIZE_MULTIPLIER);
+ 263:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	if(cam->fetcher.cm == CODEMEM_INVALID) {
+ 264:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		return -ENOMEM;
+ 265:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	}
+ 266:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	if( fetcher_request( KER_DFT_LOADER_PID, key, (uint16_t)size * LOADER_SIZE_MULTIPLIER, saddr ) 
+ 267:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			!= SOS_OK ) {
+ 268:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		ker_codemem_free( cam->fetcher.cm );
+ 269:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		return -ENOMEM;
+ 270:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	}
+ 271:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	block_protocol();
+ 272:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	return SOS_OK;
+ 273:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 274:/Users/Administrator/sos-2x/extensions/loader/loader.c **** }
+ 275:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 276:/Users/Administrator/sos-2x/extensions/loader/loader.c **** static void process_version_data( msg_version_data_t *v, uint16_t saddr ) 
+ 277:/Users/Administrator/sos-2x/extensions/loader/loader.c **** {
+ 474               	.LM19:
+ 475               	/* prologue: frame size=0 */
+ 476 00fe 8F92      		push r8
+ 477 0100 9F92      		push r9
+ 478 0102 AF92      		push r10
+ 479 0104 BF92      		push r11
+ 480 0106 CF92      		push r12
+ 481 0108 DF92      		push r13
+ 482 010a EF92      		push r14
+ 483 010c FF92      		push r15
+ 484 010e 0F93      		push r16
+ 485 0110 1F93      		push r17
+ 486 0112 CF93      		push r28
+ 487 0114 DF93      		push r29
+ 488               	/* prologue end (size=12) */
+ 489 0116 4B01      		movw r8,r22
+ 278:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	uint8_t i;
+ 279:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	for( i = 0; i < NUM_LOADER_PARAMS_ENTRIES + NUM_LOADER_MODULE_ENTRIES; i++ ) {
+ 491               	.LM20:
+ 492 0118 AA24      		clr r10
+ 493 011a 6C01      		movw r12,r24
+ 494               	.L38:
+ 495               	.LBB2:
+ 496               	.LBB3:
+ 497               	.LBB4:
+ 499               	.Ltext1:
+   1:/Users/Administrator/sos-2x/kernel/include/sos_shm.h **** 
+   2:/Users/Administrator/sos-2x/kernel/include/sos_shm.h **** #ifndef _SOS_SHM_H_
+   3:/Users/Administrator/sos-2x/kernel/include/sos_shm.h **** #define _SOS_SHM_H_
+   4:/Users/Administrator/sos-2x/kernel/include/sos_shm.h **** 
+   5:/Users/Administrator/sos-2x/kernel/include/sos_shm.h **** #include <sos_inttypes.h>
+   6:/Users/Administrator/sos-2x/kernel/include/sos_shm.h **** /**
+   7:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * \addtogroup sosCam
+   8:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * @{
+   9:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  */
+  10:/Users/Administrator/sos-2x/kernel/include/sos_shm.h **** 
+  11:/Users/Administrator/sos-2x/kernel/include/sos_shm.h **** /**
+  12:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * \file sos_shm.h
+  13:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * <STRONG>SHM (Shared memory)</STRONG> is an implementation of 
+  14:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * shared memory for SOS.<BR>  
+  15:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * 
+  16:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * \note Implementation does not support duplication.  
+  17:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  */
+  18:/Users/Administrator/sos-2x/kernel/include/sos_shm.h **** 
+  19:/Users/Administrator/sos-2x/kernel/include/sos_shm.h **** /**
+  20:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * Type used for the key.  
+  21:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  *
+  22:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * Since there is no support for multiple value of the same key,
+  23:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * by convention module should set the upper 8 bits to module ID.  
+  24:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  */
+  25:/Users/Administrator/sos-2x/kernel/include/sos_shm.h **** typedef uint16_t sos_shm_t;
+  26:/Users/Administrator/sos-2x/kernel/include/sos_shm.h **** 
+  27:/Users/Administrator/sos-2x/kernel/include/sos_shm.h **** #ifndef _MODULE_
+  28:/Users/Administrator/sos-2x/kernel/include/sos_shm.h **** /**
+  29:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * Create a shared memory with the memory 'name' and the shared memory region shm
+  30:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * 
+  31:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * \param pid  the task ID of the shared memory owner
+  32:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * \param name the name of shared memory in numeric value
+  33:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * \param shm  the pointer to the shared memory region
+  34:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * \return SOS_OK for success, -EEXIST when the name already exists,
+  35:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * -ENOMEM for no memory
+  36:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  */
+  37:/Users/Administrator/sos-2x/kernel/include/sos_shm.h **** extern int8_t ker_shm_open(sos_pid_t pid, sos_shm_t name, void *shm);
+  38:/Users/Administrator/sos-2x/kernel/include/sos_shm.h **** 
+  39:/Users/Administrator/sos-2x/kernel/include/sos_shm.h **** /**
+  40:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * Bind an existing name to a new memory region
+  41:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * 
+  42:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * \param pid the task ID that updated shared memory
+  43:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * \param name the name of shared memory in numeric value
+  44:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * \param shm  the pointer to the shared memory region
+  45:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * \return SOS_OK for success, -EBADF if the name does not exist
+  46:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  *
+  47:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * ker_shm_update signals the update of the shared memory region.  
+  48:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * This could be either a new memory region or the update of existing memory
+  49:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  */
+  50:/Users/Administrator/sos-2x/kernel/include/sos_shm.h **** extern int8_t ker_shm_update(sos_pid_t pid, sos_shm_t name, void *shm);
+  51:/Users/Administrator/sos-2x/kernel/include/sos_shm.h **** 
+  52:/Users/Administrator/sos-2x/kernel/include/sos_shm.h **** /**
+  53:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * Close the shared memory
+  54:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * 
+  55:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * \param pid  the task ID of the shared memory owner
+  56:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * \param name the name of shared memory in numeric value
+  57:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * \return SOS_OK for success, -EBADF if the name does not exist, -EPERM for incorrect owner
+  58:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * \note the memory attached to the name is not freed.
+  59:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  *
+  60:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  */
+  61:/Users/Administrator/sos-2x/kernel/include/sos_shm.h **** extern int8_t ker_shm_close(sos_pid_t pid, sos_shm_t name);
+  62:/Users/Administrator/sos-2x/kernel/include/sos_shm.h **** 
+  63:/Users/Administrator/sos-2x/kernel/include/sos_shm.h **** /**
+  64:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * Find the shared memory (if any) that is bound to the name
+  65:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  *
+  66:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * \param pid  the task ID of the requester
+  67:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * \param name the name of shared memory in numeric value
+  68:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * \return the memory region corresponding to the name, NULL if not exist
+  69:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  */
+  70:/Users/Administrator/sos-2x/kernel/include/sos_shm.h **** extern void* ker_shm_get(sos_pid_t pid, sos_shm_t name);
+  71:/Users/Administrator/sos-2x/kernel/include/sos_shm.h **** 
+  72:/Users/Administrator/sos-2x/kernel/include/sos_shm.h **** /**
+  73:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * Wait on the event from the shared memory
+  74:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  *
+  75:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * \param pid the task ID of the requester
+  76:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * \param name the name of the shared memory in numeric value
+  77:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * \return SOS_OK for success, -EBADF for invalid name, -ENOMEM for no space to 
+  78:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * store more waiter
+  79:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  *
+  80:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * ker_shm_wait waits on the event due to share memory update and close for a 
+  81:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * particular memory.  A message from KER_SHM_PID typed MSG_SHM will be generated and 
+  82:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * sent to the module when the memory is either updated and closed.  
+  83:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  */
+  84:/Users/Administrator/sos-2x/kernel/include/sos_shm.h **** extern int8_t ker_shm_wait( sos_pid_t pid, sos_shm_t name );
+  85:/Users/Administrator/sos-2x/kernel/include/sos_shm.h **** 
+  86:/Users/Administrator/sos-2x/kernel/include/sos_shm.h **** /**
+  87:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * Stop waiting on shared memory event 
+  88:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * \param pid the task ID of the requester
+  89:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * \param name the name of the shared memory in numeric value
+  90:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * \return SOS_OK for success, -EBADF for invalid name, -EINVAL if the waiter does not exist
+  91:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  */
+  92:/Users/Administrator/sos-2x/kernel/include/sos_shm.h **** extern int8_t ker_shm_stopwait( sos_pid_t pid, sos_shm_t name );
+  93:/Users/Administrator/sos-2x/kernel/include/sos_shm.h **** /* @} */
+  94:/Users/Administrator/sos-2x/kernel/include/sos_shm.h **** #endif
+  95:/Users/Administrator/sos-2x/kernel/include/sos_shm.h **** 
+  96:/Users/Administrator/sos-2x/kernel/include/sos_shm.h **** /**
+  97:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  * Create shared memory name based on task ID and task defined ID 
+  98:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****  */
+  99:/Users/Administrator/sos-2x/kernel/include/sos_shm.h **** static inline sos_shm_t sys_shm_name( sos_pid_t pid, uint8_t id ) 
+ 100:/Users/Administrator/sos-2x/kernel/include/sos_shm.h **** {
+ 101:/Users/Administrator/sos-2x/kernel/include/sos_shm.h ****   return (((sos_shm_t) pid) << 8) | id;
+ 501               	.LM21:
+ 502 011c 0A2D      		mov r16,r10
+ 503 011e 1127      		clr r17
+ 504 0120 1161      		ori r17,hi8(4352)
+ 505               	.LBE4:
+ 506               	.LBE3:
+ 508               	.Ltext2:
+ 280:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		sos_shm_t key = sys_shm_name( KER_DFT_LOADER_PID, i);
+ 281:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		loader_cam_t *cam;
+ 282:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		uint8_t type;
+ 283:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		uint8_t size;
+ 284:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		uint8_t ver;
+ 285:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 286:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		if( i < NUM_LOADER_PARAMS_ENTRIES) {
+ 510               	.LM22:
+ 511 0122 27E0      		ldi r18,lo8(7)
+ 512 0124 2A15      		cp r18,r10
+ 513 0126 30F0      		brlo .L16
+ 287:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			size = (v->pam_size[i]);
+ 515               	.LM23:
+ 516 0128 F601      		movw r30,r12
+ 517 012a F284      		ldd r15,Z+10
+ 288:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			ver = (v->pam_ver[i]);
+ 519               	.LM24:
+ 520 012c B280      		ldd r11,Z+2
+ 289:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			type = FETCHTYPE_DATA;
+ 522               	.LM25:
+ 523 012e 61E0      		ldi r22,lo8(1)
+ 524 0130 E62E      		mov r14,r22
+ 525 0132 04C0      		rjmp .L17
+ 526               	.L16:
+ 290:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		} else {
+ 291:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			size = (v->mod_size[i - NUM_LOADER_PARAMS_ENTRIES]);
+ 528               	.LM26:
+ 529 0134 F601      		movw r30,r12
+ 530 0136 F288      		ldd r15,Z+18
+ 292:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			ver = (v->mod_ver[i - NUM_LOADER_PARAMS_ENTRIES]);
+ 532               	.LM27:
+ 533 0138 B284      		ldd r11,Z+10
+ 293:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			type = FETCHTYPE_MODULE;
+ 535               	.LM28:
+ 536 013a EE24      		clr r14
+ 537               	.L17:
+ 294:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		}
+ 295:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 296:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		cam = ker_shm_get( KER_DFT_LOADER_PID,  key );
+ 539               	.LM29:
+ 540 013c B801      		movw r22,r16
+ 541 013e 81E1      		ldi r24,lo8(17)
+ 542 0140 0E94 0000 		call ker_shm_get
+ 543 0144 EC01      		movw r28,r24
+ 297:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 298:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		if( cam == NULL && size == 0 ) {
+ 545               	.LM30:
+ 546 0146 892B      		or r24,r25
+ 547 0148 C9F4      		brne .L19
+ 548 014a FF20      		tst r15
+ 549 014c 09F4      		brne .+2
+ 550 014e 5CC0      		rjmp .L14
+ 551               	.LBB5:
+ 552               	.LBB6:
+ 554               	.Ltext3:
+   1:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /* -*- Mode: C; tab-width:4 -*- */
+   2:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /* ex: set ts=4: */
+   3:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /*
+   4:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * Copyright (c) 2003 The Regents of the University of California.
+   5:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * All rights reserved.
+   6:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *
+   7:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * Redistribution and use in source and binary forms, with or without
+   8:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * modification, are permitted provided that the following conditions
+   9:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * are met:
+  10:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * 1. Redistributions of source code must retain the above copyright
+  11:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *    notice, this list of conditions and the following disclaimer.
+  12:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * 2. Redistributions in binary form must reproduce the above
+  13:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *    copyright notice, this list of conditions and the following
+  14:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *    disclaimer in the documentation and/or other materials provided
+  15:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *    with the distribution.
+  16:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * 3. All advertising materials mentioning features or use of this
+  17:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *    software must display the following acknowledgement:
+  18:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *       This product includes software developed by Networked &
+  19:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *       Embedded Systems Lab at UCLA
+  20:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * 4. Neither the name of the University nor that of the Laboratory
+  21:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *    may be used to endorse or promote products derived from this
+  22:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *    software without specific prior written permission.
+  23:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *
+  24:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS''
+  25:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+  26:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+  27:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE REGENTS
+  28:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+  29:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+  30:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+  31:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+  32:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+  33:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+  34:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+  35:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * SUCH DAMAGE.
+  36:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *
+  37:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief    Allocte and free dynamic memory 
+  38:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @author   Roy Shea (roy@cs.ucla.edu) 
+  39:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+  40:/Users/Administrator/sos-2x/kernel/include/malloc.h **** #ifndef _MALLOC_H_
+  41:/Users/Administrator/sos-2x/kernel/include/malloc.h **** #define _MALLOC_H_
+  42:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  43:/Users/Administrator/sos-2x/kernel/include/malloc.h **** #include <sos_types.h>
+  44:/Users/Administrator/sos-2x/kernel/include/malloc.h **** #include <pid.h>
+  45:/Users/Administrator/sos-2x/kernel/include/malloc.h **** #include <malloc_conf.h>
+  46:/Users/Administrator/sos-2x/kernel/include/malloc.h **** #include <sos_module_types.h>
+  47:/Users/Administrator/sos-2x/kernel/include/malloc.h **** #ifdef FAULT_TOLERANT_SOS
+  48:/Users/Administrator/sos-2x/kernel/include/malloc.h **** #include <malloc_domains.h>
+  49:/Users/Administrator/sos-2x/kernel/include/malloc.h **** #endif
+  50:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  51:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+  52:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Init function for memory manager
+  53:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+  54:/Users/Administrator/sos-2x/kernel/include/malloc.h **** extern void mem_init(void);
+  55:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  56:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+  57:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Starting memory module interface
+  58:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+  59:/Users/Administrator/sos-2x/kernel/include/malloc.h **** extern void mem_start(void);
+  60:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  61:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+  62:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Allocate a chunk of blocks from the heap
+  63:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+  64:/Users/Administrator/sos-2x/kernel/include/malloc.h **** extern void *sos_blk_mem_alloc(uint16_t size, sos_pid_t id, bool bCallFromModule);
+  65:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  66:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+  67:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Free a block back into the heap
+  68:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+  69:/Users/Administrator/sos-2x/kernel/include/malloc.h **** extern void sos_blk_mem_free(void* ptr, bool bCallFromModule);
+  70:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  71:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+  72:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Re-allocate a block of memory from the heap
+  73:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+  74:/Users/Administrator/sos-2x/kernel/include/malloc.h **** extern void *sos_blk_mem_realloc(void* pntr, uint16_t newSize, bool bCallFromModule);
+  75:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  76:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+  77:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Change memory ownership of a segment of memory
+  78:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+  79:/Users/Administrator/sos-2x/kernel/include/malloc.h **** extern int8_t sos_blk_mem_change_own(void* ptr, sos_pid_t id, bool bCallFromModule);
+  80:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  81:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+  82:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Allocate a block of memory for long term usage
+  83:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+  84:/Users/Administrator/sos-2x/kernel/include/malloc.h **** extern void *sos_blk_mem_longterm_alloc(uint16_t size, sos_pid_t id, bool bCallFromModule);
+  85:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  86:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  87:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+  88:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Allocate dynamic memory
+  89:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @param size Number of bytes to allocate
+  90:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @param id Node responsible for the memory
+  91:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @return Returns a pointer to the allocated memory.
+  92:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * Will return a NULL pointer if the call to sys_malloc fails.
+  93:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+  94:/Users/Administrator/sos-2x/kernel/include/malloc.h **** static inline void *ker_malloc(uint16_t size, sos_pid_t id)
+  95:/Users/Administrator/sos-2x/kernel/include/malloc.h **** {
+  96:/Users/Administrator/sos-2x/kernel/include/malloc.h ****   return sos_blk_mem_alloc(size, id, false);
+ 556               	.LM31:
+ 557 0150 40E0      		ldi r20,lo8(0)
+ 558 0152 61E1      		ldi r22,lo8(17)
+ 559 0154 86E0      		ldi r24,lo8(6)
+ 560 0156 90E0      		ldi r25,hi8(6)
+ 561 0158 0E94 0000 		call sos_blk_mem_alloc
+ 562 015c EC01      		movw r28,r24
+ 563               	.LBE6:
+ 564               	.LBE5:
+ 566               	.Ltext4:
+ 299:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			// We cannot find entry and the size is zero
+ 300:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			// skip this slot
+ 301:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			continue;
+ 302:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		}
+ 303:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 304:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 305:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		if( cam == NULL ) {
+ 306:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			// we need to add a new module
+ 307:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			cam = (loader_cam_t*) ker_malloc(sizeof(loader_cam_t), KER_DFT_LOADER_PID);
+ 308:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			if( cam == NULL) {
+ 568               	.LM32:
+ 569 015e 0097      		sbiw r24,0
+ 570 0160 09F4      		brne .+2
+ 571 0162 5AC0      		rjmp .L11
+ 309:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 				return;
+ 310:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			}
+ 311:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			if( ker_shm_open( KER_DFT_LOADER_PID, key, cam ) != SOS_OK ) {
+ 573               	.LM33:
+ 574 0164 AC01      		movw r20,r24
+ 575 0166 B801      		movw r22,r16
+ 576 0168 81E1      		ldi r24,lo8(17)
+ 577 016a 0E94 0000 		call ker_shm_open
+ 578 016e 8823      		tst r24
+ 579 0170 11F1      		breq .L24
+ 580               	.LBB7:
+ 581               	.LBB8:
+ 583               	.Ltext5:
+  97:/Users/Administrator/sos-2x/kernel/include/malloc.h **** }
+  98:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  99:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+ 100:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Reallocate dynamic memory
+ 101:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @param pntr Pointer to the currently held block of memory
+ 102:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @param newSize Number of bytes to be allocated
+ 103:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @return Returns the pointer to the reallocated memory.
+ 104:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * Returns a NULL if unable to reallocate but the original pointer is still valid.
+ 105:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+ 106:/Users/Administrator/sos-2x/kernel/include/malloc.h **** static inline void* ker_realloc(void* pntr, uint16_t newSize)
+ 107:/Users/Administrator/sos-2x/kernel/include/malloc.h **** {
+ 108:/Users/Administrator/sos-2x/kernel/include/malloc.h ****   return sos_blk_mem_realloc(pntr, newSize, false);
+ 109:/Users/Administrator/sos-2x/kernel/include/malloc.h **** }
+ 110:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+ 111:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+ 112:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Free memory pointed to by ptr
+ 113:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @param ptr Pointer to the memory that should be released
+ 114:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @return void
+ 115:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+ 116:/Users/Administrator/sos-2x/kernel/include/malloc.h **** static inline void ker_free(void* ptr)
+ 117:/Users/Administrator/sos-2x/kernel/include/malloc.h **** {
+ 118:/Users/Administrator/sos-2x/kernel/include/malloc.h ****   sos_blk_mem_free(ptr, false);
+ 585               	.LM34:
+ 586 0172 60E0      		ldi r22,lo8(0)
+ 587 0174 CE01      		movw r24,r28
+ 588 0176 0E94 0000 		call sos_blk_mem_free
+ 589               	.LBE8:
+ 590               	.LBE7:
+ 592               	.Ltext6:
+ 312:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 				ker_free( cam );
+ 313:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 				return;
+ 594               	.LM35:
+ 595 017a 4EC0      		rjmp .L11
+ 596               	.L19:
+ 314:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			}
+ 315:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		} else {
+ 316:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			// we need to replace a module
+ 317:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			if( cam->version == ver ) {
+ 598               	.LM36:
+ 599 017c 8C81      		ldd r24,Y+4
+ 600 017e 8B15      		cp r24,r11
+ 601 0180 09F4      		brne .+2
+ 602 0182 42C0      		rjmp .L14
+ 318:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 				continue;
+ 319:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			}
+ 320:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			//! new version of module found...
+ 321:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			if( cam->fetcher.status != FETCHING_DONE ) {
+ 604               	.LM37:
+ 605 0184 8B81      		ldd r24,Y+3
+ 606 0186 8130      		cpi r24,lo8(1)
+ 607 0188 51F0      		breq .L26
+ 322:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 				if( cam->fetcher.status == FETCHING_STARTED ) {
+ 609               	.LM38:
+ 610 018a 8823      		tst r24
+ 611 018c 21F4      		brne .L27
+ 323:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 					st.blocked = 0;
+ 613               	.LM39:
+ 614 018e 8093 0000 		sts st+54,r24
+ 324:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 					restartInterval( 0 );
+ 616               	.LM40:
+ 617 0192 0E94 0000 		call restartInterval
+ 618               	.L27:
+ 325:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 				}
+ 326:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 				fetcher_cancel( KER_DFT_LOADER_PID, key );	
+ 620               	.LM41:
+ 621 0196 B801      		movw r22,r16
+ 622 0198 81E1      		ldi r24,lo8(17)
+ 623 019a 0E94 0000 		call fetcher_cancel
+ 624               	.L26:
+ 327:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 				ker_codemem_free(cam->fetcher.cm);
+ 328:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			} else /* if( cam->fetcher.status == FETCHING_DONE ) */ {
+ 329:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 				ker_codemem_free(cam->fetcher.cm);
+ 626               	.LM42:
+ 627 019e 8881      		ld r24,Y
+ 628 01a0 9981      		ldd r25,Y+1
+ 629 01a2 0E94 0000 		call ker_codemem_free
+ 330:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			}
+ 331:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			if( size == 0 ) {
+ 631               	.LM43:
+ 632 01a6 FF20      		tst r15
+ 633 01a8 31F4      		brne .L24
+ 332:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 				//! an rmmod case
+ 333:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 				ker_shm_close( KER_DFT_LOADER_PID,  key );
+ 635               	.LM44:
+ 636 01aa B801      		movw r22,r16
+ 637 01ac 81E1      		ldi r24,lo8(17)
+ 638 01ae 0E94 0000 		call ker_shm_close
+ 639               	.LBB9:
+ 640               	.LBB10:
+ 642               	.Ltext7:
+ 644               	.LM45:
+ 645 01b2 6F2D      		mov r22,r15
+ 646 01b4 26C0      		rjmp .L42
+ 647               	.L24:
+ 648               	.LBE10:
+ 649               	.LBE9:
+ 650               	.LBB11:
+ 651               	.LBB12:
+ 653               	.Ltext8:
+ 655               	.LM46:
+ 656 01b6 FD82      		std Y+5,r15
+ 658               	.LM47:
+ 659 01b8 EA82      		std Y+2,r14
+ 661               	.LM48:
+ 662 01ba 8F2D      		mov r24,r15
+ 663 01bc 9927      		clr r25
+ 664 01be F82E      		mov r15,r24
+ 665 01c0 EE24      		clr r14
+ 666 01c2 62E0      		ldi r22,lo8(2)
+ 667 01c4 C701      		movw r24,r14
+ 668 01c6 0E94 0000 		call ker_codemem_alloc
+ 669 01ca 8883      		st Y,r24
+ 670 01cc 9983      		std Y+1,r25
+ 672               	.LM49:
+ 673 01ce 8F5F      		subi r24,lo8(-1)
+ 674 01d0 9F4F      		sbci r25,hi8(-1)
+ 675 01d2 91F0      		breq .L41
+ 677               	.LM50:
+ 678 01d4 9401      		movw r18,r8
+ 679 01d6 A701      		movw r20,r14
+ 680 01d8 B801      		movw r22,r16
+ 681 01da 81E1      		ldi r24,lo8(17)
+ 682 01dc 0E94 0000 		call fetcher_request
+ 683 01e0 8823      		tst r24
+ 684 01e2 29F0      		breq .L34
+ 686               	.LM51:
+ 687 01e4 8881      		ld r24,Y
+ 688 01e6 9981      		ldd r25,Y+1
+ 689 01e8 0E94 0000 		call ker_codemem_free
+ 690 01ec 05C0      		rjmp .L41
+ 691               	.L34:
+ 692               	.LBB13:
+ 693               	.LBB14:
+ 695               	.LM52:
+ 696 01ee 81E0      		ldi r24,lo8(1)
+ 697 01f0 8093 0000 		sts st+54,r24
+ 698               	.LBE14:
+ 699               	.LBE13:
+ 700               	.LBE12:
+ 701               	.LBE11:
+ 334:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 				ker_free( cam );
+ 335:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 				continue;
+ 336:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			} 
+ 337:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			//! an insmod case with cam
+ 338:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		} 
+ 339:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		if( request_new_module( key, cam, size, saddr, type) != SOS_OK ) {
+ 340:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			ker_shm_close( KER_DFT_LOADER_PID, key );
+ 341:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			ker_free( cam );
+ 342:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		} else {
+ 343:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			// another insmod case
+ 344:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			cam->version = ver;
+ 703               	.LM53:
+ 704 01f4 BC82      		std Y+4,r11
+ 345:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			// only do one fetching
+ 346:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			return;
+ 706               	.LM54:
+ 707 01f6 10C0      		rjmp .L11
+ 708               	.L41:
+ 710               	.LM55:
+ 711 01f8 B801      		movw r22,r16
+ 712 01fa 81E1      		ldi r24,lo8(17)
+ 713 01fc 0E94 0000 		call ker_shm_close
+ 714               	.LBB15:
+ 715               	.LBB16:
+ 717               	.Ltext9:
+ 719               	.LM56:
+ 720 0200 60E0      		ldi r22,lo8(0)
+ 721               	.L42:
+ 722 0202 CE01      		movw r24,r28
+ 723 0204 0E94 0000 		call sos_blk_mem_free
+ 724               	.L14:
+ 725               	.LBE16:
+ 726               	.LBE15:
+ 727               	.LBE2:
+ 729               	.Ltext10:
+ 731               	.LM57:
+ 732 0208 A394      		inc r10
+ 733 020a 0894      		sec
+ 734 020c C11C      		adc r12,__zero_reg__
+ 735 020e D11C      		adc r13,__zero_reg__
+ 736 0210 2FE0      		ldi r18,lo8(15)
+ 737 0212 2A15      		cp r18,r10
+ 738 0214 08F0      		brlo .+2
+ 739 0216 82CF      		rjmp .L38
+ 740               	.L11:
+ 741               	/* epilogue: frame size=0 */
+ 742 0218 DF91      		pop r29
+ 743 021a CF91      		pop r28
+ 744 021c 1F91      		pop r17
+ 745 021e 0F91      		pop r16
+ 746 0220 FF90      		pop r15
+ 747 0222 EF90      		pop r14
+ 748 0224 DF90      		pop r13
+ 749 0226 CF90      		pop r12
+ 750 0228 BF90      		pop r11
+ 751 022a AF90      		pop r10
+ 752 022c 9F90      		pop r9
+ 753 022e 8F90      		pop r8
+ 754 0230 0895      		ret
+ 755               	/* epilogue end (size=13) */
+ 756               	/* function process_version_data size 155 (130) */
+ 768               	.Lscope1:
+ 774               	loader_handler:
+ 347:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		}
+ 348:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	}
+ 349:/Users/Administrator/sos-2x/extensions/loader/loader.c **** }
+ 350:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 351:/Users/Administrator/sos-2x/extensions/loader/loader.c **** static int8_t handle_fetcher_done( Message *msg ) 
+ 352:/Users/Administrator/sos-2x/extensions/loader/loader.c **** {
+ 353:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	fetcher_state_t *f = (fetcher_state_t*) msg->data;
+ 354:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	if( is_fetcher_succeed( f ) == true ) {
+ 355:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		//mod_header_ptr p;
+ 356:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		loader_cam_t *cam;
+ 357:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		fetcher_commit(f, true);
+ 358:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 359:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		st.blocked = 0;
+ 360:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		restartInterval( 0 );
+ 361:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 362:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		cam = ker_shm_get( KER_DFT_LOADER_PID,  f->map.key );
+ 363:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		if( cam->fetcher.fetchtype == FETCHTYPE_DATA) {
+ 364:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			uint8_t buf[2];
+ 365:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			ker_codemem_read( cam->fetcher.cm, KER_DFT_LOADER_PID, buf, 2, 0);
+ 366:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			post_short(buf[0], KER_DFT_LOADER_PID, MSG_LOADER_DATA_AVAILABLE,
+ 367:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 					buf[1], cam->fetcher.cm, 0);
+ 368:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			DEBUG_PID(KER_DFT_LOADER_PID, "Data Ready\n" );
+ 369:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #ifdef LOADER_NET_EXPERIMENT
+ 370:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			ker_led(LED_GREEN_TOGGLE);
+ 371:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #endif
+ 372:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		} else {
+ 373:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		  uint8_t mcu_type;
+ 374:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #ifndef SOS_SIM
+ 375:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		  uint8_t plat_type;
+ 376:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #endif
+ 377:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		  mod_header_ptr p;
+ 378:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 								
+ 379:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		  // Link and load the module here
+ 380:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		  melf_load_module(cam->fetcher.cm);
+ 381:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		  // Get the address of the module header
+ 382:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		  p = ker_codemem_get_header_address( cam->fetcher.cm ); 
+ 383:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 384:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		  // get processor type and platform type
+ 385:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		  mcu_type = sos_read_header_byte(p, 
+ 386:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 					offsetof( mod_header_t, processor_type ));
+ 387:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #ifdef SOS_SIM
+ 388:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		  //if( (mcu_type == MCU_TYPE) )
+ 389:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		  if( p != 0 ) 
+ 390:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			// In simulation, we don't check for anything
+ 391:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #else
+ 392:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			plat_type = sos_read_header_byte(p, 
+ 393:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 						offsetof( mod_header_t, platform_type ));
+ 394:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 395:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		  if( (mcu_type == MCU_TYPE) && 
+ 396:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			  ( plat_type == HW_TYPE || plat_type == PLATFORM_ANY) )
+ 397:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #endif
+ 398:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			{
+ 399:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			  /*
+ 400:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			   * If MCU is matched, this means we are using the same 
+ 401:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			   * instruction set.
+ 402:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			   * And if this module is for this *specific* platform or 
+ 403:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			   * simply for all platform with the same MCU
+ 404:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			   */
+ 405:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			  // mark module executable
+ 406:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			  ker_codemem_mark_executable( cam->fetcher.cm );
+ 407:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			  if (cam->version & 0x80) {
+ 408:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #ifdef SOS_SFI
+ 409:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 				sfi_modtable_register(cam->fetcher.cm);
+ 410:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 				if (SOS_OK == ker_verify_module(cam->fetcher.cm)){
+ 411:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 				  sfi_modtable_flash(p);
+ 412:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 				  ker_register_module(p);
+ 413:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 				}
+ 414:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 				else
+ 415:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 				  sfi_exception(KER_VERIFY_FAIL_EXCEPTION);
+ 416:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #else
+ 417:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 				ker_register_module(p);
+ 418:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #endif //SOS_SFI
+ 419:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			  }
+ 420:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			} else {
+ 421:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 				DEBUG("invalid module for this node\n");
+ 422:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			}
+ 423:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		}
+ 424:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		process_version_data( st.version_data, st.recent_neighbor);
+ 425:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	} else {
+ 426:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	  DEBUG_PID( KER_DFT_LOADER_PID, "Fetch failed!, request %d\n", st.recent_neighbor);
+ 427:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	  f = (fetcher_state_t*) ker_msg_take_data(KER_DFT_LOADER_PID, msg);
+ 428:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	  fetcher_restart( f, st.recent_neighbor );
+ 429:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	}
+ 430:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	return SOS_OK;
+ 431:/Users/Administrator/sos-2x/extensions/loader/loader.c **** }
+ 432:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 433:/Users/Administrator/sos-2x/extensions/loader/loader.c **** static int8_t handle_loader_ls_on_node( Message *msg )
+ 434:/Users/Administrator/sos-2x/extensions/loader/loader.c **** {
+ 435:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	msg_ls_reply_t *reply;
+ 436:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	uint8_t i;
+ 437:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 438:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	reply = (msg_ls_reply_t *) ker_malloc( sizeof( msg_ls_reply_t ),
+ 439:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			KER_DFT_LOADER_PID );
+ 440:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	if( reply == NULL ) return -ENOMEM;
+ 441:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 442:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	for( i = 0; i < NUM_LOADER_PARAMS_ENTRIES; i ++ ) {
+ 443:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		sos_shm_t key = sys_shm_name( KER_DFT_LOADER_PID, i );
+ 444:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		loader_cam_t *cam;
+ 445:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		uint8_t buf[2];
+ 446:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 447:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		cam = ker_shm_get( KER_DFT_LOADER_PID,  key );
+ 448:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		if( cam != NULL && cam->fetcher.status == FETCHING_DONE 
+ 449:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 				&& (ker_codemem_read( cam->fetcher.cm, KER_DFT_LOADER_PID, 
+ 450:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 						buf, 2, 0) == SOS_OK)) {
+ 451:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			DEBUG_PID( KER_DFT_LOADER_PID, "Data(%d) = %d %d\n", i, buf[0], buf[1]);
+ 452:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			reply->pam_dst_pid[ i ] = buf[0];
+ 453:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			reply->pam_dst_subpid[ i ] = buf[1];
+ 454:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		} else {
+ 455:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			DEBUG_PID( KER_DFT_LOADER_PID, "Data(%d) = NULL\n", i);
+ 456:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			/*
+ 457:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			if( cam != NULL && cam->fetcher.status == FETCHING_DONE) {
+ 458:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 				DEBUG_PID( KER_DFT_LOADER_PID, "ker_codemem_read failed...\n");
+ 459:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			}
+ 460:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			*/
+ 461:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			reply->pam_dst_pid[ i ] = NULL_PID;
+ 462:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			reply->pam_dst_subpid[ i ] = 0;
+ 463:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		}
+ 464:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	}
+ 465:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	for( i = 0; i < NUM_LOADER_MODULE_ENTRIES; i ++ ) {
+ 466:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		sos_shm_t key = sys_shm_name( KER_DFT_LOADER_PID, 
+ 467:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 				NUM_LOADER_PARAMS_ENTRIES + i );
+ 468:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		loader_cam_t *cam;
+ 469:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 470:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		cam = ker_shm_get( KER_DFT_LOADER_PID,  key );
+ 471:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 472:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		if( cam != NULL && cam->fetcher.status == FETCHING_DONE ) {
+ 473:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			mod_header_ptr p;
+ 474:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			sos_code_id_t cid;
+ 475:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			// Get the address of the module header
+ 476:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			p = ker_codemem_get_header_address( cam->fetcher.cm );
+ 477:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			cid = sos_read_header_word( p, offsetof(mod_header_t, code_id));
+ 478:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			// warning: already netowrk order...
+ 479:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			reply->code_id[ i ] = cid;
+ 480:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		} else {
+ 481:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			reply->code_id[ i ] = 0;
+ 482:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		}
+ 483:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	}
+ 484:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	post_auto( KER_DFT_LOADER_PID,
+ 485:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			KER_DFT_LOADER_PID,
+ 486:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			MSG_LOADER_LS_REPLY,
+ 487:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			sizeof( msg_ls_reply_t ),
+ 488:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			reply,
+ 489:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			SOS_MSG_RELEASE,
+ 490:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			msg->saddr);
+ 491:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	return SOS_OK;
+ 492:/Users/Administrator/sos-2x/extensions/loader/loader.c **** }
+ 493:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 494:/Users/Administrator/sos-2x/extensions/loader/loader.c **** static int8_t handle_init()
+ 495:/Users/Administrator/sos-2x/extensions/loader/loader.c **** {
+ 496:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	ker_permanent_timer_init((&st.tou_timer), KER_DFT_LOADER_PID, 
+ 497:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			TOU_TID, TIMER_ONE_SHOT);		
+ 498:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	ker_permanent_timer_init((&st.tran_timer), KER_DFT_LOADER_PID, 
+ 499:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			TRAN_TID, TIMER_ONE_SHOT);		
+ 500:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	ker_permanent_timer_init((&st.data_timer), KER_DFT_LOADER_PID, 
+ 501:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			DATA_TID, TIMER_ONE_SHOT);		
+ 502:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	st.net_state = MAINTAIN;
+ 503:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	st.tran_count = 0;
+ 504:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	st.data_count = 0;
+ 505:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	st.blocked    = 0;
+ 506:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	st.recent_neighbor = 0;
+ 507:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	st.version_data = ker_malloc(sizeof(msg_version_data_t), KER_DFT_LOADER_PID);
+ 508:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	if(st.version_data == NULL) return -ENOMEM;
+ 509:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 510:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	memset((uint8_t *) st.version_data, 0, sizeof(msg_version_data_t));
+ 511:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	/*
+ 512:/Users/Administrator/sos-2x/extensions/loader/loader.c ****      * Use default version to be 1 so that loader_pc can probe loaded data
+ 513:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	 */
+ 514:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	st.version_data->version = 1;
+ 515:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 516:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	restartInterval( 0 );
+ 517:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	return SOS_OK;
+ 518:/Users/Administrator/sos-2x/extensions/loader/loader.c **** }
+ 519:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 520:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #ifdef LOADER_NET_EXPERIMENT
+ 521:/Users/Administrator/sos-2x/extensions/loader/loader.c **** //static bool experiment_started = false;
+ 522:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #ifndef EXPERIMENT_SIZE
+ 523:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #define EXPERIMENT_SIZE 256
+ 524:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #endif
+ 525:/Users/Administrator/sos-2x/extensions/loader/loader.c **** static void start_experiment(uint16_t size)
+ 526:/Users/Administrator/sos-2x/extensions/loader/loader.c **** {
+ 527:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	sos_shm_t key;
+ 528:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	loader_cam_t *cam;
+ 529:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	codemem_t cm;
+ 530:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	uint8_t buf[2];
+ 531:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 532:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	buf[0] = 128;
+ 533:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	buf[1] = 1;
+ 534:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	DEBUG_PID(KER_DFT_LOADER_PID, "start experiment: size = %d\n", size);
+ 535:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	cm = ker_codemem_alloc( size, CODEMEM_TYPE_EXECUTABLE);
+ 536:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	ker_codemem_write(cm, KER_DFT_LOADER_PID, buf, 2, 0);
+ 537:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	cam = ker_malloc(sizeof(loader_cam_t), KER_DFT_LOADER_PID);
+ 538:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 539:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	st.version_data->pam_ver[0]++;
+ 540:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	st.version_data->pam_size[0] = (size + (LOADER_SIZE_MULTIPLIER - 1)) / LOADER_SIZE_MULTIPLIER;
+ 541:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	st.version_data->version ++;
+ 542:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 543:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	key = sys_shm_name( KER_DFT_LOADER_PID, 0 );
+ 544:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	cam->fetcher.fetchtype = FETCHTYPE_DATA;
+ 545:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	cam->fetcher.cm = cm;
+ 546:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	ker_shm_open( KER_DFT_LOADER_PID, key, cam);	
+ 547:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	restartInterval(0);
+ 548:/Users/Administrator/sos-2x/extensions/loader/loader.c **** }
+ 549:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #endif
+ 550:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 551:/Users/Administrator/sos-2x/extensions/loader/loader.c **** static int8_t loader_handler( void *state, Message *msg )
+ 552:/Users/Administrator/sos-2x/extensions/loader/loader.c **** {
+ 776               	.LM58:
+ 777               	/* prologue: frame size=4 */
+ 778 0232 6F92      		push r6
+ 779 0234 7F92      		push r7
+ 780 0236 8F92      		push r8
+ 781 0238 9F92      		push r9
+ 782 023a BF92      		push r11
+ 783 023c CF92      		push r12
+ 784 023e DF92      		push r13
+ 785 0240 EF92      		push r14
+ 786 0242 FF92      		push r15
+ 787 0244 0F93      		push r16
+ 788 0246 1F93      		push r17
+ 789 0248 CF93      		push r28
+ 790 024a DF93      		push r29
+ 791 024c CDB7      		in r28,__SP_L__
+ 792 024e DEB7      		in r29,__SP_H__
+ 793 0250 2497      		sbiw r28,4
+ 794 0252 0FB6      		in __tmp_reg__,__SREG__
+ 795 0254 F894      		cli
+ 796 0256 DEBF      		out __SP_H__,r29
+ 797 0258 0FBE      		out __SREG__,__tmp_reg__
+ 798 025a CDBF      		out __SP_L__,r28
+ 799               	/* prologue end (size=21) */
+ 800 025c 6B01      		movw r12,r22
+ 553:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	switch (msg->type){
+ 802               	.LM59:
+ 803 025e FB01      		movw r30,r22
+ 804 0260 8681      		ldd r24,Z+6
+ 805 0262 082F      		mov r16,r24
+ 806 0264 1127      		clr r17
+ 807 0266 0C30      		cpi r16,12
+ 808 0268 1105      		cpc r17,__zero_reg__
+ 809 026a 09F4      		brne .+2
+ 810 026c A2C1      		rjmp .L95
+ 812               	.LM60:
+ 813 026e 0D30      		cpi r16,13
+ 814 0270 1105      		cpc r17,__zero_reg__
+ 815 0272 44F4      		brge .L112
+ 816 0274 0115      		cp r16,__zero_reg__
+ 817 0276 1105      		cpc r17,__zero_reg__
+ 818 0278 09F4      		brne .+2
+ 819 027a 16C2      		rjmp .L107
+ 820 027c 0230      		cpi r16,2
+ 821 027e 1105      		cpc r17,__zero_reg__
+ 822 0280 91F0      		breq .L45
+ 823 0282 58C2      		rjmp .L111
+ 824               	.L112:
+ 825 0284 0132      		cpi r16,33
+ 826 0286 1105      		cpc r17,__zero_reg__
+ 827 0288 09F4      		brne .+2
+ 828 028a B5C0      		rjmp .L68
+ 829 028c 0232      		cpi r16,34
+ 830 028e 1105      		cpc r17,__zero_reg__
+ 831 0290 2CF4      		brge .L113
+ 832 0292 0032      		cpi r16,32
+ 833 0294 1105      		cpc r17,__zero_reg__
+ 834 0296 09F4      		brne .+2
+ 835 0298 77C0      		rjmp .L59
+ 836 029a 4CC2      		rjmp .L111
+ 837               	.L113:
+ 838 029c 0232      		cpi r16,34
+ 839 029e 1105      		cpc r17,__zero_reg__
+ 840 02a0 09F4      		brne .+2
+ 841 02a2 FFC0      		rjmp .L76
+ 842 02a4 47C2      		rjmp .L111
+ 843               	.L45:
+ 844               	.LBB17:
+ 845               	.LBB18:
+ 847               	.LM61:
+ 848 02a6 FB01      		movw r30,r22
+ 849 02a8 A085      		ldd r26,Z+8
+ 850 02aa B185      		ldd r27,Z+9
+ 852               	.LM62:
+ 853 02ac 8C91      		ld r24,X
+ 854 02ae 682F      		mov r22,r24
+ 855 02b0 7727      		clr r23
+ 856 02b2 6130      		cpi r22,1
+ 857 02b4 7105      		cpc r23,__zero_reg__
+ 858 02b6 B1F0      		breq .L50
+ 859 02b8 6230      		cpi r22,2
+ 860 02ba 7105      		cpc r23,__zero_reg__
+ 861 02bc 1CF4      		brge .L58
+ 862 02be 672B      		or r22,r23
+ 863 02c0 29F0      		breq .L47
+ 864 02c2 74C1      		rjmp .L126
+ 865               	.L58:
+ 866 02c4 6230      		cpi r22,2
+ 867 02c6 7105      		cpc r23,__zero_reg__
+ 868 02c8 71F1      		breq .L55
+ 869 02ca 70C1      		rjmp .L126
+ 870               	.L47:
+ 872               	.LM63:
+ 873 02cc 8091 0000 		lds r24,st+49
+ 874 02d0 8823      		tst r24
+ 875 02d2 11F0      		breq .L48
+ 877               	.LM64:
+ 878 02d4 80E0      		ldi r24,lo8(0)
+ 879 02d6 03C0      		rjmp .L121
+ 880               	.L48:
+ 882               	.LM65:
+ 883 02d8 8091 0000 		lds r24,st+48
+ 884 02dc 8F5F      		subi r24,lo8(-(1))
+ 885               	.L121:
+ 886 02de 0E94 0000 		call restartInterval
+ 888               	.LM66:
+ 889 02e2 64C1      		rjmp .L126
+ 890               	.L50:
+ 892               	.LM67:
+ 893 02e4 4091 0000 		lds r20,st+54
+ 894 02e8 4423      		tst r20
+ 895 02ea 09F0      		breq .+2
+ 896 02ec 5FC1      		rjmp .L126
+ 897               	.LBB19:
+ 898               	.LBB20:
+ 899               	.LBB21:
+ 901               	.Ltext11:
+ 903               	.LM68:
+ 904 02ee 61E1      		ldi r22,lo8(17)
+ 905 02f0 C801      		movw r24,r16
+ 906 02f2 0E94 0000 		call sos_blk_mem_alloc
+ 907 02f6 DC01      		movw r26,r24
+ 908               	.LBE21:
+ 909               	.LBE20:
+ 911               	.Ltext12:
+ 913               	.LM69:
+ 914 02f8 892B      		or r24,r25
+ 915 02fa 09F4      		brne .+2
+ 916 02fc 04C2      		rjmp .L125
+ 918               	.LM70:
+ 919 02fe E091 0000 		lds r30,st+55
+ 920 0302 F091 0000 		lds r31,(st+55)+1
+ 921 0306 8081      		ld r24,Z
+ 922 0308 9181      		ldd r25,Z+1
+ 923 030a 8D93      		st X+,r24
+ 924 030c 9C93      		st X,r25
+ 925 030e 1197      		sbiw r26,1
+ 927               	.LM71:
+ 928 0310 8FEF      		ldi r24,lo8(-1)
+ 929 0312 C82E      		mov r12,r24
+ 930 0314 D82E      		mov r13,r24
+ 931 0316 04E0      		ldi r16,lo8(7684)
+ 932 0318 E02E      		mov r14,r16
+ 933 031a 0EE1      		ldi r16,hi8(7684)
+ 934 031c F02E      		mov r15,r16
+ 935 031e 8D01      		movw r16,r26
+ 936 0320 22E0      		ldi r18,lo8(2)
+ 937 0322 40E2      		ldi r20,lo8(32)
+ 938 0324 3FC1      		rjmp .L127
+ 939               	.L55:
+ 940               	.LBE19:
+ 941               	.LBB22:
+ 942               	.LBB23:
+ 943               	.LBB24:
+ 945               	.Ltext13:
+ 947               	.LM72:
+ 948 0326 40E0      		ldi r20,lo8(0)
+ 949 0328 61E1      		ldi r22,lo8(17)
+ 950 032a 85E2      		ldi r24,lo8(37)
+ 951 032c 90E0      		ldi r25,hi8(37)
+ 952 032e 0E94 0000 		call sos_blk_mem_alloc
+ 953 0332 BC01      		movw r22,r24
+ 954               	.LBE24:
+ 955               	.LBE23:
+ 957               	.Ltext14:
+ 959               	.LM73:
+ 960 0334 0097      		sbiw r24,0
+ 961 0336 11F1      		breq .L57
+ 963               	.LM74:
+ 964 0338 4091 0000 		lds r20,st+55
+ 965 033c 5091 0000 		lds r21,(st+55)+1
+ 966 0340 25E2      		ldi r18,lo8(37)
+ 967 0342 DC01      		movw r26,r24
+ 968 0344 FA01      		movw r30,r20
+ 969 0346 822F      		mov r24,r18
+ 970 0348 0190      		ld __tmp_reg__,Z+
+ 971 034a 0D92      		st X+,__tmp_reg__
+ 972 034c 8A95      		dec r24
+ 973 034e E1F7      		brne .-8
+ 975               	.LM75:
+ 976 0350 E091 0000 		lds r30,st+55
+ 977 0354 F091 0000 		lds r31,(st+55)+1
+ 978 0358 8081      		ld r24,Z
+ 979 035a 9181      		ldd r25,Z+1
+ 980 035c DB01      		movw r26,r22
+ 981 035e 8D93      		st X+,r24
+ 982 0360 9C93      		st X,r25
+ 984               	.LM76:
+ 985 0362 1FEF      		ldi r17,lo8(-1)
+ 986 0364 C12E      		mov r12,r17
+ 987 0366 D12E      		mov r13,r17
+ 988 0368 B4E0      		ldi r27,lo8(7684)
+ 989 036a EB2E      		mov r14,r27
+ 990 036c BEE1      		ldi r27,hi8(7684)
+ 991 036e FB2E      		mov r15,r27
+ 992 0370 8B01      		movw r16,r22
+ 993 0372 41E2      		ldi r20,lo8(33)
+ 994 0374 61E1      		ldi r22,lo8(17)
+ 995 0376 862F      		mov r24,r22
+ 996 0378 0E94 0000 		call post_link
+ 997               	.L57:
+ 999               	.LM77:
+ 1000 037c 8091 0000 		lds r24,st+49
+ 1001 0380 8E7F      		andi r24,lo8(-2)
+ 1002 0382 8093 0000 		sts st+49,r24
+ 1003 0386 12C1      		rjmp .L126
+ 1004               	.L59:
+ 1005               	.LBE22:
+ 1006               	.LBE18:
+ 1007               	.LBE17:
+ 1008               	.LBB25:
+ 554:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		case MSG_TIMER_TIMEOUT: 
+ 555:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		{ return handle_timeout( msg ); }
+ 556:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 557:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		case MSG_VERSION_ADV:
+ 558:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		{
+ 559:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			msg_version_adv_t *pkt = (msg_version_adv_t *) msg->data;
+ 1010               	.LM78:
+ 1011 0388 FB01      		movw r30,r22
+ 1012 038a 4085      		ldd r20,Z+8
+ 1013 038c 5185      		ldd r21,Z+9
+ 560:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			pkt->version = version_ntoh(pkt->version);	
+ 561:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			if(pkt->version >= st.version_data->version) {
+ 1015               	.LM79:
+ 1016 038e A091 0000 		lds r26,st+55
+ 1017 0392 B091 0000 		lds r27,(st+55)+1
+ 1018 0396 FA01      		movw r30,r20
+ 1019 0398 2081      		ld r18,Z
+ 1020 039a 3181      		ldd r19,Z+1
+ 1021 039c 8D91      		ld r24,X+
+ 1022 039e 9C91      		ld r25,X
+ 1023 03a0 1197      		sbiw r26,1
+ 1024 03a2 2817      		cp r18,r24
+ 1025 03a4 3907      		cpc r19,r25
+ 1026 03a6 38F0      		brlo .L60
+ 562:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 				st.recent_neighbor = msg->saddr;
+ 1028               	.LM80:
+ 1029 03a8 FB01      		movw r30,r22
+ 1030 03aa 8481      		ldd r24,Z+4
+ 1031 03ac 9581      		ldd r25,Z+5
+ 1032 03ae 9093 0000 		sts (st+52)+1,r25
+ 1033 03b2 8093 0000 		sts st+52,r24
+ 1034               	.L60:
+ 1035               	.LBB26:
+ 1036               	.LBB27:
+ 1038               	.LM81:
+ 1039 03b6 FA01      		movw r30,r20
+ 1040 03b8 2081      		ld r18,Z
+ 1041 03ba 3181      		ldd r19,Z+1
+ 1042 03bc 8D91      		ld r24,X+
+ 1043 03be 9C91      		ld r25,X
+ 1044 03c0 8217      		cp r24,r18
+ 1045 03c2 9307      		cpc r25,r19
+ 1046 03c4 50F0      		brlo .L122
+ 1048               	.LM82:
+ 1049 03c6 2817      		cp r18,r24
+ 1050 03c8 3907      		cpc r19,r25
+ 1051 03ca 58F4      		brsh .L63
+ 1053               	.LM83:
+ 1054 03cc 8091 0000 		lds r24,st+49
+ 1055 03d0 80FD      		sbrc r24,0
+ 1056 03d2 67C1      		rjmp .L105
+ 1058               	.LM84:
+ 1059 03d4 8160      		ori r24,lo8(1)
+ 1060 03d6 8093 0000 		sts st+49,r24
+ 1061               	.L122:
+ 1063               	.LM85:
+ 1064 03da 80E0      		ldi r24,lo8(0)
+ 1065 03dc 0E94 0000 		call restartInterval
+ 1066 03e0 60C1      		rjmp .L105
+ 1067               	.L63:
+ 1069               	.LM86:
+ 1070 03e2 8091 0000 		lds r24,st+50
+ 1071 03e6 8F5F      		subi r24,lo8(-(1))
+ 1072 03e8 8093 0000 		sts st+50,r24
+ 1074               	.LM87:
+ 1075 03ec 8823      		tst r24
+ 1076 03ee 09F4      		brne .+2
+ 1077 03f0 58C1      		rjmp .L105
+ 1079               	.LM88:
+ 1080 03f2 61E0      		ldi r22,lo8(1)
+ 1081 03f4 30C0      		rjmp .L123
+ 1082               	.L68:
+ 1083               	.LBE27:
+ 1084               	.LBE26:
+ 1085               	.LBE25:
+ 1086               	.LBB28:
+ 563:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			}
+ 564:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			return handle_version_adv( msg ); 
+ 565:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		}
+ 566:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 567:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		case MSG_VERSION_DATA:
+ 568:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		{ 
+ 569:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			msg_version_data_t *pkt = (msg_version_data_t *) msg->data;
+ 1088               	.LM89:
+ 1089 03f6 FB01      		movw r30,r22
+ 1090 03f8 A085      		ldd r26,Z+8
+ 1091 03fa B185      		ldd r27,Z+9
+ 570:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			pkt->version = version_ntoh(pkt->version);
+ 571:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			if(pkt->version >= st.version_data->version) {
+ 1093               	.LM90:
+ 1094 03fc 6091 0000 		lds r22,st+55
+ 1095 0400 7091 0000 		lds r23,(st+55)+1
+ 1096 0404 2D91      		ld r18,X+
+ 1097 0406 3C91      		ld r19,X
+ 1098 0408 1197      		sbiw r26,1
+ 1099 040a FB01      		movw r30,r22
+ 1100 040c 8081      		ld r24,Z
+ 1101 040e 9181      		ldd r25,Z+1
+ 1102 0410 2817      		cp r18,r24
+ 1103 0412 3907      		cpc r19,r25
+ 1104 0414 38F0      		brlo .L69
+ 572:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 				st.recent_neighbor = msg->saddr;
+ 1106               	.LM91:
+ 1107 0416 F601      		movw r30,r12
+ 1108 0418 8481      		ldd r24,Z+4
+ 1109 041a 9581      		ldd r25,Z+5
+ 1110 041c 9093 0000 		sts (st+52)+1,r25
+ 1111 0420 8093 0000 		sts st+52,r24
+ 1112               	.L69:
+ 1113               	.LBB29:
+ 1114               	.LBB30:
+ 1116               	.LM92:
+ 1117 0424 4091 0000 		lds r20,st+49
+ 1118 0428 40FF      		sbrs r20,0
+ 1119 042a 19C0      		rjmp .L70
+ 1121               	.LM93:
+ 1122 042c 2D91      		ld r18,X+
+ 1123 042e 3C91      		ld r19,X
+ 1124 0430 1197      		sbiw r26,1
+ 1125 0432 FB01      		movw r30,r22
+ 1126 0434 8081      		ld r24,Z
+ 1127 0436 9181      		ldd r25,Z+1
+ 1128 0438 2817      		cp r18,r24
+ 1129 043a 3907      		cpc r19,r25
+ 1130 043c 81F4      		brne .L70
+ 1132               	.LM94:
+ 1133 043e 8091 0000 		lds r24,st+51
+ 1134 0442 8F5F      		subi r24,lo8(-(1))
+ 1135 0444 8093 0000 		sts st+51,r24
+ 1137               	.LM95:
+ 1138 0448 8823      		tst r24
+ 1139 044a 09F4      		brne .+2
+ 1140 044c 2AC1      		rjmp .L105
+ 1142               	.LM96:
+ 1143 044e 4E7F      		andi r20,lo8(-2)
+ 1144 0450 4093 0000 		sts st+49,r20
+ 1146               	.LM97:
+ 1147 0454 62E0      		ldi r22,lo8(2)
+ 1148               	.L123:
+ 1149 0456 81E1      		ldi r24,lo8(17)
+ 1150 0458 0E94 0000 		call ker_timer_stop
+ 1152               	.LM98:
+ 1153 045c 22C1      		rjmp .L105
+ 1154               	.L70:
+ 1156               	.LM99:
+ 1157 045e E091 0000 		lds r30,st+55
+ 1158 0462 F091 0000 		lds r31,(st+55)+1
+ 1159 0466 2D91      		ld r18,X+
+ 1160 0468 3C91      		ld r19,X
+ 1161 046a 8081      		ld r24,Z
+ 1162 046c 9181      		ldd r25,Z+1
+ 1163 046e 8217      		cp r24,r18
+ 1164 0470 9307      		cpc r25,r19
+ 1165 0472 08F0      		brlo .+2
+ 1166 0474 16C1      		rjmp .L105
+ 1168               	.LM100:
+ 1169 0476 80E0      		ldi r24,lo8(0)
+ 1170 0478 0E94 0000 		call restartInterval
+ 1171               	.LBB31:
+ 1172               	.LBB32:
+ 1174               	.Ltext15:
+ 1176               	.LM101:
+ 1177 047c 60E0      		ldi r22,lo8(0)
+ 1178 047e 8091 0000 		lds r24,st+55
+ 1179 0482 9091 0000 		lds r25,(st+55)+1
+ 1180 0486 0E94 0000 		call sos_blk_mem_free
+ 1181               	.LBE32:
+ 1182               	.LBE31:
+ 1184               	.Ltext16:
+ 1186               	.LM102:
+ 1187 048a B601      		movw r22,r12
+ 1188 048c 81E1      		ldi r24,lo8(17)
+ 1189 048e 0E94 0000 		call ker_msg_take_data
+ 1190 0492 9093 0000 		sts (st+55)+1,r25
+ 1191 0496 8093 0000 		sts st+55,r24
+ 1193               	.LM103:
+ 1194 049a F601      		movw r30,r12
+ 1195 049c 6481      		ldd r22,Z+4
+ 1196 049e 7581      		ldd r23,Z+5
+ 1197 04a0 F4C0      		rjmp .L124
+ 1198               	.L76:
+ 1199               	.LBE30:
+ 1200               	.LBE29:
+ 1201               	.LBE28:
+ 1202               	.LBB33:
+ 1203               	.LBB34:
+ 1204               	.LBB35:
+ 1205               	.LBB36:
+ 1207               	.Ltext17:
+ 1209               	.LM104:
+ 1210 04a2 40E0      		ldi r20,lo8(0)
+ 1211 04a4 61E1      		ldi r22,lo8(17)
+ 1212 04a6 80E2      		ldi r24,lo8(32)
+ 1213 04a8 90E0      		ldi r25,hi8(32)
+ 1214 04aa 0E94 0000 		call sos_blk_mem_alloc
+ 1215 04ae 4C01      		movw r8,r24
+ 1216               	.LBE36:
+ 1217               	.LBE35:
+ 1219               	.Ltext18:
+ 1221               	.LM105:
+ 1222 04b0 0097      		sbiw r24,0
+ 1223 04b2 09F4      		brne .+2
+ 1224 04b4 28C1      		rjmp .L125
+ 1225 04b6 7C01      		movw r14,r24
+ 1226 04b8 6624      		clr r6
+ 1227 04ba 7724      		clr r7
+ 1228 04bc A7E0      		ldi r26,lo8(7)
+ 1229 04be BA2E      		mov r11,r26
+ 1230               	.L86:
+ 1231               	.LBB37:
+ 1232               	.LBB38:
+ 1233               	.LBB39:
+ 1235               	.Ltext19:
+ 1237               	.LM106:
+ 1238 04c0 C301      		movw r24,r6
+ 1239 04c2 9161      		ori r25,hi8(4352)
+ 1240               	.LBE39:
+ 1241               	.LBE38:
+ 1243               	.Ltext20:
+ 1245               	.LM107:
+ 1246 04c4 BC01      		movw r22,r24
+ 1247 04c6 81E1      		ldi r24,lo8(17)
+ 1248 04c8 0E94 0000 		call ker_shm_get
+ 1249 04cc FC01      		movw r30,r24
+ 1251               	.LM108:
+ 1252 04ce 892B      		or r24,r25
+ 1253 04d0 C1F0      		breq .L84
+ 1254 04d2 8381      		ldd r24,Z+3
+ 1255 04d4 8130      		cpi r24,lo8(1)
+ 1256 04d6 A9F4      		brne .L84
+ 1257 04d8 00E0      		ldi r16,lo8(0)
+ 1258 04da 10E0      		ldi r17,hi8(0)
+ 1259 04dc 22E0      		ldi r18,lo8(2)
+ 1260 04de 30E0      		ldi r19,hi8(2)
+ 1261 04e0 AE01      		movw r20,r28
+ 1262 04e2 4F5F      		subi r20,lo8(-(1))
+ 1263 04e4 5F4F      		sbci r21,hi8(-(1))
+ 1264 04e6 61E1      		ldi r22,lo8(17)
+ 1265 04e8 8081      		ld r24,Z
+ 1266 04ea 9181      		ldd r25,Z+1
+ 1267 04ec 0E94 0000 		call ker_codemem_read
+ 1268 04f0 8823      		tst r24
+ 1269 04f2 39F4      		brne .L84
+ 1271               	.LM109:
+ 1272 04f4 8981      		ldd r24,Y+1
+ 1273 04f6 D701      		movw r26,r14
+ 1274 04f8 8C93      		st X,r24
+ 1276               	.LM110:
+ 1277 04fa 8A81      		ldd r24,Y+2
+ 1278 04fc F701      		movw r30,r14
+ 1279 04fe 8087      		std Z+8,r24
+ 1280 0500 05C0      		rjmp .L82
+ 1281               	.L84:
+ 1283               	.LM111:
+ 1284 0502 8FEF      		ldi r24,lo8(-1)
+ 1285 0504 D701      		movw r26,r14
+ 1286 0506 8C93      		st X,r24
+ 1288               	.LM112:
+ 1289 0508 F701      		movw r30,r14
+ 1290 050a 1086      		std Z+8,__zero_reg__
+ 1291               	.L82:
+ 1292               	.LBE37:
+ 1294               	.LM113:
+ 1295 050c BA94      		dec r11
+ 1296 050e 0894      		sec
+ 1297 0510 611C      		adc r6,__zero_reg__
+ 1298 0512 711C      		adc r7,__zero_reg__
+ 1299 0514 0894      		sec
+ 1300 0516 E11C      		adc r14,__zero_reg__
+ 1301 0518 F11C      		adc r15,__zero_reg__
+ 1302 051a B7FE      		sbrs r11,7
+ 1303 051c D1CF      		rjmp .L86
+ 1305               	.LM114:
+ 1306 051e BB24      		clr r11
+ 1307 0520 8401      		movw r16,r8
+ 1308 0522 005F      		subi r16,lo8(-(16))
+ 1309 0524 1F4F      		sbci r17,hi8(-(16))
+ 1310 0526 7801      		movw r14,r16
+ 1311               	.L93:
+ 1312               	.LBB40:
+ 1313               	.LBB41:
+ 1315               	.Ltext21:
+ 1317               	.LM115:
+ 1318 0528 F8E0      		ldi r31,lo8(8)
+ 1319 052a BF0E      		add r11,r31
+ 1320               	.LBB42:
+ 1322               	.LM116:
+ 1323 052c 8B2D      		mov r24,r11
+ 1324 052e 9927      		clr r25
+ 1325 0530 28EF      		ldi r18,lo8(-8)
+ 1326 0532 B20E      		add r11,r18
+ 1327 0534 9161      		ori r25,hi8(4352)
+ 1328               	.LBE42:
+ 1329               	.LBE41:
+ 1331               	.Ltext22:
+ 1333               	.LM117:
+ 1334 0536 BC01      		movw r22,r24
+ 1335 0538 81E1      		ldi r24,lo8(17)
+ 1336 053a 0E94 0000 		call ker_shm_get
+ 1337 053e FC01      		movw r30,r24
+ 1339               	.LM118:
+ 1340 0540 892B      		or r24,r25
+ 1341 0542 C1F0      		breq .L91
+ 1342 0544 8381      		ldd r24,Z+3
+ 1343 0546 8130      		cpi r24,lo8(1)
+ 1344 0548 A9F4      		brne .L91
+ 1345               	.LBB43:
+ 1347               	.LM119:
+ 1348 054a 8081      		ld r24,Z
+ 1349 054c 9181      		ldd r25,Z+1
+ 1350 054e 0E94 0000 		call ker_codemem_get_header_address
+ 1351               	.LBB44:
+ 1353               	.LM120:
+ 1354 0552 AA27      		clr r26
+ 1355 0554 BB27      		clr r27
+ 1356 0556 880F      		lsl r24
+ 1357 0558 991F      		rol r25
+ 1358 055a AA1F      		rol r26
+ 1359 055c BB1F      		rol r27
+ 1360 055e 0896      		adiw r24,8
+ 1361 0560 A11D      		adc r26,__zero_reg__
+ 1362 0562 B11D      		adc r27,__zero_reg__
+ 1363               	/* #APP */
+ 1364 0564 ABBF      		out 59, r26
+ 1365 0566 FC01      		movw r30, r24
+ 1366 0568 8791      		elpm r24, Z+
+ 1367 056a 9691      		elpm r25, Z
+ 1368               		
+ 1369               	/* #NOAPP */
+ 1370               	.LBE44:
+ 1372               	.LM121:
+ 1373 056c D701      		movw r26,r14
+ 1374 056e 8D93      		st X+,r24
+ 1375 0570 9C93      		st X,r25
+ 1376               	.LBE43:
+ 1377 0572 03C0      		rjmp .L89
+ 1378               	.L91:
+ 1380               	.LM122:
+ 1381 0574 F801      		movw r30,r16
+ 1382 0576 1082      		st Z,__zero_reg__
+ 1383 0578 1182      		std Z+1,__zero_reg__
+ 1384               	.L89:
+ 1385               	.LBE40:
+ 1387               	.LM123:
+ 1388 057a B394      		inc r11
+ 1389 057c 82E0      		ldi r24,lo8(2)
+ 1390 057e 90E0      		ldi r25,hi8(2)
+ 1391 0580 E80E      		add r14,r24
+ 1392 0582 F91E      		adc r15,r25
+ 1393 0584 080F      		add r16,r24
+ 1394 0586 191F      		adc r17,r25
+ 1395 0588 97E0      		ldi r25,lo8(7)
+ 1396 058a 9B15      		cp r25,r11
+ 1397 058c 68F6      		brsh .L93
+ 1398               	.LBB45:
+ 1400               	.Ltext23:
+   1:/Users/Administrator/sos-2x/kernel/include/message.h **** /* -*- Mode: C; tab-width:4 -*- */
+   2:/Users/Administrator/sos-2x/kernel/include/message.h **** /* ex: set ts=4 shiftwidth=4 softtabstop=4 cindent: */
+   3:/Users/Administrator/sos-2x/kernel/include/message.h **** /*
+   4:/Users/Administrator/sos-2x/kernel/include/message.h ****  * Copyright (c) 2003 The Regents of the University of California.
+   5:/Users/Administrator/sos-2x/kernel/include/message.h ****  * All rights reserved.
+   6:/Users/Administrator/sos-2x/kernel/include/message.h ****  *
+   7:/Users/Administrator/sos-2x/kernel/include/message.h ****  * Redistribution and use in source and binary forms, with or without
+   8:/Users/Administrator/sos-2x/kernel/include/message.h ****  * modification, are permitted provided that the following conditions
+   9:/Users/Administrator/sos-2x/kernel/include/message.h ****  * are met:
+  10:/Users/Administrator/sos-2x/kernel/include/message.h ****  * 1. Redistributions of source code must retain the above copyright
+  11:/Users/Administrator/sos-2x/kernel/include/message.h ****  *    notice, this list of conditions and the following disclaimer.
+  12:/Users/Administrator/sos-2x/kernel/include/message.h ****  * 2. Redistributions in binary form must reproduce the above
+  13:/Users/Administrator/sos-2x/kernel/include/message.h ****  *    copyright notice, this list of conditions and the following
+  14:/Users/Administrator/sos-2x/kernel/include/message.h ****  *    disclaimer in the documentation and/or other materials provided
+  15:/Users/Administrator/sos-2x/kernel/include/message.h ****  *    with the distribution.
+  16:/Users/Administrator/sos-2x/kernel/include/message.h ****  * 3. All advertising materials mentioning features or use of this
+  17:/Users/Administrator/sos-2x/kernel/include/message.h ****  *    software must display the following acknowledgement:
+  18:/Users/Administrator/sos-2x/kernel/include/message.h ****  *       This product includes software developed by Networked &
+  19:/Users/Administrator/sos-2x/kernel/include/message.h ****  *       Embedded Systems Lab at UCLA
+  20:/Users/Administrator/sos-2x/kernel/include/message.h ****  * 4. Neither the name of the University nor that of the Laboratory
+  21:/Users/Administrator/sos-2x/kernel/include/message.h ****  *    may be used to endorse or promote products derived from this
+  22:/Users/Administrator/sos-2x/kernel/include/message.h ****  *    software without specific prior written permission.
+  23:/Users/Administrator/sos-2x/kernel/include/message.h ****  *
+  24:/Users/Administrator/sos-2x/kernel/include/message.h ****  * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS''
+  25:/Users/Administrator/sos-2x/kernel/include/message.h ****  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+  26:/Users/Administrator/sos-2x/kernel/include/message.h ****  * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+  27:/Users/Administrator/sos-2x/kernel/include/message.h ****  * PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE REGENTS
+  28:/Users/Administrator/sos-2x/kernel/include/message.h ****  * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+  29:/Users/Administrator/sos-2x/kernel/include/message.h ****  * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+  30:/Users/Administrator/sos-2x/kernel/include/message.h ****  * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+  31:/Users/Administrator/sos-2x/kernel/include/message.h ****  * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+  32:/Users/Administrator/sos-2x/kernel/include/message.h ****  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+  33:/Users/Administrator/sos-2x/kernel/include/message.h ****  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+  34:/Users/Administrator/sos-2x/kernel/include/message.h ****  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+  35:/Users/Administrator/sos-2x/kernel/include/message.h ****  * SUCH DAMAGE.
+  36:/Users/Administrator/sos-2x/kernel/include/message.h ****  *
+  37:/Users/Administrator/sos-2x/kernel/include/message.h ****  * $Id: message.h,v 1.8 2006/08/04 02:05:14 ram Exp $
+  38:/Users/Administrator/sos-2x/kernel/include/message.h ****  */
+  39:/Users/Administrator/sos-2x/kernel/include/message.h **** /**
+  40:/Users/Administrator/sos-2x/kernel/include/message.h ****  * @brief    SOS message structure
+  41:/Users/Administrator/sos-2x/kernel/include/message.h ****  * @author   Simon Han (simonhan@cs.ucla.edu)
+  42:/Users/Administrator/sos-2x/kernel/include/message.h ****  *
+  43:/Users/Administrator/sos-2x/kernel/include/message.h ****  * Defines the message structure and its related functions
+  44:/Users/Administrator/sos-2x/kernel/include/message.h ****  * 
+  45:/Users/Administrator/sos-2x/kernel/include/message.h ****  * @note message parameters explanations.                               \n
+  46:/Users/Administrator/sos-2x/kernel/include/message.h ****  * e     :   message pointer.                                           \n
+  47:/Users/Administrator/sos-2x/kernel/include/message.h ****  * daddr :   node destination address.                                  \n
+  48:/Users/Administrator/sos-2x/kernel/include/message.h ****  * did   :   module destination id.				                        \n
+  49:/Users/Administrator/sos-2x/kernel/include/message.h ****  * type  :   module specific message type.                              \n
+  50:/Users/Administrator/sos-2x/kernel/include/message.h ****  * saddr :   node source address.                                       \n
+  51:/Users/Administrator/sos-2x/kernel/include/message.h ****  * sid   :   module source id.                                          \n
+  52:/Users/Administrator/sos-2x/kernel/include/message.h ****  * len   :   payload length                                             \n
+  53:/Users/Administrator/sos-2x/kernel/include/message.h ****  * data  :   message payload.                                           \n
+  54:/Users/Administrator/sos-2x/kernel/include/message.h ****  * flag  :   flag to indicate the status of message.                    \n
+  55:/Users/Administrator/sos-2x/kernel/include/message.h ****  * In all case, function returns 0 for successful, errno for error.     \n
+  56:/Users/Administrator/sos-2x/kernel/include/message.h ****  */
+  57:/Users/Administrator/sos-2x/kernel/include/message.h **** 
+  58:/Users/Administrator/sos-2x/kernel/include/message.h **** #ifndef _MESSAGE_H
+  59:/Users/Administrator/sos-2x/kernel/include/message.h **** #define _MESSAGE_H
+  60:/Users/Administrator/sos-2x/kernel/include/message.h **** #include <sos_types.h>
+  61:/Users/Administrator/sos-2x/kernel/include/message.h **** #include <message_types.h>
+  62:/Users/Administrator/sos-2x/kernel/include/message.h **** 
+  63:/Users/Administrator/sos-2x/kernel/include/message.h **** 
+  64:/Users/Administrator/sos-2x/kernel/include/message.h **** /**
+  65:/Users/Administrator/sos-2x/kernel/include/message.h ****  * @brief Post a message
+  66:/Users/Administrator/sos-2x/kernel/include/message.h ****  * @param e Message pointer
+  67:/Users/Administrator/sos-2x/kernel/include/message.h ****  * @return errno
+  68:/Users/Administrator/sos-2x/kernel/include/message.h ****  */
+  69:/Users/Administrator/sos-2x/kernel/include/message.h **** extern int8_t post(Message *e);
+  70:/Users/Administrator/sos-2x/kernel/include/message.h **** 
+  71:/Users/Administrator/sos-2x/kernel/include/message.h **** /**
+  72:/Users/Administrator/sos-2x/kernel/include/message.h ****  * @brief Post message over an IO Link
+  73:/Users/Administrator/sos-2x/kernel/include/message.h ****  * @param did    Destination Module ID
+  74:/Users/Administrator/sos-2x/kernel/include/message.h ****  * @param sid    Source Module ID
+  75:/Users/Administrator/sos-2x/kernel/include/message.h ****  * @param type   Message Type
+  76:/Users/Administrator/sos-2x/kernel/include/message.h ****  * @param len    Message Payload Length
+  77:/Users/Administrator/sos-2x/kernel/include/message.h ****  * @param data   Pointer to message payload
+  78:/Users/Administrator/sos-2x/kernel/include/message.h ****  * @param flag   Message Options
+  79:/Users/Administrator/sos-2x/kernel/include/message.h ****  * @param daddr  Destination Node Address
+  80:/Users/Administrator/sos-2x/kernel/include/message.h ****  * @return errno
+  81:/Users/Administrator/sos-2x/kernel/include/message.h ****  */
+  82:/Users/Administrator/sos-2x/kernel/include/message.h **** extern int8_t post_link(sos_pid_t did, 
+  83:/Users/Administrator/sos-2x/kernel/include/message.h **** 						sos_pid_t sid, 
+  84:/Users/Administrator/sos-2x/kernel/include/message.h **** 						uint8_t type, 
+  85:/Users/Administrator/sos-2x/kernel/include/message.h **** 						uint8_t len,
+  86:/Users/Administrator/sos-2x/kernel/include/message.h **** 						void* data, 
+  87:/Users/Administrator/sos-2x/kernel/include/message.h **** 						uint16_t flag, 
+  88:/Users/Administrator/sos-2x/kernel/include/message.h **** 						uint16_t daddr);
+  89:/Users/Administrator/sos-2x/kernel/include/message.h **** 
+  90:/Users/Administrator/sos-2x/kernel/include/message.h **** /**
+  91:/Users/Administrator/sos-2x/kernel/include/message.h ****  * @brief Post message over the right link select by the system
+  92:/Users/Administrator/sos-2x/kernel/include/message.h ****  * @param did    Destination Module ID
+  93:/Users/Administrator/sos-2x/kernel/include/message.h ****  * @param sid    Source Module ID
+  94:/Users/Administrator/sos-2x/kernel/include/message.h ****  * @param type   Message Type
+  95:/Users/Administrator/sos-2x/kernel/include/message.h ****  * @param len    Message Payload Length
+  96:/Users/Administrator/sos-2x/kernel/include/message.h ****  * @param data   Pointer to message payload
+  97:/Users/Administrator/sos-2x/kernel/include/message.h ****  * @param flag   Message Options
+  98:/Users/Administrator/sos-2x/kernel/include/message.h ****  * @param daddr  Destination Node Address
+  99:/Users/Administrator/sos-2x/kernel/include/message.h ****  * @return errno
+ 100:/Users/Administrator/sos-2x/kernel/include/message.h ****  */
+ 101:/Users/Administrator/sos-2x/kernel/include/message.h **** static inline int8_t post_auto(sos_pid_t did,
+ 102:/Users/Administrator/sos-2x/kernel/include/message.h ****                                sos_pid_t sid,
+ 103:/Users/Administrator/sos-2x/kernel/include/message.h **** 							   uint8_t type,
+ 104:/Users/Administrator/sos-2x/kernel/include/message.h **** 							   uint8_t len,
+ 105:/Users/Administrator/sos-2x/kernel/include/message.h **** 							   void* data,
+ 106:/Users/Administrator/sos-2x/kernel/include/message.h **** 							   uint16_t flag,
+ 107:/Users/Administrator/sos-2x/kernel/include/message.h **** 							   uint16_t daddr) {
+ 1402               	.LM124:
+ 1403 058e F601      		movw r30,r12
+ 1404 0590 8481      		ldd r24,Z+4
+ 1405 0592 9581      		ldd r25,Z+5
+ 1406               	.LBB46:
+ 108:/Users/Administrator/sos-2x/kernel/include/message.h ****   return post_link(did, sid, type, len, data, flag | SOS_MSG_ALL_LINK_IO | SOS_MSG_LINK_AUTO, daddr
+ 1408               	.LM125:
+ 1409 0594 6C01      		movw r12,r24
+ 1410 0596 E4E0      		ldi r30,lo8(15876)
+ 1411 0598 EE2E      		mov r14,r30
+ 1412 059a EEE3      		ldi r30,hi8(15876)
+ 1413 059c FE2E      		mov r15,r30
+ 1414 059e 8401      		movw r16,r8
+ 1415 05a0 20E2      		ldi r18,lo8(32)
+ 1416 05a2 43E2      		ldi r20,lo8(35)
+ 1417               	.L127:
+ 1418 05a4 61E1      		ldi r22,lo8(17)
+ 1419 05a6 862F      		mov r24,r22
+ 1420 05a8 0E94 0000 		call post_link
+ 1421               	.L126:
+ 1422               	.LBE46:
+ 1423               	.LBE45:
+ 1425               	.Ltext24:
+ 1427               	.LM126:
+ 1428 05ac 80E0      		ldi r24,lo8(0)
+ 1429 05ae 90E0      		ldi r25,hi8(0)
+ 1430 05b0 BDC0      		rjmp .L110
+ 1431               	.L95:
+ 1432               	.LBE34:
+ 1433               	.LBE33:
+ 1434               	.LBB47:
+ 1435               	.LBB48:
+ 1437               	.LM127:
+ 1438 05b2 FB01      		movw r30,r22
+ 1439 05b4 0085      		ldd r16,Z+8
+ 1440 05b6 1185      		ldd r17,Z+9
+ 1441               	.LBB49:
+ 1442               	.LBB50:
+ 1444               	.Ltext25:
+   1:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 
+   2:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** #ifndef _SOS_MODULE_FETCHER_H
+   3:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** #define _SOS_MODULE_FETCHER_H
+   4:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 
+   5:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** #ifndef _MODULE_
+   6:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** #include <sos_inttypes.h>
+   7:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** #include <sos_sched.h>
+   8:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** #include <malloc.h>
+   9:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** #include <codemem.h>
+  10:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** #include <sos_timer.h>
+  11:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** #include <fntable.h>
+  12:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** #endif
+  13:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** #include <sos_shm.h>
+  14:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 
+  15:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** typedef struct {
+  16:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	codemem_t cm;
+  17:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	uint8_t   fetchtype;
+  18:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	uint8_t   status;
+  19:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** } fetcher_cam_t;
+  20:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 
+  21:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** // use in fetcher_cam_t.fetchtype for patching SOS modules
+  22:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** enum {
+  23:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	FETCHTYPE_MODULE    = 0,
+  24:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	FETCHTYPE_DATA      = 1,
+  25:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** };
+  26:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 
+  27:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** // use in fetcher_cam_t.status for fetching status
+  28:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** enum {
+  29:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	FETCHING_STARTED    = 0,
+  30:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	FETCHING_DONE       = 1,
+  31:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	FETCHING_QUEUED     = 2,
+  32:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** };
+  33:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 
+  34:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 
+  35:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** enum {
+  36:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	//! the size of fragment fetcher will fetch in at 1 time
+  37:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	FETCHER_FRAGMENT_SIZE   =  64L,
+  38:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** };
+  39:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 
+  40:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** //! timers
+  41:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** enum {
+  42:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	FETCHER_REQUEST_TID    = 1,
+  43:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	FETCHER_TRANSMIT_TID      = 2,
+  44:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	FETCHER_REQUEST_BACKOFF_SLOT  = 256L,  //!< 0.25 seconds
+  45:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	FETCHER_REQUEST_MAX_SLOT  = 8,
+  46:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	FETCHER_REQUEST_WATCHDOG  = 5 * 1024L, //!< 5 seconds.
+  47:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	FETCHER_REQUEST_MAX_RETX  = 3,
+  48:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** };
+  49:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 
+  50:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** //! message types
+  51:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** enum {
+  52:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	MSG_FETCHER_REQUEST        =   (MOD_MSG_START + 0),
+  53:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	MSG_FETCHER_FRAGMENT       =   (MOD_MSG_START + 1),
+  54:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** };
+  55:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 
+  56:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** typedef struct {
+  57:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	sos_shm_t key;
+  58:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	uint8_t bitmap_size;  //!< the size of the bitmap
+  59:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	uint8_t bitmap[];  //!< the bitmap that stores fetched fragments,
+  60:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	                   //! 0 means the fragment is fetched and 1 means the
+  61:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	                   //! fragment is missing.
+  62:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** } PACK_STRUCT
+  63:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** fetcher_bitmap_t;
+  64:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 
+  65:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** //! the packet that carries the fragment
+  66:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** typedef struct {
+  67:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	uint16_t     frag_id;   //! fragment number
+  68:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	sos_shm_t    key;
+  69:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	uint8_t      fragment[FETCHER_FRAGMENT_SIZE];
+  70:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** } PACK_STRUCT
+  71:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** fetcher_fragment_t;
+  72:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 
+  73:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** typedef struct fetcher_state_str {
+  74:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	//! the location of fragment to be fetched
+  75:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	uint16_t                    src_addr;
+  76:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h ****    	//! the module which requests the fetching
+  77:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	sos_pid_t                   requester;
+  78:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	//! number of retransmission of request
+  79:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	uint8_t                     retx;         
+  80:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	//! number of function poiinters in the module
+  81:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	//! this will be discovered during fetching
+  82:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	uint8_t                     num_funcs;
+  83:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	codemem_t                   cm;   
+  84:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	//! link list to store restart request
+  85:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	struct fetcher_state_str    *next;
+  86:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	//! bitmap for wanted fragments (Has to be the last element in the struct)
+  87:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	fetcher_bitmap_t            map;
+  88:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** }
+  89:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** fetcher_state_t;
+  90:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 
+  91:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** int8_t fetcher_init(void);
+  92:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 
+  93:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** /**
+  94:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h ****  * @brief request a particular module to be fetchered
+  95:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h ****  *
+  96:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h ****  * @param requester the id that is requesting the fetch
+  97:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h ****  * @param mod_id the id to be fetched
+  98:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h ****  * @param version the version of the module to be fetched
+  99:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h ****  * @param size the size of module to be fetched
+ 100:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h ****  * @param src  the node id to be fetched from
+ 101:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h ****  *
+ 102:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h ****  */
+ 103:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** int8_t fetcher_request(sos_pid_t req_id, sos_shm_t key, uint16_t size, uint16_t src);
+ 104:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 
+ 105:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** int8_t fetcher_cancel(sos_pid_t req_id, sos_shm_t key);
+ 106:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 
+ 107:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** void fetcher_restart(fetcher_state_t *s, uint16_t src);
+ 108:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 
+ 109:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** void fetcher_commit(fetcher_state_t *s, bool commit);
+ 110:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 
+ 111:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** static inline bool is_fetcher_succeed(fetcher_state_t *s)
+ 112:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** {
+ 113:/Users/Administrator/sos-2x/kernel/include/sos_module_fetcher.h **** 	if(s->retx <= FETCHER_REQUEST_MAX_RETX) {
+ 1446               	.LM128:
+ 1447 05b8 F801      		movw r30,r16
+ 1448 05ba 8381      		ldd r24,Z+3
+ 1449 05bc 8430      		cpi r24,lo8(4)
+ 1450 05be 08F0      		brlo .+2
+ 1451 05c0 67C0      		rjmp .L120
+ 1452               	.LBE50:
+ 1453               	.LBE49:
+ 1454               	.LBB51:
+ 1456               	.Ltext26:
+ 1458               	.LM129:
+ 1459 05c2 61E0      		ldi r22,lo8(1)
+ 1460 05c4 C801      		movw r24,r16
+ 1461 05c6 0E94 0000 		call fetcher_commit
+ 1463               	.LM130:
+ 1464 05ca 1092 0000 		sts st+54,__zero_reg__
+ 1466               	.LM131:
+ 1467 05ce 8091 0000 		lds r24,st+54
+ 1468 05d2 0E94 0000 		call restartInterval
+ 1470               	.LM132:
+ 1471 05d6 F801      		movw r30,r16
+ 1472 05d8 6185      		ldd r22,Z+9
+ 1473 05da 7285      		ldd r23,Z+10
+ 1474 05dc 81E1      		ldi r24,lo8(17)
+ 1475 05de 0E94 0000 		call ker_shm_get
+ 1476 05e2 6C01      		movw r12,r24
+ 1478               	.LM133:
+ 1479 05e4 FC01      		movw r30,r24
+ 1480 05e6 8281      		ldd r24,Z+2
+ 1481 05e8 8130      		cpi r24,lo8(1)
+ 1482 05ea B9F4      		brne .L99
+ 1483               	.LBB52:
+ 1485               	.LM134:
+ 1486 05ec 00E0      		ldi r16,lo8(0)
+ 1487 05ee 10E0      		ldi r17,hi8(0)
+ 1488 05f0 22E0      		ldi r18,lo8(2)
+ 1489 05f2 30E0      		ldi r19,hi8(2)
+ 1490 05f4 AE01      		movw r20,r28
+ 1491 05f6 4D5F      		subi r20,lo8(-(3))
+ 1492 05f8 5F4F      		sbci r21,hi8(-(3))
+ 1493 05fa 61E1      		ldi r22,lo8(17)
+ 1494 05fc 8081      		ld r24,Z
+ 1495 05fe 9181      		ldd r25,Z+1
+ 1496 0600 0E94 0000 		call ker_codemem_read
+ 1498               	.LM135:
+ 1499 0604 7801      		movw r14,r16
+ 1500 0606 D601      		movw r26,r12
+ 1501 0608 0D91      		ld r16,X+
+ 1502 060a 1C91      		ld r17,X
+ 1503 060c 2C81      		ldd r18,Y+4
+ 1504 060e 4BE2      		ldi r20,lo8(43)
+ 1505 0610 61E1      		ldi r22,lo8(17)
+ 1506 0612 8B81      		ldd r24,Y+3
+ 1507 0614 0E94 0000 		call post_short
+ 1508               	.LBE52:
+ 1509 0618 30C0      		rjmp .L100
+ 1510               	.L99:
+ 1511               	.LBB53:
+ 1513               	.LM136:
+ 1514 061a F601      		movw r30,r12
+ 1515 061c 8081      		ld r24,Z
+ 1516 061e 9181      		ldd r25,Z+1
+ 1517 0620 0E94 0000 		call melf_load_module
+ 1519               	.LM137:
+ 1520 0624 D601      		movw r26,r12
+ 1521 0626 8D91      		ld r24,X+
+ 1522 0628 9C91      		ld r25,X
+ 1523 062a 0E94 0000 		call ker_codemem_get_header_address
+ 1524 062e 8C01      		movw r16,r24
+ 1525               	.LBB54:
+ 1527               	.LM138:
+ 1528 0630 C801      		movw r24,r16
+ 1529 0632 AA27      		clr r26
+ 1530 0634 BB27      		clr r27
+ 1531 0636 880F      		lsl r24
+ 1532 0638 991F      		rol r25
+ 1533 063a AA1F      		rol r26
+ 1534 063c BB1F      		rol r27
+ 1535 063e 0A96      		adiw r24,10
+ 1536 0640 A11D      		adc r26,__zero_reg__
+ 1537 0642 B11D      		adc r27,__zero_reg__
+ 1538               	/* #APP */
+ 1539 0644 ABBF      		out 59, r26
+ 1540 0646 FC01      		movw r30, r24
+ 1541 0648 2791      		elpm r18, Z+
+ 1542               		
+ 1543               	/* #NOAPP */
+ 1544               	.LBE54:
+ 1545               	.LBB55:
+ 1547               	.LM139:
+ 1548 064a 0196      		adiw r24,1
+ 1549 064c A11D      		adc r26,__zero_reg__
+ 1550 064e B11D      		adc r27,__zero_reg__
+ 1551               	/* #APP */
+ 1552 0650 ABBF      		out 59, r26
+ 1553 0652 FC01      		movw r30, r24
+ 1554 0654 8791      		elpm r24, Z+
+ 1555               		
+ 1556               	/* #NOAPP */
+ 1557               	.LBE55:
+ 1559               	.LM140:
+ 1560 0656 2130      		cpi r18,lo8(1)
+ 1561 0658 81F4      		brne .L100
+ 1562 065a 8230      		cpi r24,lo8(2)
+ 1563 065c 11F0      		breq .L102
+ 1564 065e 8F3F      		cpi r24,lo8(-1)
+ 1565 0660 61F4      		brne .L100
+ 1566               	.L102:
+ 1568               	.LM141:
+ 1569 0662 F601      		movw r30,r12
+ 1570 0664 8081      		ld r24,Z
+ 1571 0666 9181      		ldd r25,Z+1
+ 1572 0668 0E94 0000 		call ker_codemem_mark_executable
+ 1574               	.LM142:
+ 1575 066c F601      		movw r30,r12
+ 1576 066e 8481      		ldd r24,Z+4
+ 1577 0670 87FF      		sbrs r24,7
+ 1578 0672 03C0      		rjmp .L100
+ 1580               	.LM143:
+ 1581 0674 C801      		movw r24,r16
+ 1582 0676 0E94 0000 		call ker_register_module
+ 1583               	.L100:
+ 1584               	.LBE53:
+ 1586               	.LM144:
+ 1587 067a 6091 0000 		lds r22,st+52
+ 1588 067e 7091 0000 		lds r23,(st+52)+1
+ 1589 0682 8091 0000 		lds r24,st+55
+ 1590 0686 9091 0000 		lds r25,(st+55)+1
+ 1591               	.L124:
+ 1592 068a 0E94 0000 		call process_version_data
+ 1593               	.LBE51:
+ 1594 068e 09C0      		rjmp .L105
+ 1595               	.L120:
+ 1597               	.LM145:
+ 1598 0690 81E1      		ldi r24,lo8(17)
+ 1599 0692 0E94 0000 		call ker_msg_take_data
+ 1601               	.LM146:
+ 1602 0696 6091 0000 		lds r22,st+52
+ 1603 069a 7091 0000 		lds r23,(st+52)+1
+ 1604 069e 0E94 0000 		call fetcher_restart
+ 1605               	.L105:
+ 1606               	.LBE48:
+ 1607               	.LBE47:
+ 1609               	.LM147:
+ 1610 06a2 80E0      		ldi r24,lo8(0)
+ 1611 06a4 90E0      		ldi r25,hi8(0)
+ 1612 06a6 48C0      		rjmp .L43
+ 1613               	.L107:
+ 1614               	.LBB56:
+ 1615               	.LBB57:
+ 1617               	.LM148:
+ 1618 06a8 21E0      		ldi r18,lo8(1)
+ 1619 06aa 40E0      		ldi r20,lo8(0)
+ 1620 06ac 61E1      		ldi r22,lo8(17)
+ 1621 06ae 80E0      		ldi r24,lo8(st)
+ 1622 06b0 90E0      		ldi r25,hi8(st)
+ 1623 06b2 0E94 0000 		call ker_permanent_timer_init
+ 1625               	.LM149:
+ 1626 06b6 21E0      		ldi r18,lo8(1)
+ 1627 06b8 422F      		mov r20,r18
+ 1628 06ba 61E1      		ldi r22,lo8(17)
+ 1629 06bc 80E0      		ldi r24,lo8(st+16)
+ 1630 06be 90E0      		ldi r25,hi8(st+16)
+ 1631 06c0 0E94 0000 		call ker_permanent_timer_init
+ 1633               	.LM150:
+ 1634 06c4 21E0      		ldi r18,lo8(1)
+ 1635 06c6 42E0      		ldi r20,lo8(2)
+ 1636 06c8 61E1      		ldi r22,lo8(17)
+ 1637 06ca 80E0      		ldi r24,lo8(st+32)
+ 1638 06cc 90E0      		ldi r25,hi8(st+32)
+ 1639 06ce 0E94 0000 		call ker_permanent_timer_init
+ 1641               	.LM151:
+ 1642 06d2 1092 0000 		sts st+49,__zero_reg__
+ 1644               	.LM152:
+ 1645 06d6 1092 0000 		sts st+50,__zero_reg__
+ 1647               	.LM153:
+ 1648 06da 1092 0000 		sts st+51,__zero_reg__
+ 1650               	.LM154:
+ 1651 06de 1092 0000 		sts st+54,__zero_reg__
+ 1653               	.LM155:
+ 1654 06e2 1093 0000 		sts (st+52)+1,r17
+ 1655 06e6 0093 0000 		sts st+52,r16
+ 1656               	.LBB58:
+ 1657               	.LBB59:
+ 1659               	.Ltext27:
+ 1661               	.LM156:
+ 1662 06ea 4091 0000 		lds r20,st+49
+ 1663 06ee 61E1      		ldi r22,lo8(17)
+ 1664 06f0 85E2      		ldi r24,lo8(37)
+ 1665 06f2 90E0      		ldi r25,hi8(37)
+ 1666 06f4 0E94 0000 		call sos_blk_mem_alloc
+ 1667 06f8 FC01      		movw r30,r24
+ 1668               	.LBE59:
+ 1669               	.LBE58:
+ 1671               	.LM157:
+ 1672 06fa 9093 0000 		sts (st+55)+1,r25
+ 1673 06fe 8093 0000 		sts st+55,r24
+ 1675               	.Ltext28:
+ 1677               	.LM158:
+ 1678 0702 892B      		or r24,r25
+ 1679 0704 19F4      		brne .L109
+ 1680               	.L125:
+ 1681 0706 84EF      		ldi r24,lo8(-12)
+ 1682 0708 9FEF      		ldi r25,hi8(-12)
+ 1683 070a 10C0      		rjmp .L110
+ 1684               	.L109:
+ 1686               	.LM159:
+ 1687 070c 85E2      		ldi r24,lo8(37)
+ 1688 070e 1192      		st Z+,__zero_reg__
+ 1689 0710 8A95      	        dec r24
+ 1690 0712 E9F7      		brne .-6
+ 1692               	.LM160:
+ 1693 0714 E091 0000 		lds r30,st+55
+ 1694 0718 F091 0000 		lds r31,(st+55)+1
+ 1695 071c 81E0      		ldi r24,lo8(1)
+ 1696 071e 90E0      		ldi r25,hi8(1)
+ 1697 0720 8083      		st Z,r24
+ 1698 0722 9183      		std Z+1,r25
+ 1700               	.LM161:
+ 1701 0724 80E0      		ldi r24,lo8(0)
+ 1702 0726 0E94 0000 		call restartInterval
+ 1703 072a C801      		movw r24,r16
+ 1704               	.L110:
+ 1705               	.LBE57:
+ 1706               	.LBE56:
+ 1708               	.LM162:
+ 1709 072c 9927      		clr r25
+ 1710 072e 87FD      		sbrc r24,7
+ 1711 0730 9095      		com r25
+ 1712 0732 02C0      		rjmp .L43
+ 1713               	.L111:
+ 573:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			}
+ 574:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			return handle_version_data( msg ); 
+ 575:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		}
+ 576:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 577:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		case MSG_LOADER_LS_ON_NODE:
+ 578:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		{
+ 579:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			return handle_loader_ls_on_node( msg );
+ 580:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		}
+ 581:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 582:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		case MSG_FETCHER_DONE:
+ 583:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		{ 
+ 584:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			return handle_fetcher_done( msg ); 
+ 585:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		}
+ 586:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 587:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		case MSG_INIT:
+ 588:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		{ 
+ 589:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #ifdef LOADER_NET_EXPERIMENT
+ 590:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			handle_init();
+ 591:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			if( ker_id() == 0 ) {
+ 592:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 				start_experiment(EXPERIMENT_SIZE);	
+ 593:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			}
+ 594:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #else
+ 595:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 			return handle_init(); 
+ 596:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #endif
+ 597:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		}
+ 598:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 599:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		default:
+ 600:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 		return -EINVAL;
+ 1715               	.LM163:
+ 1716 0734 8AEE      		ldi r24,lo8(-22)
+ 1717 0736 9FEF      		ldi r25,hi8(-22)
+ 1718               	.L43:
+ 1719               	/* epilogue: frame size=4 */
+ 1720 0738 2496      		adiw r28,4
+ 1721 073a 0FB6      		in __tmp_reg__,__SREG__
+ 1722 073c F894      		cli
+ 1723 073e DEBF      		out __SP_H__,r29
+ 1724 0740 0FBE      		out __SREG__,__tmp_reg__
+ 1725 0742 CDBF      		out __SP_L__,r28
+ 1726 0744 DF91      		pop r29
+ 1727 0746 CF91      		pop r28
+ 1728 0748 1F91      		pop r17
+ 1729 074a 0F91      		pop r16
+ 1730 074c FF90      		pop r15
+ 1731 074e EF90      		pop r14
+ 1732 0750 DF90      		pop r13
+ 1733 0752 CF90      		pop r12
+ 1734 0754 BF90      		pop r11
+ 1735 0756 9F90      		pop r9
+ 1736 0758 8F90      		pop r8
+ 1737 075a 7F90      		pop r7
+ 1738 075c 6F90      		pop r6
+ 1739 075e 0895      		ret
+ 1740               	/* epilogue end (size=20) */
+ 1741               	/* function loader_handler size 679 (638) */
+ 1790               	.Lscope2:
+ 1793               	.global	loader_get_header
+ 1795               	loader_get_header:
+ 601:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	}
+ 602:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	return SOS_OK;
+ 603:/Users/Administrator/sos-2x/extensions/loader/loader.c **** }
+ 604:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 605:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 606:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 
+ 607:/Users/Administrator/sos-2x/extensions/loader/loader.c **** #ifndef _MODULE_
+ 608:/Users/Administrator/sos-2x/extensions/loader/loader.c **** mod_header_ptr loader_get_header()
+ 609:/Users/Administrator/sos-2x/extensions/loader/loader.c **** {
+ 1797               	.LM164:
+ 1798               	/* prologue: frame size=0 */
+ 1799               	/* prologue end (size=0) */
+ 610:/Users/Administrator/sos-2x/extensions/loader/loader.c **** 	return sos_get_header_address(mod_header);
+ 1801               	.LM165:
+ 1802 0760 80E0      		ldi r24,lo8(mod_header)
+ 1803 0762 90E0      		ldi r25,hi8(mod_header)
+ 1804 0764 AA27      		clr r26
+ 1805 0766 97FD      		sbrc r25,7
+ 1806 0768 A095      		com r26
+ 1807 076a BA2F      		mov r27,r26
+ 1808 076c B695      		lsr r27
+ 1809 076e A795      		ror r26
+ 1810 0770 9795      		ror r25
+ 1811 0772 8795      		ror r24
+ 1812               	/* epilogue: frame size=0 */
+ 1813 0774 0895      		ret
+ 1814               	/* epilogue end (size=1) */
+ 1815               	/* function loader_get_header size 11 (10) */
+ 1817               	.Lscope3:
+ 1819               		.lcomm st,57
+ 1822               		.text
+ 1824               	Letext:
+ 1825               	/* File "/Users/Administrator/sos-2x/extensions/loader/loader.c": code  972 = 0x03cc ( 896), prolog
+DEFINED SYMBOLS
+                            *ABS*:00000000 loader.c
+                            *ABS*:0000003f __SREG__
+                            *ABS*:0000003e __SP_H__
+                            *ABS*:0000003d __SP_L__
+                            *ABS*:00000000 __tmp_reg__
+                            *ABS*:00000001 __zero_reg__
+/var/tmp//ccR1sVl0.s:290    .progmem.data:00000000 mod_header
+/var/tmp//ccR1sVl0.s:774    .text:00000232 loader_handler
+/var/tmp//ccR1sVl0.s:302    .text:00000000 restartInterval
+                             .bss:00000000 st
+/var/tmp//ccR1sVl0.s:472    .text:000000fe process_version_data
+/var/tmp//ccR1sVl0.s:1795   .text:00000760 loader_get_header
+/var/tmp//ccR1sVl0.s:1824   .text:00000776 Letext
+
+UNDEFINED SYMBOLS
+__do_copy_data
+__do_clear_bss
+ker_timer_stop
+ker_timer_start
+ker_rand
+__divmodsi4
+ker_shm_get
+sos_blk_mem_alloc
+ker_shm_open
+sos_blk_mem_free
+fetcher_cancel
+ker_codemem_free
+ker_shm_close
+ker_codemem_alloc
+fetcher_request
+post_link
+ker_msg_take_data
+ker_codemem_read
+ker_codemem_get_header_address
+fetcher_commit
+post_short
+melf_load_module
+ker_codemem_mark_executable
+ker_register_module
+fetcher_restart
+ker_permanent_timer_init

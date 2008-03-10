@@ -1,0 +1,3351 @@
+   1               		.file	"exflash.c"
+   2               		.arch atmega128
+   3               	__SREG__ = 0x3f
+   4               	__SP_H__ = 0x3e
+   5               	__SP_L__ = 0x3d
+   6               	__tmp_reg__ = 0
+   7               	__zero_reg__ = 1
+   8               		.global __do_copy_data
+   9               		.global __do_clear_bss
+  12               		.text
+  13               	.Ltext0:
+ 290               		.section	.progmem.data,"a",@progbits
+ 293               	mod_header:
+ 294 0000 0000      		.word	0
+ 295 0002 45        		.byte	69
+ 296 0003 00        		.skip 1,0
+ 297 0004 00        		.byte	0
+ 298 0005 00        		.byte	0
+ 299 0006 0000 0000 		.skip 8,0
+ 299      0000 0000 
+ 300 000e 0000      		.word	pm(exflash_handler)
+ 301               		.text
+ 305               	FlashSPI_txByte:
+   1:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** /* -*- Mode: C; tab-width:4 -*- */
+   2:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** /* ex: set ts=4 shiftwidth=4 softtabstop=4 cindent: */
+   3:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** /*									tab:4
+   4:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  * "Copyright (c) 2000-2003 The Regents of the University  of California.  
+   5:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  * All rights reserved.
+   6:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  *
+   7:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  * Permission to use, copy, modify, and distribute this software and its
+   8:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  * documentation for any purpose, without fee, and without written agreement is
+   9:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  * hereby granted, provided that the above copyright notice, the following
+  10:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  * two paragraphs and the author appear in all copies of this software.
+  11:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  * 
+  12:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  * IN NO EVENT SHALL THE UNIVERSITY OF CALIFORNIA BE LIABLE TO ANY PARTY FOR
+  13:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  * DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES ARISING OUT
+  14:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  * OF THE USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF THE UNIVERSITY OF
+  15:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  * CALIFORNIA HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  16:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  * 
+  17:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  * THE UNIVERSITY OF CALIFORNIA SPECIFICALLY DISCLAIMS ANY WARRANTIES,
+  18:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
+  19:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  * AND FITNESS FOR A PARTICULAR PURPOSE.  THE SOFTWARE PROVIDED HEREUNDER IS
+  20:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  * ON AN "AS IS" BASIS, AND THE UNIVERSITY OF CALIFORNIA HAS NO OBLIGATION TO
+  21:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  * PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS."
+  22:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  *
+  23:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  * Copyright (c) 2002-2003 Intel Corporation
+  24:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  * All rights reserved.
+  25:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  *
+  26:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  * This file is distributed under the terms in the attached INTEL-LICENSE     
+  27:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  * file. If you do not find these files, copies can be found by writing to
+  28:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  * Intel Research Berkeley, 2150 Shattuck Avenue, Suite 1300, Berkeley, CA, 
+  29:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  * 94704.  Attention:  Intel License Inquiry.
+  30:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  */
+  31:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** /*
+  32:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  *
+  33:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  * Authors:		Jason Hill, David Gay, Philip Levis
+  34:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  * Date last modified:  6/25/02
+  35:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  *
+  36:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  */
+  37:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+  38:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** /**
+  39:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  * Low level hardware access to the onboard Flash 
+  40:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  * @author Jason Hill
+  41:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  * @author David Gay
+  42:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  * @author Philip Levis
+  43:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  * @author Simon Han
+  44:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  *    Merge PageEEPROM and HPLFlash
+  45:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  */
+  46:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** #include <hardware.h>
+  47:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** #include <sos_module_types.h>
+  48:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** #include <sos_sched.h>
+  49:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** #include <message.h>
+  50:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** #include "crc.h"
+  51:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+  52:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static inline void TOSH_uwait(uint16_t _u_sec) {
+  53:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	while (_u_sec > 0) {
+  54:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		/* XXX SIX nop will give 8 cycles, which is 1088 ns */
+  55:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		asm volatile  ("nop" ::);
+  56:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		asm volatile  ("nop" ::);
+  57:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		asm volatile  ("nop" ::);
+  58:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		asm volatile  ("nop" ::);
+  59:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		asm volatile  ("nop" ::);
+  60:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		asm volatile  ("nop" ::);
+  61:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		asm volatile  ("nop" ::);
+  62:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		asm volatile  ("nop" ::);
+  63:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		_u_sec--;
+  64:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	}
+  65:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** }
+  66:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+  67:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** /*---------------------------------------------------------------------*/
+  68:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** /* Typedefs                                                            */
+  69:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** /*---------------------------------------------------------------------*/
+  70:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** enum { // requests
+  71:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	IDLE,
+  72:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	R_READ,
+  73:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	R_READCRC,
+  74:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	R_WRITE,
+  75:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	R_ERASE,
+  76:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	R_SYNC,
+  77:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	R_SYNCALL,
+  78:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	R_FLUSH,
+  79:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	R_FLUSHALL
+  80:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** };                                                          
+  81:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+  82:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** enum {                                                      
+  83:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	P_SEND_CMD,                                               
+  84:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	P_READ,                                                   
+  85:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	P_READCRC,                                                
+  86:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	P_WRITE,                                                  
+  87:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	P_FLUSH,                                                  
+  88:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	P_FILL,                                                   
+  89:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	P_ERASE,                                                  
+  90:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	P_COMPARE,                                                
+  91:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	P_COMPARE_CHECK                                           
+  92:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** };                                                          
+  93:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+  94:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** enum { // commands we're executing (all SPI Mode 0 or 3)    
+  95:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	C_READ_BUFFER1 = 0xd4,                                    
+  96:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	C_READ_BUFFER2 = 0xd6,                                    
+  97:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	C_WRITE_BUFFER1 = 0x84,                                   
+  98:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	C_WRITE_BUFFER2 = 0x87,                                   
+  99:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	C_FILL_BUFFER1 = 0x53,                                    
+ 100:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	C_FILL_BUFFER2 = 0x55,                                    
+ 101:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	C_FLUSH_BUFFER1 = 0x83,                                   
+ 102:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	C_FLUSH_BUFFER2 = 0x86,                                   
+ 103:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	C_QFLUSH_BUFFER1 = 0x88,                                  
+ 104:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	C_QFLUSH_BUFFER2 = 0x89,                                  
+ 105:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	C_COMPARE_BUFFER1 = 0x60,                                 
+ 106:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	C_COMPARE_BUFFER2 = 0x61,                                 
+ 107:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	C_REQ_STATUS = 0xd7,                                      
+ 108:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	C_ERASE_PAGE = 0x81                                       
+ 109:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** };                                                          
+ 110:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 111:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** /*---------------------------------------------------------------------*/
+ 112:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** /* Global Data  Declarations                                           */
+ 113:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** /*---------------------------------------------------------------------*/
+ 114:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static int8_t exflash_handler(void *state, Message *e);
+ 115:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static mod_header_t mod_header SOS_MODULE_HEADER ={    
+ 116:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** mod_id : EXFLASH_PID,    
+ 117:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** state_size : 0,    
+ 118:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** num_sub_func : 0,   
+ 119:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** num_prov_func : 0,   
+ 120:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** module_handler: exflash_handler,    
+ 121:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** };
+ 122:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 123:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** #ifndef SOS_USE_PREEMPTION
+ 124:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static sos_module_t exflash_module;
+ 125:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** #endif
+ 126:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 127:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static uint8_t request;                                            
+ 128:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static uint8_t *reqBuf;                                            
+ 129:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static exflashoffset_t reqOffset, reqBytes;                     
+ 130:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static exflashpage_t reqPage;                                       
+ 131:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 132:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** /* deselect of Ex-flash requested (needed between two commands) */ 
+ 133:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static bool deselectRequested; 
+ 134:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static bool broken; // Write failed. Fail all subsequent requests. 
+ 135:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static bool compareOk;                                             
+ 136:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 137:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static uint8_t cmdPhase, waiting;                                  
+ 138:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static uint8_t *data, cmd[4];                                      
+ 139:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static uint8_t cmdCount;                 
+ 140:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static exflashoffset_t dataCount;                               
+ 141:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static uint16_t computedCrc;                                       
+ 142:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 143:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static struct {                                                    
+ 144:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	exflashpage_t page;                                        
+ 145:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	bool busy : 1;                                            
+ 146:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	bool clean : 1;                                           
+ 147:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	bool erased : 1;                                          
+ 148:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	uint8_t unchecked : 2;                                    
+ 149:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** } buffer[2];                                                
+ 150:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static uint8_t selected; // buffer used by the current op          
+ 151:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static uint8_t checking;                                           
+ 152:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static bool flashBusy;                                             
+ 153:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static sos_pid_t reqPid;
+ 154:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 155:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** /*---------------------------------------------------------------------*/
+ 156:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** /* Function Declarations (Internal)                                    */
+ 157:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** /*---------------------------------------------------------------------*/
+ 158:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static bool FlashSelect_notifyHigh();
+ 159:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static void FlashIdle_available();
+ 160:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static void requestDone(bool result);
+ 161:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static void execCommand(bool wait, uint8_t reqCmd, uint8_t dontCare, 
+ 162:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		exflashpage_t page, exflashoffset_t offset);
+ 163:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static void handleRWRequest();
+ 164:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static int8_t syncOrFlushAll(sos_pid_t pid, uint8_t newReq);
+ 165:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 166:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 167:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** /*---------------------------------------------------------------------*/
+ 168:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** /* Message Handler                                                     */
+ 169:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** /*---------------------------------------------------------------------*/
+ 170:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static int8_t exflash_handler(void *state, Message *e)
+ 171:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** {
+ 172:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	switch(e->type) {
+ 173:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		case MSG_EXFLASH_DESELECT: 
+ 174:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		{
+ 175:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			FlashSelect_notifyHigh();
+ 176:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			return SOS_OK;	
+ 177:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		}
+ 178:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		case MSG_EXFLASH_AVAIL:
+ 179:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		{
+ 180:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			FlashIdle_available();
+ 181:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			return SOS_OK;
+ 182:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 183:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		}
+ 184:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	}
+ 185:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	return SOS_OK;
+ 186:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** }
+ 187:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 188:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** /*---------------------------------------------------------------------*/
+ 189:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** /* Function Definitions (Internal)                                     */
+ 190:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** /*---------------------------------------------------------------------*/
+ 191:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 192:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** #define DISABLE_FLASH_INTERRUPT()  (EIMSK &= ~_BV(2))
+ 193:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** #define ENABLE_FLASH_INTERRUPT()  (EIMSK |= _BV(2))
+ 194:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 195:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** #define BITINIT \
+ 196:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** uint8_t clrClkAndData = (PORTD & ~0x28)
+ 197:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 198:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** #define BIT(n) \
+ 199:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	PORTD = clrClkAndData; \
+ 200:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	asm __volatile__ \
+ 201:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****         (  "sbrc %2," #n "\n" \
+ 202:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	 "\tsbi 18,3\n" \
+ 203:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	 "\tsbi 18,5\n" \
+ 204:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	 "\tsbic 16,2\n" \
+ 205:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	 "\tori %0,1<<" #n "\n" \
+ 206:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	 : "=d" (spiIn) : "0" (spiIn), "r" (spiOut))
+ 207:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 208:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** // Select a command for the current buffer                  
+ 209:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** #define OPN(n, name) ((n) ? name ## 1 : name ## 2)            
+ 210:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** #define OP(name) OPN(selected, name)          
+ 211:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 212:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** // We use SPI mode 0 (clock low at select time)
+ 213:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** /* async command */
+ 214:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static uint8_t FlashSPI_txByte(uint8_t spiOut) {
+ 307               	.LM1:
+ 308               	/* prologue: frame size=0 */
+ 309               	/* prologue end (size=0) */
+ 310 0000 982F      		mov r25,r24
+ 215:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****     uint8_t spiIn = 0;
+ 312               	.LM2:
+ 313 0002 80E0      		ldi r24,lo8(0)
+ 216:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	HAS_CRITICAL_SECTION;
+ 217:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 218:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****     // This critical section ensures integrity at the hardware level...
+ 219:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	ENTER_CRITICAL_SECTION();
+ 315               	.LM3:
+ 316               	/* #APP */
+ 317 0004 3FB7      		in r19, __SREG__
+ 318 0006 F894      		cli
+ 319               		
+ 320               	/* #NOAPP */
+ 321               	.LBB2:
+ 220:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	{
+ 221:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		BITINIT;
+ 323               	.LM4:
+ 324 0008 22B3      		in r18,50-0x20
+ 325 000a 277D      		andi r18,lo8(-41)
+ 222:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 223:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		BIT(7);
+ 327               	.LM5:
+ 328 000c 22BB      		out 50-0x20,r18
+ 329               	/* #APP */
+ 330 000e 97FD      		sbrc r25,7
+ 331 0010 939A      		sbi 18,3
+ 332 0012 959A      		sbi 18,5
+ 333 0014 8299      		sbic 16,2
+ 334 0016 8068      		ori r24,1<<7
+ 335               	
+ 224:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		BIT(6);
+ 337               	.LM6:
+ 338               	/* #NOAPP */
+ 339 0018 22BB      		out 50-0x20,r18
+ 340               	/* #APP */
+ 341 001a 96FD      		sbrc r25,6
+ 342 001c 939A      		sbi 18,3
+ 343 001e 959A      		sbi 18,5
+ 344 0020 8299      		sbic 16,2
+ 345 0022 8064      		ori r24,1<<6
+ 346               	
+ 225:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		BIT(5);
+ 348               	.LM7:
+ 349               	/* #NOAPP */
+ 350 0024 22BB      		out 50-0x20,r18
+ 351               	/* #APP */
+ 352 0026 95FD      		sbrc r25,5
+ 353 0028 939A      		sbi 18,3
+ 354 002a 959A      		sbi 18,5
+ 355 002c 8299      		sbic 16,2
+ 356 002e 8062      		ori r24,1<<5
+ 357               	
+ 226:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		BIT(4);
+ 359               	.LM8:
+ 360               	/* #NOAPP */
+ 361 0030 22BB      		out 50-0x20,r18
+ 362               	/* #APP */
+ 363 0032 94FD      		sbrc r25,4
+ 364 0034 939A      		sbi 18,3
+ 365 0036 959A      		sbi 18,5
+ 366 0038 8299      		sbic 16,2
+ 367 003a 8061      		ori r24,1<<4
+ 368               	
+ 227:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		BIT(3);
+ 370               	.LM9:
+ 371               	/* #NOAPP */
+ 372 003c 22BB      		out 50-0x20,r18
+ 373               	/* #APP */
+ 374 003e 93FD      		sbrc r25,3
+ 375 0040 939A      		sbi 18,3
+ 376 0042 959A      		sbi 18,5
+ 377 0044 8299      		sbic 16,2
+ 378 0046 8860      		ori r24,1<<3
+ 379               	
+ 228:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		BIT(2);
+ 381               	.LM10:
+ 382               	/* #NOAPP */
+ 383 0048 22BB      		out 50-0x20,r18
+ 384               	/* #APP */
+ 385 004a 92FD      		sbrc r25,2
+ 386 004c 939A      		sbi 18,3
+ 387 004e 959A      		sbi 18,5
+ 388 0050 8299      		sbic 16,2
+ 389 0052 8460      		ori r24,1<<2
+ 390               	
+ 229:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		BIT(1);
+ 392               	.LM11:
+ 393               	/* #NOAPP */
+ 394 0054 22BB      		out 50-0x20,r18
+ 395               	/* #APP */
+ 396 0056 91FD      		sbrc r25,1
+ 397 0058 939A      		sbi 18,3
+ 398 005a 959A      		sbi 18,5
+ 399 005c 8299      		sbic 16,2
+ 400 005e 8260      		ori r24,1<<1
+ 401               	
+ 230:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		BIT(0);
+ 403               	.LM12:
+ 404               	/* #NOAPP */
+ 405 0060 22BB      		out 50-0x20,r18
+ 406               	/* #APP */
+ 407 0062 90FD      		sbrc r25,0
+ 408 0064 939A      		sbi 18,3
+ 409 0066 959A      		sbi 18,5
+ 410 0068 8299      		sbic 16,2
+ 411 006a 8160      		ori r24,1<<0
+ 412               	
+ 413               	/* #NOAPP */
+ 414               	.LBE2:
+ 231:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	}
+ 232:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	LEAVE_CRITICAL_SECTION();
+ 416               	.LM13:
+ 417               	/* #APP */
+ 418 006c 3FBF      		out __SREG__, r19
+ 419               		
+ 233:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	return spiIn;
+ 234:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** }
+ 421               	.LM14:
+ 422               	/* #NOAPP */
+ 423 006e 9927      		clr r25
+ 424               	/* epilogue: frame size=0 */
+ 425 0070 0895      		ret
+ 426               	/* epilogue end (size=1) */
+ 427               	/* function FlashSPI_txByte size 120 (119) */
+ 436               	.Lscope0:
+ 439               	.global	__vector_3
+ 441               	__vector_3:
+ 235:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 236:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** /**
+ 237:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  * Check FLASH status byte.
+ 238:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  * @return true if the flash is ready, FALSE if not.
+ 239:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  *   In the true case, the full status byte may not have been
+ 240:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  *   read out of the flash, in the FALSE case it is fully read out.
+ 241:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****  */
+ 242:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 243:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static bool FlashIdle_wait() {
+ 244:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	bool waits;
+ 245:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	HAS_CRITICAL_SECTION;
+ 246:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 247:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	// Setup interrupt on rising edge of flash in
+ 248:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	ENTER_CRITICAL_SECTION();
+ 249:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	{
+ 250:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		EIFR = 1 << 2; // clear any pending interrupt
+ 251:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		ENABLE_FLASH_INTERRUPT();
+ 252:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		CLR_FLASH_CLK();
+ 253:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		// We need to wait at least 2 cycles here (because of the signal
+ 254:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		// acquisition delay). It's also good to wait a few microseconds
+ 255:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		// to get the fast ("FAIL") exit from wait (reads are twice as fast
+ 256:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		// with a 2us delay...)
+ 257:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		TOSH_uwait(2);
+ 258:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 259:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		if (READ_FLASH_IN())
+ 260:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		{
+ 261:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			// already high
+ 262:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			DISABLE_FLASH_INTERRUPT();
+ 263:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			waits = false;
+ 264:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		}
+ 265:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		else {
+ 266:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			waits = true;
+ 267:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		}
+ 268:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	}
+ 269:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	LEAVE_CRITICAL_SECTION();
+ 270:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****     return waits;
+ 271:/Users/Administrator/sos-2x/platform/micaz/exflash.c ****   }
+ 272:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 273:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 274:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** SIGNAL(SIG_INTERRUPT2) {
+ 443               	.LM15:
+ 444               	/* prologue: frame size=0 */
+ 445 0072 1F92      		push __zero_reg__
+ 446 0074 0F92      		push __tmp_reg__
+ 447 0076 0FB6      		in __tmp_reg__,__SREG__
+ 448 0078 0F92      		push __tmp_reg__
+ 449 007a 1124      		clr __zero_reg__
+ 450 007c EF92      		push r14
+ 451 007e FF92      		push r15
+ 452 0080 0F93      		push r16
+ 453 0082 1F93      		push r17
+ 454 0084 2F93      		push r18
+ 455 0086 3F93      		push r19
+ 456 0088 4F93      		push r20
+ 457 008a 5F93      		push r21
+ 458 008c 6F93      		push r22
+ 459 008e 7F93      		push r23
+ 460 0090 8F93      		push r24
+ 461 0092 9F93      		push r25
+ 462 0094 AF93      		push r26
+ 463 0096 BF93      		push r27
+ 464 0098 EF93      		push r30
+ 465 009a FF93      		push r31
+ 466               	/* prologue end (size=21) */
+ 275:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	DISABLE_FLASH_INTERRUPT();
+ 468               	.LM16:
+ 469 009c 89B7      		in r24,89-0x20
+ 470 009e 8B7F      		andi r24,lo8(-5)
+ 471 00a0 89BF      		out 89-0x20,r24
+ 276:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	EIMSK &= ~_BV(2); // disable interrupt
+ 473               	.LM17:
+ 474 00a2 89B7      		in r24,89-0x20
+ 475 00a4 8B7F      		andi r24,lo8(-5)
+ 476 00a6 89BF      		out 89-0x20,r24
+ 277:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	post_short(EXFLASH_PID, EXFLASH_PID, MSG_EXFLASH_AVAIL, 0, 0, 0);
+ 478               	.LM18:
+ 479 00a8 EE24      		clr r14
+ 480 00aa FF24      		clr r15
+ 481 00ac 8701      		movw r16,r14
+ 482 00ae 20E0      		ldi r18,lo8(0)
+ 483 00b0 43E8      		ldi r20,lo8(-125)
+ 484 00b2 65E4      		ldi r22,lo8(69)
+ 485 00b4 862F      		mov r24,r22
+ 486 00b6 0E94 0000 		call post_short
+ 487               	/* epilogue: frame size=0 */
+ 488 00ba FF91      		pop r31
+ 489 00bc EF91      		pop r30
+ 490 00be BF91      		pop r27
+ 491 00c0 AF91      		pop r26
+ 492 00c2 9F91      		pop r25
+ 493 00c4 8F91      		pop r24
+ 494 00c6 7F91      		pop r23
+ 495 00c8 6F91      		pop r22
+ 496 00ca 5F91      		pop r21
+ 497 00cc 4F91      		pop r20
+ 498 00ce 3F91      		pop r19
+ 499 00d0 2F91      		pop r18
+ 500 00d2 1F91      		pop r17
+ 501 00d4 0F91      		pop r16
+ 502 00d6 FF90      		pop r15
+ 503 00d8 EF90      		pop r14
+ 504 00da 0F90      		pop __tmp_reg__
+ 505 00dc 0FBE      		out __SREG__,__tmp_reg__
+ 506 00de 0F90      		pop __tmp_reg__
+ 507 00e0 1F90      		pop __zero_reg__
+ 508 00e2 1895      		reti
+ 509               	/* epilogue end (size=21) */
+ 510               	/* function __vector_3 size 57 (15) */
+ 512               	.Lscope1:
+ 515               	.global	exflash_init
+ 517               	exflash_init:
+ 278:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** }
+ 279:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 280:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static inline bool getCompareStatus() {
+ 281:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	SET_FLASH_CLK();
+ 282:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	CLR_FLASH_CLK();
+ 283:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	// Wait for compare value to propagate
+ 284:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	asm volatile("nop");
+ 285:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	asm volatile("nop");
+ 286:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	return !READ_FLASH_IN();
+ 287:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** }
+ 288:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 289:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** int8_t exflash_init() 
+ 290:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** {
+ 519               	.LM19:
+ 520               	/* prologue: frame size=0 */
+ 521               	/* prologue end (size=0) */
+ 522               	.LBB3:
+ 523               	.LBB4:
+ 524               	.LBB5:
+ 525               	.LBB6:
+ 527               	.Ltext1:
+   1:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** /* -*- Mode: C; tab-width:4 -*- */
+   2:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** /* ex: set ts=4: */
+   3:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+   4:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+   5:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** #ifndef _PIN_DEFS_H_
+   6:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** #define _PIN_DEFS_H_
+   7:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+   8:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** #include <avr/io.h>
+   9:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** /** 
+  10:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * port/pin naming scheme from the atmega128 datasheet.
+  11:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * if using avr-libc all names are declared in iom128.h which is included from io.h
+  12:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  */
+  13:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** /**
+  14:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * Port names
+  15:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  *
+  16:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * PORTx:	Data Register
+  17:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * DDRx:	Data Direction Register
+  18:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * PINx:	Port Input Pins
+  19:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  */
+  20:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+  21:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** /**
+  22:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * Pin names
+  23:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  *
+  24:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * DDxn: 	Data Direction Bit
+  25:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * PORTxn: 	Data Bit
+  26:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * PINxn:	Pin Input Bit
+  27:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  */
+  28:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+  29:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** /**
+  30:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * Global IO controls
+  31:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * 
+  32:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * SLEEP: SLEEP CONTROL
+  33:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * PUD: PULLUP DISABLE
+  34:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * clkI/O: I/O CLOCK
+  35:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  */
+  36:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+  37:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** /**
+  38:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * Port specific controls
+  39:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * 
+  40:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * WDx: WRITE DDRx
+  41:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * RDx: READ DDRx
+  42:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * WPx: WRITE PORTx
+  43:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * RRx: READ PORTx REGISTER
+  44:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * RPx: READ PORTx PIN
+  45:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  */
+  46:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+  47:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** /**
+  48:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * Pin specific controls
+  49:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * 
+  50:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * PUOExn: Pxn PULL-UP OVERRIDE ENABLE
+  51:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * PUOVxn: Pxn PULL-UP OVERRIDE VALUE
+  52:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * DDOExn: Pxn DATA DIRECTION OVERRIDE ENABLE
+  53:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * DDOVxn: Pxn DATA DIRECTION OVERRIDE VALUE
+  54:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * PVOExn: Pxn PORT VALUE OVERRIDE ENABLE
+  55:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * PVOVxn: Pxn PORT VALUE OVERRIDE VALUE
+  56:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * DIxn: DIGITAL INPUT PIN n ON PORTx
+  57:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * AIOxn: ANALOG INPUT/OUTPUT PIN n ON PORTx
+  58:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * DIEOExn: Pxn DIGITAL INPUT-ENABLE OVERRIDE ENABLE
+  59:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * DIEOVxn: Pxn DIGITAL INPUT-ENABLE OVERRIDE VALUE
+  60:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * DIxn: DIGITAL INPUT PIN n ON PORTx
+  61:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * AIOxn: ANALOG INPUT/OUTPUT PIN n ON PORTx
+  62:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  */
+  63:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+  64:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+  65:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** #define DEF_IO_PIN(name, port, pin) \
+  66:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline uint8_t name##_PORT() { return _SFR_ADDR(PORT##port); } \
+  67:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline uint8_t name##_BIT() { return pin; } \
+  68:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	\
+  69:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline int8_t READ_##name() \
+  70:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 		{ return (PIN##port & (1 << pin)) ? 1 : 0; } \
+  71:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline int8_t name##_IS_SET() \
+  72:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 		{ return (PORT##port & (1 << pin)) ? 1 : 0; } \
+  73:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline int8_t name##_IS_CLR() \
+  74:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 		{ return (PORT##port & (1 << pin)) ? 0 : 1; } \
+  75:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	\
+  76:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void SET_##name() { PORT##port |= (1 << pin); } \
+  77:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void CLR_##name() { PORT##port &= (~(1 << pin )); } \
+  78:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void TOGGLE_##name() { PORT##port ^= (1 << pin ); } \
+  79:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	\
+  80:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void SET_##name##_DD_OUT() { DDR##port |= (1 << pin); } \
+  81:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void SET_##name##_DD_IN() { DDR##port &= ~(1 << pin); }
+  82:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+  83:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+  84:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** #define DEF_OUTPUT_PIN(name, port, pin) \
+  85:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline uint8_t name##_PORT() { return _SFR_ADDR(PORT##port); } \
+  86:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline uint8_t name##_BIT() { return pin; } \
+  87:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	\
+  88:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline int8_t name##_IS_SET() \
+  89:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 		{ return (PORT##port & (1 << pin)) ? 1 : 0; } \
+  90:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline int8_t name##_IS_CLR() \
+  91:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 		{ return (PORT##port & (1 << pin)) ? 0 : 1; } \
+  92:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	\
+  93:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void SET_##name() { PORT##port |= (1 << pin); } \
+  94:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void CLR_##name() { PORT##port &= (~(1 << pin )); } \
+  95:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void TOGGLE_##name() { PORT##port ^= (1 << pin ); } \
+  96:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	\
+  97:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void SET_##name##_DD_OUT() { DDR##port |= (1 << pin); } \
+  98:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	\
+  99:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void name##_CS_HIGH() { PORT##port |= (1 << pin); } \
+ 100:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void name##_CS_LOW() { PORT##port &= (~(1 << pin )); }
+ 101:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+ 102:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+ 103:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** #define ALIAS_IO_PIN(alias, pin) \
+ 104:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline uint8_t alias##_PORT() { return pin##_PORT(); } \
+ 105:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline uint8_t alias##_BIT() { return pin##_BIT(); } \
+ 106:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	\
+ 107:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline int8_t READ_##alias() { return READ_##pin(); } \
+ 108:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline int8_t alias##_IS_SET() { return pin##_IS_SET(); } \
+ 109:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline int8_t alias##_IS_CLR() { return pin##_IS_CLR(); } \
+ 110:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	\
+ 111:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void SET_##alias() { SET_##pin(); } \
+ 112:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void CLR_##alias() { CLR_##pin(); } \
+ 113:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void TOGGLE_##alias() { TOGGLE_##pin(); } \
+ 114:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	\
+ 115:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void SET_##alias##_DD_IN() { SET_##pin##_DD_IN(); } \
+ 116:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void SET_##alias##_DD_OUT() { SET_##pin##_DD_OUT(); }
+ 117:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 		
+ 118:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+ 119:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** #define ALIAS_OUTPUT_PIN(alias, pin) \
+ 120:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline uint8_t alias##_PORT() { return pin##_PORT(); } \
+ 121:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline uint8_t alias##_BIT() { return pin##_BIT(); } \
+ 122:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	\
+ 123:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline int8_t alias##_IS_SET() { return pin##_IS_SET(); } \
+ 124:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline int8_t alias##_IS_CLR() { return pin##_IS_CLR(); } \
+ 125:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	\
+ 126:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void SET_##alias() { SET_##pin(); } \
+ 127:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void CLR_##alias() { CLR_##pin(); } \
+ 128:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void TOGGLE_##alias() { TOGGLE_##pin(); } \
+ 129:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	\
+ 130:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void SET_##alias##_DD_OUT() { SET_##pin##_DD_OUT(); } \
+ 131:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	\
+ 132:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void alias##_CS_HIGH() { SET_##pin(); } \
+ 133:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void alias##_CS_LOW() { CLR_##pin(); }
+ 134:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+ 135:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+ 136:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** /**
+ 137:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * PORTA:
+ 138:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  */
+ 139:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINA7, A, PA7);
+ 140:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINA6, A, PA6);
+ 141:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINA5, A, PA5);
+ 142:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINA4, A, PA4);
+ 143:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINA3, A, PA3);
+ 529               	.LM20:
+ 530 00e4 D39A      		sbi 58-0x20,3
+ 531               	.LBE6:
+ 532               	.LBE5:
+ 533               	.LBE4:
+ 534               	.LBE3:
+ 535               	.LBB7:
+ 536               	.LBB8:
+ 537               	.LBB9:
+ 538               	.LBB10:
+ 539 00e6 DB9A      		sbi 59-0x20,3
+ 540               	.LBE10:
+ 541               	.LBE9:
+ 542               	.LBE8:
+ 543               	.LBE7:
+ 544               	.LBB11:
+ 545               	.LBB12:
+ 546               	.LBB13:
+ 547               	.LBB14:
+ 144:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINA2, A, PA2);
+ 145:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINA1, A, PA1);
+ 146:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINA0, A, PA0);
+ 147:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+ 148:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** /**
+ 149:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * PORTB:
+ 150:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  */
+ 151:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINB7, B, PB7);
+ 152:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINB6, B, PB6);
+ 153:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINB5, B, PB5);
+ 154:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINB4, B, PB4);
+ 155:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINB3, B, PB3);
+ 156:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINB2, B, PB2);
+ 157:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINB1, B, PB1);
+ 158:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINB0, B, PB0);
+ 159:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+ 160:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** /**
+ 161:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * PORTC:
+ 162:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  */
+ 163:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINC7, C, PC7);
+ 164:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINC6, C, PC6);
+ 165:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINC5, C, PC5);
+ 166:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINC4, C, PC4);
+ 167:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINC3, C, PC3);
+ 168:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINC2, C, PC2);
+ 169:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINC1, C, PC1);
+ 170:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINC0, C, PC0);
+ 171:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+ 172:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+ 173:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** /**
+ 174:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * PORTD:
+ 175:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  */
+ 176:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PIND7, D, PD7);
+ 177:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PIND6, D, PD6);
+ 178:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PIND5, D, PD5);
+ 549               	.LM21:
+ 550 00e8 8D9A      		sbi 49-0x20,5
+ 551               	.LBE14:
+ 552               	.LBE13:
+ 553               	.LBE12:
+ 554               	.LBE11:
+ 555               	.LBB15:
+ 556               	.LBB16:
+ 557               	.LBB17:
+ 558               	.LBB18:
+ 559 00ea 9598      		cbi 50-0x20,5
+ 560               	.LBE18:
+ 561               	.LBE17:
+ 562               	.LBE16:
+ 563               	.LBE15:
+ 564               	.LBB19:
+ 565               	.LBB20:
+ 566               	.LBB21:
+ 567               	.LBB22:
+ 179:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PIND4, D, PD4);
+ 180:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PIND3, D, PD3);
+ 569               	.LM22:
+ 570 00ec 8B9A      		sbi 49-0x20,3
+ 571               	.LBE22:
+ 572               	.LBE21:
+ 573               	.LBE20:
+ 574               	.LBE19:
+ 575               	.LBB23:
+ 576               	.LBB24:
+ 577               	.LBB25:
+ 578               	.LBB26:
+ 579 00ee 939A      		sbi 50-0x20,3
+ 580               	.LBE26:
+ 581               	.LBE25:
+ 582               	.LBE24:
+ 583               	.LBE23:
+ 584               	.LBB27:
+ 585               	.LBB28:
+ 586               	.LBB29:
+ 587               	.LBB30:
+ 181:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PIND2, D, PD2);
+ 589               	.LM23:
+ 590 00f0 8A98      		cbi 49-0x20,2
+ 591               	.LBE30:
+ 592               	.LBE29:
+ 593               	.LBE28:
+ 594               	.LBE27:
+ 595               	.LBB31:
+ 596               	.LBB32:
+ 597               	.LBB33:
+ 598               	.LBB34:
+ 599 00f2 9298      		cbi 50-0x20,2
+ 600               	.LBE34:
+ 601               	.LBE33:
+ 602               	.LBE32:
+ 603               	.LBE31:
+ 605               	.Ltext2:
+ 291:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	SET_FLASH_SELECT_DD_OUT();
+ 292:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	SET_FLASH_SELECT();
+ 293:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 294:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	SET_FLASH_CLK_DD_OUT();
+ 295:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	CLR_FLASH_CLK();
+ 296:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	SET_FLASH_OUT_DD_OUT();
+ 297:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	SET_FLASH_OUT();
+ 298:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	SET_FLASH_IN_DD_IN();
+ 299:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	CLR_FLASH_IN();
+ 300:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 301:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	DISABLE_FLASH_INTERRUPT();
+ 607               	.LM24:
+ 608 00f4 89B7      		in r24,89-0x20
+ 609 00f6 8B7F      		andi r24,lo8(-5)
+ 610 00f8 89BF      		out 89-0x20,r24
+ 302:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	EICRA |= 0x30; // make flash in a rising-edge interrupt
+ 612               	.LM25:
+ 613 00fa 8091 6A00 		lds r24,106
+ 614 00fe 8063      		ori r24,lo8(48)
+ 615 0100 8093 6A00 		sts 106,r24
+ 303:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 304:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	request = IDLE;
+ 617               	.LM26:
+ 618 0104 1092 0000 		sts request,__zero_reg__
+ 305:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	waiting = deselectRequested = false;
+ 620               	.LM27:
+ 621 0108 1092 0000 		sts deselectRequested,__zero_reg__
+ 622 010c 1092 0000 		sts waiting,__zero_reg__
+ 306:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	flashBusy = true;
+ 624               	.LM28:
+ 625 0110 81E0      		ldi r24,lo8(1)
+ 626 0112 8093 0000 		sts flashBusy,r24
+ 307:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 308:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	// pretend we're on an invalid non-existent page
+ 309:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	buffer[0].page = buffer[1].page = EXFLASH_MAX_PAGES;
+ 628               	.LM29:
+ 629 0116 80E0      		ldi r24,lo8(2048)
+ 630 0118 98E0      		ldi r25,hi8(2048)
+ 631 011a 9093 0000 		sts (buffer+3)+1,r25
+ 632 011e 8093 0000 		sts buffer+3,r24
+ 633 0122 9093 0000 		sts (buffer)+1,r25
+ 634 0126 8093 0000 		sts buffer,r24
+ 310:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	buffer[0].busy = buffer[1].busy = false;
+ 636               	.LM30:
+ 637 012a 8091 0000 		lds r24,buffer+5
+ 638 012e 9091 0000 		lds r25,buffer+2
+ 311:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	buffer[0].clean = buffer[1].clean = true;
+ 640               	.LM31:
+ 641 0132 8260      		ori r24,lo8(2)
+ 642 0134 9260      		ori r25,lo8(2)
+ 312:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	buffer[0].unchecked = buffer[1].unchecked = 0;
+ 313:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	buffer[0].erased = buffer[1].erased = false;
+ 644               	.LM32:
+ 645 0136 827E      		andi r24,lo8(-30)
+ 646 0138 8093 0000 		sts buffer+5,r24
+ 647 013c 927E      		andi r25,lo8(-30)
+ 648 013e 9093 0000 		sts buffer+2,r25
+ 314:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 315:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	reqPid = NULL_PID;
+ 650               	.LM33:
+ 651 0142 8FEF      		ldi r24,lo8(-1)
+ 652 0144 8093 0000 		sts reqPid,r24
+ 316:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** #ifdef SOS_USE_PREEMPTION
+ 317:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	ker_register_module(sos_get_header_address(mod_header));
+ 318:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** #else
+ 319:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	sched_register_kernel_module(&exflash_module, sos_get_header_address(mod_header), NULL);
+ 654               	.LM34:
+ 655 0148 80E0      		ldi r24,lo8(mod_header)
+ 656 014a 90E0      		ldi r25,hi8(mod_header)
+ 657 014c AA27      		clr r26
+ 658 014e 97FD      		sbrc r25,7
+ 659 0150 A095      		com r26
+ 660 0152 BA2F      		mov r27,r26
+ 661 0154 B695      		lsr r27
+ 662 0156 A795      		ror r26
+ 663 0158 9795      		ror r25
+ 664 015a 8795      		ror r24
+ 665 015c 40E0      		ldi r20,lo8(0)
+ 666 015e 50E0      		ldi r21,hi8(0)
+ 667 0160 BC01      		movw r22,r24
+ 668 0162 80E0      		ldi r24,lo8(exflash_module)
+ 669 0164 90E0      		ldi r25,hi8(exflash_module)
+ 670 0166 0E94 0000 		call sched_register_kernel_module
+ 320:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** #endif
+ 321:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	return SOS_OK;
+ 322:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** }
+ 672               	.LM35:
+ 673 016a 80E0      		ldi r24,lo8(0)
+ 674 016c 90E0      		ldi r25,hi8(0)
+ 675               	/* epilogue: frame size=0 */
+ 676 016e 0895      		ret
+ 677               	/* epilogue end (size=1) */
+ 678               	/* function exflash_init size 70 (69) */
+ 680               	.Lscope2:
+ 684               	FlashIdle_available:
+ 323:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 324:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** /* Select Ex-Flash, start a SPI transaction */
+ 325:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static inline void selectFlash()
+ 326:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** {
+ 327:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	CLR_FLASH_CLK(); // ensure SPI mode 0
+ 328:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	CLR_FLASH_SELECT();
+ 329:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** }
+ 330:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 331:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** /* Deselect Ex-Flash */
+ 332:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static inline void requestDeselect()
+ 333:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** {
+ 334:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	deselectRequested = true;
+ 335:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	SET_FLASH_SELECT();
+ 336:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 337:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	post_short(EXFLASH_PID, EXFLASH_PID, MSG_EXFLASH_DESELECT, 0, 0, 0);
+ 338:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** }
+ 339:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 340:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static void FlashIdle_available()
+ 341:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** {
+ 686               	.LM36:
+ 687               	/* prologue: frame size=0 */
+ 688 0170 EF92      		push r14
+ 689 0172 FF92      		push r15
+ 690 0174 0F93      		push r16
+ 691 0176 1F93      		push r17
+ 692               	/* prologue end (size=4) */
+ 342:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	if (cmdPhase == P_COMPARE_CHECK)
+ 694               	.LM37:
+ 695 0178 8091 0000 		lds r24,cmdPhase
+ 696 017c 8830      		cpi r24,lo8(8)
+ 697 017e 91F4      		brne .L21
+ 698               	.LBB35:
+ 699               	.LBB36:
+ 700               	.LBB37:
+ 701               	.LBB38:
+ 702               	.LBB39:
+ 703               	.LBB40:
+ 705               	.Ltext3:
+ 707               	.LM38:
+ 708 0180 959A      		sbi 50-0x20,5
+ 709               	.LBE40:
+ 710               	.LBE39:
+ 711               	.LBE38:
+ 712               	.LBE37:
+ 713               	.LBB41:
+ 714               	.LBB42:
+ 715               	.LBB43:
+ 716               	.LBB44:
+ 717 0182 9598      		cbi 50-0x20,5
+ 718               	.LBE44:
+ 719               	.LBE43:
+ 720               	.LBE42:
+ 721               	.LBE41:
+ 723               	.Ltext4:
+ 725               	.LM39:
+ 726               	/* #APP */
+ 727 0184 0000      		nop
+ 729               	.LM40:
+ 730 0186 0000      		nop
+ 731               	/* #NOAPP */
+ 732 0188 20E0      		ldi r18,lo8(0)
+ 733 018a 30E0      		ldi r19,hi8(0)
+ 734               	.LBB45:
+ 735               	.LBB46:
+ 736               	.LBB47:
+ 737               	.LBB48:
+ 739               	.Ltext5:
+ 741               	.LM41:
+ 742 018c 80B3      		in r24,48-0x20
+ 743 018e 9927      		clr r25
+ 744 0190 9695      		lsr r25
+ 745 0192 8795      		ror r24
+ 746 0194 9695      		lsr r25
+ 747 0196 8795      		ror r24
+ 748               	.LBE48:
+ 749               	.LBE47:
+ 750               	.LBE46:
+ 751               	.LBE45:
+ 753               	.Ltext6:
+   1:/Users/Administrator/sos-2x/platform/micaz/include/pin_map.h **** /* -*- Mode: C; tab-width:4 -*- */
+   2:/Users/Administrator/sos-2x/platform/micaz/include/pin_map.h **** /* ex: set ts=4: */
+   3:/Users/Administrator/sos-2x/platform/micaz/include/pin_map.h **** 
+   4:/Users/Administrator/sos-2x/platform/micaz/include/pin_map.h **** #ifndef _PIN_MAP_H_
+   5:/Users/Administrator/sos-2x/platform/micaz/include/pin_map.h **** #define _PIN_MAP_H_
+   6:/Users/Administrator/sos-2x/platform/micaz/include/pin_map.h **** 
+   7:/Users/Administrator/sos-2x/platform/micaz/include/pin_map.h **** #include <pin_defs.h>
+   8:/Users/Administrator/sos-2x/platform/micaz/include/pin_map.h **** #include <pin_alt_func.h>
+   9:/Users/Administrator/sos-2x/platform/micaz/include/pin_map.h **** 
+  10:/Users/Administrator/sos-2x/platform/micaz/include/pin_map.h **** // LED assignments
+  11:/Users/Administrator/sos-2x/platform/micaz/include/pin_map.h **** ALIAS_IO_PIN( RED_LED, PINA2);
+  12:/Users/Administrator/sos-2x/platform/micaz/include/pin_map.h **** ALIAS_IO_PIN( GREEN_LED, PINA1);
+  13:/Users/Administrator/sos-2x/platform/micaz/include/pin_map.h **** ALIAS_IO_PIN( YELLOW_LED, PINA0);
+  14:/Users/Administrator/sos-2x/platform/micaz/include/pin_map.h **** 
+  15:/Users/Administrator/sos-2x/platform/micaz/include/pin_map.h **** ALIAS_IO_PIN( SERIAL_ID, PINA4);
+  16:/Users/Administrator/sos-2x/platform/micaz/include/pin_map.h **** ALIAS_IO_PIN( BAT_MON, PINA5);
+  17:/Users/Administrator/sos-2x/platform/micaz/include/pin_map.h **** ALIAS_IO_PIN( THERM_PWR, PINA7);
+  18:/Users/Administrator/sos-2x/platform/micaz/include/pin_map.h **** 
+  19:/Users/Administrator/sos-2x/platform/micaz/include/pin_map.h **** // ChipCon control assignments
+  20:/Users/Administrator/sos-2x/platform/micaz/include/pin_map.h **** 
+  21:/Users/Administrator/sos-2x/platform/micaz/include/pin_map.h **** #define CC_FIFOP_INT SIG_INTERRUPT6
+  22:/Users/Administrator/sos-2x/platform/micaz/include/pin_map.h **** ALIAS_IO_PIN( CC_RSTN, PINA6); // chipcon reset
+  23:/Users/Administrator/sos-2x/platform/micaz/include/pin_map.h **** ALIAS_IO_PIN( CC_VREN, PINA5); // chipcon power enable
+  24:/Users/Administrator/sos-2x/platform/micaz/include/pin_map.h **** //ALIAS_IO_PIN( CC_FIFOP1, PIND7);  // fifo interrupt
+  25:/Users/Administrator/sos-2x/platform/micaz/include/pin_map.h **** ALIAS_IO_PIN( CC_FIFOP1, PINE6);  // fifo interrupt
+  26:/Users/Administrator/sos-2x/platform/micaz/include/pin_map.h **** 
+  27:/Users/Administrator/sos-2x/platform/micaz/include/pin_map.h **** ALIAS_IO_PIN( CC_CCA, PIND6);	  // 
+  28:/Users/Administrator/sos-2x/platform/micaz/include/pin_map.h **** ALIAS_IO_PIN( CC_SFD, PIND4);	  // chipcon packet arrival
+  29:/Users/Administrator/sos-2x/platform/micaz/include/pin_map.h **** ALIAS_IO_PIN( CC_CS, PINB0);	  // chipcon enable
+  30:/Users/Administrator/sos-2x/platform/micaz/include/pin_map.h **** ALIAS_IO_PIN( CC_FIFO, PINB7);	  // chipcon fifo
+  31:/Users/Administrator/sos-2x/platform/micaz/include/pin_map.h **** 
+  32:/Users/Administrator/sos-2x/platform/micaz/include/pin_map.h **** ALIAS_IO_PIN( RADIO_CCA, PIND6);	  // 
+  33:/Users/Administrator/sos-2x/platform/micaz/include/pin_map.h **** 
+  34:/Users/Administrator/sos-2x/platform/micaz/include/pin_map.h **** // Flash assignments
+  35:/Users/Administrator/sos-2x/platform/micaz/include/pin_map.h **** ALIAS_IO_PIN( FLASH_SELECT, PINA3);
+  36:/Users/Administrator/sos-2x/platform/micaz/include/pin_map.h **** ALIAS_IO_PIN( FLASH_CLK, PIND5);
+  37:/Users/Administrator/sos-2x/platform/micaz/include/pin_map.h **** ALIAS_IO_PIN( FLASH_OUT, PIND3);
+  38:/Users/Administrator/sos-2x/platform/micaz/include/pin_map.h **** ALIAS_IO_PIN( FLASH_IN, PIND2);
+ 755               	.LM42:
+ 756 0198 80FD      		sbrc r24,0
+ 757 019a 02C0      		rjmp .L26
+ 758 019c 21E0      		ldi r18,lo8(1)
+ 759 019e 30E0      		ldi r19,hi8(1)
+ 760               	.L26:
+ 761               	.LBE36:
+ 762               	.LBE35:
+ 764               	.Ltext7:
+ 766               	.LM43:
+ 767 01a0 2093 0000 		sts compareOk,r18
+ 768               	.L21:
+ 769               	.LBB49:
+ 770               	.LBB50:
+ 772               	.LM44:
+ 773 01a4 81E0      		ldi r24,lo8(1)
+ 774 01a6 8093 0000 		sts deselectRequested,r24
+ 775               	.LBB51:
+ 776               	.LBB52:
+ 777               	.LBB53:
+ 778               	.LBB54:
+ 780               	.Ltext8:
+ 782               	.LM45:
+ 783 01aa DB9A      		sbi 59-0x20,3
+ 784               	.LBE54:
+ 785               	.LBE53:
+ 786               	.LBE52:
+ 787               	.LBE51:
+ 789               	.Ltext9:
+ 791               	.LM46:
+ 792 01ac EE24      		clr r14
+ 793 01ae FF24      		clr r15
+ 794 01b0 8701      		movw r16,r14
+ 795 01b2 20E0      		ldi r18,lo8(0)
+ 796 01b4 42E8      		ldi r20,lo8(-126)
+ 797 01b6 65E4      		ldi r22,lo8(69)
+ 798 01b8 862F      		mov r24,r22
+ 799 01ba 0E94 0000 		call post_short
+ 800               	.LBE50:
+ 801               	.LBE49:
+ 802               	/* epilogue: frame size=0 */
+ 803 01be 1F91      		pop r17
+ 804 01c0 0F91      		pop r16
+ 805 01c2 FF90      		pop r15
+ 806 01c4 EF90      		pop r14
+ 807 01c6 0895      		ret
+ 808               	/* epilogue end (size=5) */
+ 809               	/* function FlashIdle_available size 46 (37) */
+ 811               	.Lscope3:
+ 815               	requestFlashStatus:
+ 343:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		compareOk = getCompareStatus();
+ 344:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	requestDeselect();
+ 345:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** }
+ 346:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 347:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static void requestFlashStatus() {
+ 817               	.LM47:
+ 818               	/* prologue: frame size=0 */
+ 819               	/* prologue end (size=0) */
+ 348:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	waiting = true;
+ 821               	.LM48:
+ 822 01c8 81E0      		ldi r24,lo8(1)
+ 823 01ca 8093 0000 		sts waiting,r24
+ 824               	.LBB55:
+ 825               	.LBB56:
+ 826               	.LBB57:
+ 827               	.LBB58:
+ 828               	.LBB59:
+ 829               	.LBB60:
+ 831               	.Ltext10:
+ 833               	.LM49:
+ 834 01ce 9598      		cbi 50-0x20,5
+ 835               	.LBE60:
+ 836               	.LBE59:
+ 837               	.LBE58:
+ 838               	.LBE57:
+ 839               	.LBB61:
+ 840               	.LBB62:
+ 841               	.LBB63:
+ 842               	.LBB64:
+ 844               	.LM50:
+ 845 01d0 DB98      		cbi 59-0x20,3
+ 846               	.LBE64:
+ 847               	.LBE63:
+ 848               	.LBE62:
+ 849               	.LBE61:
+ 850               	.LBE56:
+ 851               	.LBE55:
+ 853               	.Ltext11:
+ 349:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	selectFlash();
+ 350:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 351:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	FlashSPI_txByte(C_REQ_STATUS);
+ 855               	.LM51:
+ 856 01d2 87ED      		ldi r24,lo8(-41)
+ 857 01d4 0E94 0000 		call FlashSPI_txByte
+ 858               	.LBB65:
+ 859               	.LBB66:
+ 861               	.LM52:
+ 862               	/* #APP */
+ 863 01d8 2FB7      		in r18, __SREG__
+ 864 01da F894      		cli
+ 865               		
+ 867               	.LM53:
+ 868               	/* #NOAPP */
+ 869 01dc 84E0      		ldi r24,lo8(4)
+ 870 01de 88BF      		out 88-0x20,r24
+ 872               	.LM54:
+ 873 01e0 89B7      		in r24,89-0x20
+ 874 01e2 8460      		ori r24,lo8(4)
+ 875 01e4 89BF      		out 89-0x20,r24
+ 876               	.LBB67:
+ 877               	.LBB68:
+ 878               	.LBB69:
+ 879               	.LBB70:
+ 881               	.Ltext12:
+ 883               	.LM55:
+ 884 01e6 9598      		cbi 50-0x20,5
+ 885               	.LBE70:
+ 886               	.LBE69:
+ 887               	.LBE68:
+ 888               	.LBE67:
+ 889               	.LBB71:
+ 891               	.Ltext13:
+ 893               	.LM56:
+ 894 01e8 82E0      		ldi r24,lo8(2)
+ 895 01ea 90E0      		ldi r25,hi8(2)
+ 896               	.L44:
+ 897               	.LBB72:
+ 899               	.LM57:
+ 900               	/* #APP */
+ 901 01ec 0000      		nop
+ 903               	.LM58:
+ 904 01ee 0000      		nop
+ 906               	.LM59:
+ 907 01f0 0000      		nop
+ 909               	.LM60:
+ 910 01f2 0000      		nop
+ 912               	.LM61:
+ 913 01f4 0000      		nop
+ 915               	.LM62:
+ 916 01f6 0000      		nop
+ 918               	.LM63:
+ 919 01f8 0000      		nop
+ 921               	.LM64:
+ 922 01fa 0000      		nop
+ 924               	.LM65:
+ 925               	/* #NOAPP */
+ 926 01fc 0197      		sbiw r24,1
+ 927 01fe B1F7      		brne .L44
+ 928               	.LBE72:
+ 929               	.LBE71:
+ 930               	.LBB73:
+ 931               	.LBB74:
+ 932               	.LBB75:
+ 933               	.LBB76:
+ 935               	.Ltext14:
+ 937               	.LM66:
+ 938 0200 80B3      		in r24,48-0x20
+ 939 0202 9927      		clr r25
+ 940 0204 9695      		lsr r25
+ 941 0206 8795      		ror r24
+ 942 0208 9695      		lsr r25
+ 943 020a 8795      		ror r24
+ 944               	.LBE76:
+ 945               	.LBE75:
+ 946               	.LBE74:
+ 947               	.LBE73:
+ 949               	.Ltext15:
+ 951               	.LM67:
+ 952 020c 80FF      		sbrs r24,0
+ 953 020e 05C0      		rjmp .L46
+ 955               	.Ltext16:
+ 957               	.LM68:
+ 958 0210 89B7      		in r24,89-0x20
+ 959 0212 8B7F      		andi r24,lo8(-5)
+ 960 0214 89BF      		out 89-0x20,r24
+ 962               	.LM69:
+ 963 0216 80E0      		ldi r24,lo8(0)
+ 964 0218 01C0      		rjmp .L49
+ 965               	.L46:
+ 967               	.LM70:
+ 968 021a 81E0      		ldi r24,lo8(1)
+ 969               	.L49:
+ 971               	.LM71:
+ 972               	/* #APP */
+ 973 021c 2FBF      		out __SREG__, r18
+ 974               		
+ 975               	/* #NOAPP */
+ 976               	.LBE66:
+ 977               	.LBE65:
+ 979               	.LM72:
+ 980 021e 8823      		tst r24
+ 981 0220 11F4      		brne .L33
+ 352:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	if (FlashIdle_wait() == false) // already done
+ 353:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		FlashIdle_available();
+ 983               	.LM73:
+ 984 0222 0E94 0000 		call FlashIdle_available
+ 985               	.L33:
+ 986 0226 0895      		ret
+ 987               	/* epilogue: frame size=0 */
+ 988 0228 0895      		ret
+ 989               	/* epilogue end (size=1) */
+ 990               	/* function requestFlashStatus size 65 (64) */
+ 1003               	.Lscope4:
+ 1007               	sendFlashCommand:
+ 354:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** }
+ 355:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 356:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static void sendFlashCommand() {
+ 1009               	.LM74:
+ 1010               	/* prologue: frame size=0 */
+ 1011 022a CF92      		push r12
+ 1012 022c DF92      		push r13
+ 1013 022e EF92      		push r14
+ 1014 0230 FF92      		push r15
+ 1015 0232 0F93      		push r16
+ 1016 0234 1F93      		push r17
+ 1017 0236 CF93      		push r28
+ 1018 0238 DF93      		push r29
+ 1019               	/* prologue end (size=8) */
+ 357:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	uint8_t in = 0, out = 0;
+ 1021               	.LM75:
+ 1022 023a 90E0      		ldi r25,lo8(0)
+ 1023 023c C92E      		mov r12,r25
+ 358:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	uint8_t *ptr = cmd;
+ 1025               	.LM76:
+ 1026 023e C0E0      		ldi r28,lo8(cmd)
+ 1027 0240 D0E0      		ldi r29,hi8(cmd)
+ 359:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	exflashoffset_t count = cmdCount;
+ 1029               	.LM77:
+ 1030 0242 8091 0000 		lds r24,cmdCount
+ 1031 0246 082F      		mov r16,r24
+ 1032 0248 1127      		clr r17
+ 360:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	uint16_t crc = 0;
+ 1034               	.LM78:
+ 1035 024a EE24      		clr r14
+ 1036 024c FF24      		clr r15
+ 361:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	uint8_t lphase = P_SEND_CMD;
+ 1038               	.LM79:
+ 1039 024e D92E      		mov r13,r25
+ 1040               	.LBB77:
+ 1041               	.LBB78:
+ 1042               	.LBB79:
+ 1043               	.LBB80:
+ 1044               	.LBB81:
+ 1045               	.LBB82:
+ 1047               	.Ltext17:
+ 1049               	.LM80:
+ 1050 0250 9598      		cbi 50-0x20,5
+ 1051               	.LBE82:
+ 1052               	.LBE81:
+ 1053               	.LBE80:
+ 1054               	.LBE79:
+ 1055               	.LBB83:
+ 1056               	.LBB84:
+ 1057               	.LBB85:
+ 1058               	.LBB86:
+ 1060               	.LM81:
+ 1061 0252 DB98      		cbi 59-0x20,3
+ 1062               	.L59:
+ 1063               	.LBE86:
+ 1064               	.LBE85:
+ 1065               	.LBE84:
+ 1066               	.LBE83:
+ 1067               	.LBE78:
+ 1068               	.LBE77:
+ 1070               	.Ltext18:
+ 362:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 363:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	/* For a 3% speedup, we could use labels and goto *.
+ 364:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** But: very gcc-specific. Also, need to do
+ 365:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** asm ("ijmp" : : "z" (state))
+ 366:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** instead of goto *state
+ 367:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	 */
+ 368:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 369:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	selectFlash();
+ 370:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 371:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	for (;;)
+ 372:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	{
+ 373:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		if (lphase == P_READCRC)
+ 1072               	.LM82:
+ 1073 0254 82E0      		ldi r24,lo8(2)
+ 1074 0256 D816      		cp r13,r24
+ 1075 0258 E9F4      		brne .L61
+ 1076               	.LBB87:
+ 1077               	.LBB88:
+ 1079               	.Ltext19:
+   1:/Users/Administrator/sos-2x/processor/avr/include/crc.h **** /* -*- Mode: C; tab-width:4 -*- */
+   2:/Users/Administrator/sos-2x/processor/avr/include/crc.h **** /* ex: set ts=4: */
+   3:/Users/Administrator/sos-2x/processor/avr/include/crc.h **** /*									tab:4
+   4:/Users/Administrator/sos-2x/processor/avr/include/crc.h ****  * "Copyright (c) 2000-2003 The Regents of the University  of California.  
+   5:/Users/Administrator/sos-2x/processor/avr/include/crc.h ****  * All rights reserved.
+   6:/Users/Administrator/sos-2x/processor/avr/include/crc.h ****  *
+   7:/Users/Administrator/sos-2x/processor/avr/include/crc.h ****  * Permission to use, copy, modify, and distribute this software and its
+   8:/Users/Administrator/sos-2x/processor/avr/include/crc.h ****  * documentation for any purpose, without fee, and without written agreement is
+   9:/Users/Administrator/sos-2x/processor/avr/include/crc.h ****  * hereby granted, provided that the above copyright notice, the following
+  10:/Users/Administrator/sos-2x/processor/avr/include/crc.h ****  * two paragraphs and the author appear in all copies of this software.
+  11:/Users/Administrator/sos-2x/processor/avr/include/crc.h ****  * 
+  12:/Users/Administrator/sos-2x/processor/avr/include/crc.h ****  * IN NO EVENT SHALL THE UNIVERSITY OF CALIFORNIA BE LIABLE TO ANY PARTY FOR
+  13:/Users/Administrator/sos-2x/processor/avr/include/crc.h ****  * DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES ARISING OUT
+  14:/Users/Administrator/sos-2x/processor/avr/include/crc.h ****  * OF THE USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF THE UNIVERSITY OF
+  15:/Users/Administrator/sos-2x/processor/avr/include/crc.h ****  * CALIFORNIA HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  16:/Users/Administrator/sos-2x/processor/avr/include/crc.h ****  * 
+  17:/Users/Administrator/sos-2x/processor/avr/include/crc.h ****  * THE UNIVERSITY OF CALIFORNIA SPECIFICALLY DISCLAIMS ANY WARRANTIES,
+  18:/Users/Administrator/sos-2x/processor/avr/include/crc.h ****  * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
+  19:/Users/Administrator/sos-2x/processor/avr/include/crc.h ****  * AND FITNESS FOR A PARTICULAR PURPOSE.  THE SOFTWARE PROVIDED HEREUNDER IS
+  20:/Users/Administrator/sos-2x/processor/avr/include/crc.h ****  * ON AN "AS IS" BASIS, AND THE UNIVERSITY OF CALIFORNIA HAS NO OBLIGATION TO
+  21:/Users/Administrator/sos-2x/processor/avr/include/crc.h ****  * PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS."
+  22:/Users/Administrator/sos-2x/processor/avr/include/crc.h ****  *
+  23:/Users/Administrator/sos-2x/processor/avr/include/crc.h ****  * Copyright (c) 2002-2003 Intel Corporation
+  24:/Users/Administrator/sos-2x/processor/avr/include/crc.h ****  * All rights reserved.
+  25:/Users/Administrator/sos-2x/processor/avr/include/crc.h ****  *
+  26:/Users/Administrator/sos-2x/processor/avr/include/crc.h ****  * This file is distributed under the terms in the attached INTEL-LICENSE     
+  27:/Users/Administrator/sos-2x/processor/avr/include/crc.h ****  * file. If you do not find these files, copies can be found by writing to
+  28:/Users/Administrator/sos-2x/processor/avr/include/crc.h ****  * Intel Research Berkeley, 2150 Shattuck Avenue, Suite 1300, Berkeley, CA, 
+  29:/Users/Administrator/sos-2x/processor/avr/include/crc.h ****  * 94704.  Attention:  Intel License Inquiry.
+  30:/Users/Administrator/sos-2x/processor/avr/include/crc.h ****  */
+  31:/Users/Administrator/sos-2x/processor/avr/include/crc.h **** #ifndef _CRC_H
+  32:/Users/Administrator/sos-2x/processor/avr/include/crc.h **** #define _CRC_H
+  33:/Users/Administrator/sos-2x/processor/avr/include/crc.h **** 
+  34:/Users/Administrator/sos-2x/processor/avr/include/crc.h **** extern uint16_t crcTable[256] PROGMEM;  //!< this is defined in crc.c
+  35:/Users/Administrator/sos-2x/processor/avr/include/crc.h **** 
+  36:/Users/Administrator/sos-2x/processor/avr/include/crc.h **** static inline uint16_t crcByte(uint16_t oldCrc, uint8_t byte)
+  37:/Users/Administrator/sos-2x/processor/avr/include/crc.h **** {
+  38:/Users/Administrator/sos-2x/processor/avr/include/crc.h ****   uint8_t *magic = (uint8_t *)&crcTable[oldCrc >> 8 ^ byte];
+ 1081               	.LM83:
+ 1082 025a EF2D      		mov r30,r15
+ 1083 025c FF27      		clr r31
+ 1084 025e 892F      		mov r24,r25
+ 1085 0260 9927      		clr r25
+ 1086 0262 E827      		eor r30,r24
+ 1087 0264 F927      		eor r31,r25
+ 1088 0266 EE0F      		add r30,r30
+ 1089 0268 FF1F      		adc r31,r31
+ 1090 026a E050      		subi r30,lo8(-(crcTable))
+ 1091 026c F040      		sbci r31,hi8(-(crcTable))
+ 1092               	.LBB89:
+  39:/Users/Administrator/sos-2x/processor/avr/include/crc.h **** 
+  40:/Users/Administrator/sos-2x/processor/avr/include/crc.h ****   return pgm_read_byte(magic) | ((uint8_t)oldCrc ^ pgm_read_byte(magic + 1)) << 8;
+ 1094               	.LM84:
+ 1095               	/* #APP */
+ 1096 026e 8491      		lpm r24, Z
+ 1097               		
+ 1098               	/* #NOAPP */
+ 1099               	.LBE89:
+ 1100 0270 282F      		mov r18,r24
+ 1101 0272 3327      		clr r19
+ 1102               	.LBB90:
+ 1103 0274 3196      		adiw r30,1
+ 1104               	/* #APP */
+ 1105 0276 8491      		lpm r24, Z
+ 1106               		
+ 1107               	/* #NOAPP */
+ 1108               	.LBE90:
+ 1109 0278 8E25      		eor r24,r14
+ 1110 027a 9927      		clr r25
+ 1111 027c F82E      		mov r15,r24
+ 1112 027e EE24      		clr r14
+ 1113 0280 E22A      		or r14,r18
+ 1114 0282 F32A      		or r15,r19
+ 1115               	.LBE88:
+ 1116               	.LBE87:
+ 1118               	.Ltext20:
+ 374:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		{
+ 375:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			crc = crcByte(crc, in);
+ 376:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 377:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			--count;
+ 1120               	.LM85:
+ 1121 0284 0150      		subi r16,lo8(-(-1))
+ 1122 0286 1040      		sbci r17,hi8(-(-1))
+ 378:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			if (!count)
+ 1124               	.LM86:
+ 1125 0288 39F5      		brne .L64
+ 379:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			{
+ 380:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				computedCrc = crc;
+ 1127               	.LM87:
+ 1128 028a F092 0000 		sts (computedCrc)+1,r15
+ 1129 028e E092 0000 		sts computedCrc,r14
+ 381:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				break;
+ 1131               	.LM88:
+ 1132 0292 27C0      		rjmp .L60
+ 1133               	.L61:
+ 382:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			}
+ 383:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		}
+ 384:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		else if (lphase == P_SEND_CMD)
+ 1135               	.LM89:
+ 1136 0294 DD20      		tst r13
+ 1137 0296 79F4      		brne .L65
+ 385:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		{
+ 386:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			out = *ptr++;
+ 1139               	.LM90:
+ 1140 0298 C990      		ld r12,Y+
+ 387:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			count--;
+ 1142               	.LM91:
+ 1143 029a 0150      		subi r16,lo8(-(-1))
+ 1144 029c 1040      		sbci r17,hi8(-(-1))
+ 388:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			if (!count)
+ 1146               	.LM92:
+ 1147 029e E1F4      		brne .L64
+ 389:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			{
+ 390:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				lphase = cmdPhase;
+ 1149               	.LM93:
+ 1150 02a0 D090 0000 		lds r13,cmdPhase
+ 391:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				ptr = data;
+ 1152               	.LM94:
+ 1153 02a4 C091 0000 		lds r28,data
+ 1154 02a8 D091 0000 		lds r29,(data)+1
+ 392:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				count = dataCount;
+ 1156               	.LM95:
+ 1157 02ac 0091 0000 		lds r16,dataCount
+ 1158 02b0 1091 0000 		lds r17,(dataCount)+1
+ 1159 02b4 11C0      		rjmp .L64
+ 1160               	.L65:
+ 393:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			}
+ 394:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		}
+ 395:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		else if (lphase == P_READ)
+ 1162               	.LM96:
+ 1163 02b6 81E0      		ldi r24,lo8(1)
+ 1164 02b8 D816      		cp r13,r24
+ 1165 02ba 29F4      		brne .L68
+ 396:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		{
+ 397:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			*ptr++ = in;
+ 1167               	.LM97:
+ 1168 02bc 9993      		st Y+,r25
+ 398:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			--count;
+ 1170               	.LM98:
+ 1171 02be 0150      		subi r16,lo8(-(-1))
+ 1172 02c0 1040      		sbci r17,hi8(-(-1))
+ 399:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			if (!count)
+ 1174               	.LM99:
+ 1175 02c2 51F4      		brne .L64
+ 400:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				break;
+ 1177               	.LM100:
+ 1178 02c4 0EC0      		rjmp .L60
+ 1179               	.L68:
+ 401:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		}
+ 402:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		else if (lphase == P_WRITE)
+ 1181               	.LM101:
+ 1182 02c6 83E0      		ldi r24,lo8(3)
+ 1183 02c8 D816      		cp r13,r24
+ 1184 02ca 59F4      		brne .L60
+ 403:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		{
+ 404:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			if (!count)
+ 1186               	.LM102:
+ 1187 02cc 0115      		cp r16,__zero_reg__
+ 1188 02ce 1105      		cpc r17,__zero_reg__
+ 1189 02d0 41F0      		breq .L60
+ 405:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				break;
+ 406:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 407:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			out = *ptr++;
+ 1191               	.LM103:
+ 1192 02d2 C990      		ld r12,Y+
+ 408:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			--count;
+ 1194               	.LM104:
+ 1195 02d4 0150      		subi r16,lo8(-(-1))
+ 1196 02d6 1040      		sbci r17,hi8(-(-1))
+ 1197               	.L64:
+ 409:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		}
+ 410:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		else /* P_FILL, P_FLUSH, P_ERASE, P_COMPARE */
+ 411:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			break;
+ 412:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 413:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		in = FlashSPI_txByte(out);
+ 1199               	.LM105:
+ 1200 02d8 8C2D      		mov r24,r12
+ 1201 02da 0E94 0000 		call FlashSPI_txByte
+ 1202 02de 982F      		mov r25,r24
+ 1204               	.LM106:
+ 1205 02e0 B9CF      		rjmp .L59
+ 1206               	.L60:
+ 1207               	.LBB91:
+ 1208               	.LBB92:
+ 1210               	.LM107:
+ 1211 02e2 81E0      		ldi r24,lo8(1)
+ 1212 02e4 8093 0000 		sts deselectRequested,r24
+ 1213               	.LBB93:
+ 1214               	.LBB94:
+ 1215               	.LBB95:
+ 1216               	.LBB96:
+ 1218               	.Ltext21:
+ 1220               	.LM108:
+ 1221 02e8 DB9A      		sbi 59-0x20,3
+ 1222               	.LBE96:
+ 1223               	.LBE95:
+ 1224               	.LBE94:
+ 1225               	.LBE93:
+ 1227               	.Ltext22:
+ 1229               	.LM109:
+ 1230 02ea EE24      		clr r14
+ 1231 02ec FF24      		clr r15
+ 1232 02ee 8701      		movw r16,r14
+ 1233 02f0 20E0      		ldi r18,lo8(0)
+ 1234 02f2 42E8      		ldi r20,lo8(-126)
+ 1235 02f4 65E4      		ldi r22,lo8(69)
+ 1236 02f6 862F      		mov r24,r22
+ 1237 02f8 0E94 0000 		call post_short
+ 1238               	.LBE92:
+ 1239               	.LBE91:
+ 1240               	/* epilogue: frame size=0 */
+ 1241 02fc DF91      		pop r29
+ 1242 02fe CF91      		pop r28
+ 1243 0300 1F91      		pop r17
+ 1244 0302 0F91      		pop r16
+ 1245 0304 FF90      		pop r15
+ 1246 0306 EF90      		pop r14
+ 1247 0308 DF90      		pop r13
+ 1248 030a CF90      		pop r12
+ 1249 030c 0895      		ret
+ 1250               	/* epilogue end (size=9) */
+ 1251               	/* function sendFlashCommand size 126 (109) */
+ 1270               	.Lscope5:
+ 1279               	execCommand:
+ 414:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	}
+ 415:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 416:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	requestDeselect();
+ 417:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** }
+ 418:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 419:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static void checkBuffer(uint8_t buf) 
+ 420:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** {                               
+ 421:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	cmdPhase = P_COMPARE;                                       
+ 422:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	checking = buf;                                             
+ 423:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	execCommand(true, OPN(buf, C_COMPARE_BUFFER), 0,            
+ 424:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			buffer[buf].page, 0);                                   
+ 425:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** }                                                             
+ 426:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 427:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static void flushBuffer() 
+ 428:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** {                                          
+ 429:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	cmdPhase = P_FLUSH;                                         
+ 430:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	execCommand(true, buffer[selected].erased ?                 
+ 431:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			OP(C_QFLUSH_BUFFER) :                                   
+ 432:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			OP(C_FLUSH_BUFFER), 0,                                  
+ 433:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			buffer[selected].page, 0);                              
+ 434:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** }                                                  
+ 435:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 436:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static void flashCommandComplete() 
+ 437:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** {
+ 438:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	if (waiting)
+ 439:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	{
+ 440:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		waiting = flashBusy = buffer[0].busy = buffer[1].busy = false;
+ 441:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 442:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		if (cmdPhase == P_COMPARE_CHECK)
+ 443:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		{
+ 444:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			if (compareOk)
+ 445:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				buffer[checking].unchecked = 0;
+ 446:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			else if (buffer[checking].unchecked < 2)
+ 447:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				buffer[checking].clean = false;
+ 448:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			else
+ 449:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			{
+ 450:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				broken = true; // write failed. refuse all further reqs
+ 451:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				requestDone(false);
+ 452:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				return;
+ 453:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			}
+ 454:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			handleRWRequest();
+ 455:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		}
+ 456:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		else
+ 457:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		{
+ 458:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			// Eager compare - this steals the current command
+ 459:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			if ((buffer[0].unchecked || buffer[1].unchecked) &&
+ 460:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 					!(cmdPhase == P_COMPARE || cmdPhase == P_COMPARE_CHECK))
+ 461:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				checkBuffer(buffer[0].unchecked ? 0 : 1);
+ 462:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			else
+ 463:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				sendFlashCommand();
+ 464:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		}
+ 465:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		return;
+ 466:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	}
+ 467:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	switch (cmdPhase)
+ 468:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	{
+ 469:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		default: // shouldn't happen
+ 470:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			requestDone(false);
+ 471:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			break;
+ 472:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 473:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		case P_READ: case P_READCRC: case P_WRITE:
+ 474:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			requestDone(true);
+ 475:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			break;
+ 476:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 477:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		case P_FLUSH:
+ 478:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			flashBusy = true;
+ 479:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			buffer[selected].clean = buffer[selected].busy = true;
+ 480:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			buffer[selected].unchecked++;
+ 481:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			buffer[selected].erased = false;
+ 482:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			handleRWRequest();
+ 483:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			break;
+ 484:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 485:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		case P_COMPARE:
+ 486:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			cmdPhase = P_COMPARE_CHECK;
+ 487:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			flashBusy = true;
+ 488:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			buffer[checking].busy = true;
+ 489:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			// The 10us wait makes old mica motes (Atmega 103) happy, for
+ 490:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			// some mysterious reason (w/o this wait, the first compare
+ 491:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			// always fail, even though the compare after the rewrite
+ 492:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			// succeeds...)
+ 493:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			TOSH_uwait(10);
+ 494:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			requestFlashStatus();
+ 495:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			break;
+ 496:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 497:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		case P_FILL: // page load started                         
+ 498:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			flashBusy = true;                                           
+ 499:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			buffer[selected].page = reqPage;                            
+ 500:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			buffer[selected].clean = buffer[selected].busy = true;      
+ 501:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			buffer[selected].erased = false;                            
+ 502:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			handleRWRequest();                                          
+ 503:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			break;                                                      
+ 504:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 505:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		case P_ERASE:                                             
+ 506:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			flashBusy = true;                                           
+ 507:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			// The buffer contains garbage, but we don't care about the state
+ 508:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			// of bits on this page anyway (if we do, we'll perform a   
+ 509:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			// subsequent write)                                        
+ 510:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			buffer[selected].page = reqPage;                            
+ 511:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			buffer[selected].clean = true;                              
+ 512:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			buffer[selected].erased = true;                             
+ 513:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			requestDone(true);                                       
+ 514:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			break;                                                      
+ 515:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	}                                                         
+ 516:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** }                                          
+ 517:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 518:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static bool FlashSelect_notifyHigh()
+ 519:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** {                     
+ 520:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	if (deselectRequested)                                      
+ 521:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	{                                                         
+ 522:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		deselectRequested = false;                                  
+ 523:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		flashCommandComplete();                                     
+ 524:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	}                                                         
+ 525:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	return true;                                             
+ 526:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** }                                                             
+ 527:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 528:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static void execCommand(bool wait, uint8_t reqCmd, uint8_t dontCare, 
+ 529:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		exflashpage_t page, exflashoffset_t offset)
+ 530:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** {      
+ 1281               	.LM110:
+ 1282               	/* prologue: frame size=0 */
+ 1283 030e 0F93      		push r16
+ 1284 0310 1F93      		push r17
+ 1285               	/* prologue end (size=2) */
+ 1286 0312 962F      		mov r25,r22
+ 1287 0314 E42F      		mov r30,r20
+ 1288 0316 A901      		movw r20,r18
+ 531:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	// page (2 bytes) and highest bit of offset                 
+ 532:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	cmd[0] = reqCmd;                                            
+ 1290               	.LM111:
+ 1291 0318 9093 0000 		sts cmd,r25
+ 533:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	cmd[1] = page >> 7;                                         
+ 1293               	.LM112:
+ 1294 031c 220F      		lsl r18
+ 1295 031e 232F      		mov r18,r19
+ 1296 0320 221F      		rol r18
+ 1297 0322 330B      		sbc r19,r19
+ 1298 0324 3195      		neg r19
+ 1299 0326 2093 0000 		sts cmd+1,r18
+ 534:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	cmd[2] = page << 1 | offset >> 8;                           
+ 1301               	.LM113:
+ 1302 032a 942F      		mov r25,r20
+ 1303 032c 990F      		lsl r25
+ 1304 032e 212F      		mov r18,r17
+ 1305 0330 3327      		clr r19
+ 1306 0332 922B      		or r25,r18
+ 1307 0334 9093 0000 		sts cmd+2,r25
+ 535:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	cmd[3] = offset; // low-order 8 bits                        
+ 1309               	.LM114:
+ 1310 0338 0093 0000 		sts cmd+3,r16
+ 536:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	cmdCount = 4 + dontCare;                                    
+ 1312               	.LM115:
+ 1313 033c EC5F      		subi r30,lo8(-(4))
+ 1314 033e E093 0000 		sts cmdCount,r30
+ 537:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 538:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	if (wait && flashBusy)                                      
+ 1316               	.LM116:
+ 1317 0342 8823      		tst r24
+ 1318 0344 39F0      		breq .L78
+ 1320               	.LM117:
+ 1321 0346 8091 0000 		lds r24,flashBusy
+ 1322 034a 8823      		tst r24
+ 1323 034c 19F0      		breq .L78
+ 539:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		requestFlashStatus();                                     
+ 1325               	.LM118:
+ 1326 034e 0E94 0000 		call requestFlashStatus
+ 1327 0352 02C0      		rjmp .L77
+ 1328               	.L78:
+ 540:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	else                                                        
+ 541:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		sendFlashCommand();                                       
+ 1330               	.LM119:
+ 1331 0354 0E94 0000 		call sendFlashCommand
+ 1332               	.L77:
+ 1333               	/* epilogue: frame size=0 */
+ 1334 0358 1F91      		pop r17
+ 1335 035a 0F91      		pop r16
+ 1336 035c 0895      		ret
+ 1337               	/* epilogue end (size=3) */
+ 1338               	/* function execCommand size 40 (35) */
+ 1340               	.Lscope6:
+ 1345               	checkBuffer:
+ 1347               	.LM120:
+ 1348               	/* prologue: frame size=0 */
+ 1349 035e 0F93      		push r16
+ 1350 0360 1F93      		push r17
+ 1351               	/* prologue end (size=2) */
+ 1352 0362 282F      		mov r18,r24
+ 1354               	.LM121:
+ 1355 0364 87E0      		ldi r24,lo8(7)
+ 1356 0366 8093 0000 		sts cmdPhase,r24
+ 1358               	.LM122:
+ 1359 036a 2093 0000 		sts checking,r18
+ 1361               	.LM123:
+ 1362 036e 822F      		mov r24,r18
+ 1363 0370 9927      		clr r25
+ 1364 0372 FC01      		movw r30,r24
+ 1365 0374 EE0F      		lsl r30
+ 1366 0376 FF1F      		rol r31
+ 1367 0378 E80F      		add r30,r24
+ 1368 037a F91F      		adc r31,r25
+ 1369 037c E050      		subi r30,lo8(-(buffer))
+ 1370 037e F040      		sbci r31,hi8(-(buffer))
+ 1371 0380 2223      		tst r18
+ 1372 0382 11F0      		breq .L81
+ 1374               	.LM124:
+ 1375 0384 60E6      		ldi r22,lo8(96)
+ 1376 0386 01C0      		rjmp .L82
+ 1377               	.L81:
+ 1378 0388 61E6      		ldi r22,lo8(97)
+ 1379               	.L82:
+ 1380 038a 00E0      		ldi r16,lo8(0)
+ 1381 038c 10E0      		ldi r17,hi8(0)
+ 1382 038e 2081      		ld r18,Z
+ 1383 0390 3181      		ldd r19,Z+1
+ 1384 0392 40E0      		ldi r20,lo8(0)
+ 1385 0394 81E0      		ldi r24,lo8(1)
+ 1386 0396 0E94 0000 		call execCommand
+ 1387               	/* epilogue: frame size=0 */
+ 1388 039a 1F91      		pop r17
+ 1389 039c 0F91      		pop r16
+ 1390 039e 0895      		ret
+ 1391               	/* epilogue end (size=3) */
+ 1392               	/* function checkBuffer size 33 (28) */
+ 1394               	.Lscope7:
+ 1398               	flushBuffer:
+ 1400               	.LM125:
+ 1401               	/* prologue: frame size=0 */
+ 1402 03a0 0F93      		push r16
+ 1403 03a2 1F93      		push r17
+ 1404               	/* prologue end (size=2) */
+ 1406               	.LM126:
+ 1407 03a4 84E0      		ldi r24,lo8(4)
+ 1408 03a6 8093 0000 		sts cmdPhase,r24
+ 1410               	.LM127:
+ 1411 03aa 4091 0000 		lds r20,selected
+ 1412 03ae 242F      		mov r18,r20
+ 1413 03b0 3327      		clr r19
+ 1414 03b2 C901      		movw r24,r18
+ 1415 03b4 880F      		lsl r24
+ 1416 03b6 991F      		rol r25
+ 1417 03b8 820F      		add r24,r18
+ 1418 03ba 931F      		adc r25,r19
+ 1419 03bc DC01      		movw r26,r24
+ 1420 03be A050      		subi r26,lo8(-(buffer))
+ 1421 03c0 B040      		sbci r27,hi8(-(buffer))
+ 1422 03c2 FC01      		movw r30,r24
+ 1423 03c4 E050      		subi r30,lo8(-(buffer+2))
+ 1424 03c6 F040      		sbci r31,hi8(-(buffer+2))
+ 1425 03c8 8081      		ld r24,Z
+ 1426 03ca 82FF      		sbrs r24,2
+ 1427 03cc 06C0      		rjmp .L84
+ 1429               	.LM128:
+ 1430 03ce 4423      		tst r20
+ 1431 03d0 11F0      		breq .L86
+ 1432 03d2 68E8      		ldi r22,lo8(-120)
+ 1433 03d4 07C0      		rjmp .L85
+ 1434               	.L86:
+ 1435 03d6 69E8      		ldi r22,lo8(-119)
+ 1436 03d8 05C0      		rjmp .L85
+ 1437               	.L84:
+ 1438 03da 4423      		tst r20
+ 1439 03dc 11F0      		breq .L88
+ 1440 03de 63E8      		ldi r22,lo8(-125)
+ 1441 03e0 01C0      		rjmp .L85
+ 1442               	.L88:
+ 1443 03e2 66E8      		ldi r22,lo8(-122)
+ 1444               	.L85:
+ 1445 03e4 00E0      		ldi r16,lo8(0)
+ 1446 03e6 10E0      		ldi r17,hi8(0)
+ 1447 03e8 2D91      		ld r18,X+
+ 1448 03ea 3C91      		ld r19,X
+ 1449 03ec 40E0      		ldi r20,lo8(0)
+ 1450 03ee 81E0      		ldi r24,lo8(1)
+ 1451 03f0 0E94 0000 		call execCommand
+ 1452               	/* epilogue: frame size=0 */
+ 1453 03f4 1F91      		pop r17
+ 1454 03f6 0F91      		pop r16
+ 1455 03f8 0895      		ret
+ 1456               	/* epilogue end (size=3) */
+ 1457               	/* function flushBuffer size 45 (40) */
+ 1459               	.Lscope8:
+ 1464               	requestDone:
+ 542:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** }                                                             
+ 543:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 544:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static void execRWBuffer(uint8_t reqCmd, uint8_t dontCare, exflashoffset_t offset) 
+ 545:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** {
+ 546:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	execCommand(buffer[selected].busy, reqCmd, dontCare, 0, offset);
+ 547:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** }                                                             
+ 548:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 549:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static void handleRWRequest() 
+ 550:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** {                                      
+ 551:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	if (reqPage == buffer[selected].page)  {                     
+ 552:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		switch (request)                                          
+ 553:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		{                                                           
+ 554:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			case R_ERASE:                                               
+ 555:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				switch (reqOffset)                                        
+ 556:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				{                                                       
+ 557:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 					case EXFLASH_ERASE:                                  
+ 558:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 						cmdPhase = P_ERASE;                                   
+ 559:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 						execCommand(true, C_ERASE_PAGE, 0, reqPage, 0);       
+ 560:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 						break;                                                
+ 561:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 					case EXFLASH_PREVIOUSLY_ERASED:                      
+ 562:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 						// We believe the user...                             
+ 563:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 						buffer[selected].erased = true;                       
+ 564:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 						/* Fallthrough */                                     
+ 565:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 					case EXFLASH_DONT_ERASE:                             
+ 566:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 						// The buffer contains garbage, but we don't care about the state   
+ 567:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 						// of bits on this page anyway (if we do, we'll perform a 
+ 568:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 						// subsequent write)                                  
+ 569:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 						buffer[selected].clean = true;                        
+ 570:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 						requestDone(true);                                 
+ 571:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 						break;                                                
+ 572:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				}                                                       
+ 573:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				break;                                                    
+ 574:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 575:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			case R_SYNC: case R_SYNCALL:                                
+ 576:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				if (buffer[selected].clean && buffer[selected].unchecked) 
+ 577:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				{                                                       
+ 578:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 					checkBuffer(selected);                                
+ 579:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 					return;                                               
+ 580:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				}                                                       
+ 581:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				/* fall through */                                        
+ 582:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			case R_FLUSH: case R_FLUSHALL:                              
+ 583:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				if (!buffer[selected].clean) {
+ 584:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 					flushBuffer();                                          
+ 585:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				} else if (request == R_FLUSH || request == R_SYNC) {
+ 586:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 					requestDone(true);
+ 587:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				} else {                                                       
+ 588:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 					// Check for more dirty pages                         
+ 589:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 					uint8_t oreq = request;                               
+ 590:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 591:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 					request = IDLE;                                       
+ 592:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 					syncOrFlushAll(reqPid, oreq); 
+ 593:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				}                                                       
+ 594:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				break;                                                    
+ 595:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 596:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			case R_READ:                                                
+ 597:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				data = reqBuf;                                            
+ 598:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				dataCount = reqBytes;                                     
+ 599:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				cmdPhase = P_READ;                                        
+ 600:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				execRWBuffer(OP(C_READ_BUFFER), 2, reqOffset);            
+ 601:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				break;                                                    
+ 602:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 603:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			case R_READCRC:                                             
+ 604:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				dataCount = reqBytes;                                     
+ 605:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				cmdPhase = P_READCRC;                                     
+ 606:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				execRWBuffer(OP(C_READ_BUFFER), 2, 0);                    
+ 607:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				break;                                                    
+ 608:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 609:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			case R_WRITE:                                               
+ 610:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				data = reqBuf;                                            
+ 611:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				dataCount = reqBytes;                                     
+ 612:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				cmdPhase = P_WRITE;                                       
+ 613:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				buffer[selected].clean = false;                           
+ 614:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				buffer[selected].unchecked = 0;                           
+ 615:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				execRWBuffer(OP(C_WRITE_BUFFER), 0, reqOffset);           
+ 616:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 				break;                                                    
+ 617:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		}                                                           
+ 618:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	} else if (!buffer[selected].clean) {                         
+ 619:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		flushBuffer();                                            
+ 620:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	} else if (buffer[selected].unchecked) {                     
+ 621:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		checkBuffer(selected);                                    
+ 622:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	} else {                                                         
+ 623:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		// just get the new page (except for erase)                 
+ 624:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		if (request == R_ERASE) { 
+ 625:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			buffer[selected].page = reqPage;                        
+ 626:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			handleRWRequest();                                      
+ 627:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		} else { 
+ 628:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			cmdPhase = P_FILL;                                      
+ 629:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			execCommand(true, OP(C_FILL_BUFFER), 0, reqPage, 0);    
+ 630:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		}                                                         
+ 631:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	}                                                         
+ 632:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** }                                                             
+ 633:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 634:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 635:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static void requestDone(bool result)
+ 636:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** {                           
+ 1466               	.LM129:
+ 1467               	/* prologue: frame size=0 */
+ 1468 03fa EF92      		push r14
+ 1469 03fc FF92      		push r15
+ 1470 03fe 0F93      		push r16
+ 1471 0400 1F93      		push r17
+ 1472               	/* prologue end (size=4) */
+ 1473 0402 282F      		mov r18,r24
+ 637:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	uint8_t orequest = request;                                 
+ 1475               	.LM130:
+ 1476 0404 8091 0000 		lds r24,request
+ 638:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	uint8_t msgtype;
+ 639:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 640:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	switch (orequest)                                           
+ 1478               	.LM131:
+ 1479 0408 9927      		clr r25
+ 1480 040a 8330      		cpi r24,3
+ 1481 040c 9105      		cpc r25,__zero_reg__
+ 1482 040e E1F0      		breq .L94
+ 1484               	.LM132:
+ 1485 0410 8430      		cpi r24,4
+ 1486 0412 9105      		cpc r25,__zero_reg__
+ 1487 0414 34F4      		brge .L99
+ 1488 0416 8130      		cpi r24,1
+ 1489 0418 9105      		cpc r25,__zero_reg__
+ 1490 041a 61F0      		breq .L92
+ 1491 041c 0297      		sbiw r24,2
+ 1492 041e 61F0      		breq .L93
+ 1493 0420 27C0      		rjmp .L90
+ 1494               	.L99:
+ 1495 0422 8530      		cpi r24,5
+ 1496 0424 9105      		cpc r25,__zero_reg__
+ 1497 0426 91F0      		breq .L95
+ 1498 0428 8530      		cpi r24,5
+ 1499 042a 9105      		cpc r25,__zero_reg__
+ 1500 042c 9CF0      		brlt .L97
+ 1501 042e 0797      		sbiw r24,7
+ 1502 0430 79F0      		breq .L96
+ 1503 0432 1EC0      		rjmp .L90
+ 1504               	.L92:
+ 641:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	{   
+ 642:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		case R_READ: msgtype = MSG_EXFLASH_READDONE; break;
+ 1506               	.LM133:
+ 1507 0434 44E8      		ldi r20,lo8(-124)
+ 1508 0436 0FC0      		rjmp .L91
+ 1509               	.L93:
+ 643:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		case R_READCRC: 
+ 644:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		{
+ 645:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			msgtype = MSG_EXFLASH_CRCDONE; 
+ 1511               	.LM134:
+ 1512 0438 45E8      		ldi r20,lo8(-123)
+ 646:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			post_short(reqPid, EXFLASH_PID, MSG_EXFLASH_CRCDONE, result, computedCrc, 0);
+ 1514               	.LM135:
+ 1515 043a EE24      		clr r14
+ 1516 043c FF24      		clr r15
+ 1517 043e 0091 0000 		lds r16,computedCrc
+ 1518 0442 1091 0000 		lds r17,(computedCrc)+1
+ 1519 0446 0AC0      		rjmp .L100
+ 1520               	.L94:
+ 647:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			request = IDLE;
+ 648:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			reqPid = NULL_PID;
+ 649:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			return;
+ 650:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		}
+ 651:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		case R_WRITE: msgtype = MSG_EXFLASH_WRITEDONE; break;
+ 1522               	.LM136:
+ 1523 0448 46E8      		ldi r20,lo8(-122)
+ 1524 044a 05C0      		rjmp .L91
+ 1525               	.L95:
+ 652:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		case R_SYNC: msgtype = MSG_EXFLASH_SYNCDONE; break;
+ 1527               	.LM137:
+ 1528 044c 47E8      		ldi r20,lo8(-121)
+ 1529 044e 03C0      		rjmp .L91
+ 1530               	.L96:
+ 653:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		case R_FLUSH: msgtype = MSG_EXFLASH_FLUSHDONE; break;
+ 1532               	.LM138:
+ 1533 0450 48E8      		ldi r20,lo8(-120)
+ 1534 0452 01C0      		rjmp .L91
+ 1535               	.L97:
+ 654:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		case R_ERASE: msgtype = MSG_EXFLASH_ERASEDONE; break;
+ 1537               	.LM139:
+ 1538 0454 49E8      		ldi r20,lo8(-119)
+ 1539               	.L91:
+ 655:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		default: return;
+ 656:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	}                                                         
+ 657:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	post_short(reqPid, EXFLASH_PID, msgtype, result, 0, 0);
+ 1541               	.LM140:
+ 1542 0456 EE24      		clr r14
+ 1543 0458 FF24      		clr r15
+ 1544 045a 8701      		movw r16,r14
+ 1545               	.L100:
+ 1546 045c 65E4      		ldi r22,lo8(69)
+ 1547 045e 8091 0000 		lds r24,reqPid
+ 1548 0462 0E94 0000 		call post_short
+ 658:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	request = IDLE;
+ 1550               	.LM141:
+ 1551 0466 1092 0000 		sts request,__zero_reg__
+ 659:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	reqPid = NULL_PID;
+ 1553               	.LM142:
+ 1554 046a 8FEF      		ldi r24,lo8(-1)
+ 1555 046c 8093 0000 		sts reqPid,r24
+ 1556               	.L90:
+ 1557               	/* epilogue: frame size=0 */
+ 1558 0470 1F91      		pop r17
+ 1559 0472 0F91      		pop r16
+ 1560 0474 FF90      		pop r15
+ 1561 0476 EF90      		pop r14
+ 1562 0478 0895      		ret
+ 1563               	/* epilogue end (size=5) */
+ 1564               	/* function requestDone size 66 (57) */
+ 1570               	.Lscope9:
+ 1577               	execRWBuffer:
+ 1579               	.LM143:
+ 1580               	/* prologue: frame size=0 */
+ 1581 047a 0F93      		push r16
+ 1582 047c 1F93      		push r17
+ 1583               	/* prologue end (size=2) */
+ 1584 047e 782F      		mov r23,r24
+ 1586               	.LM144:
+ 1587 0480 8091 0000 		lds r24,selected
+ 1588 0484 9927      		clr r25
+ 1589 0486 FC01      		movw r30,r24
+ 1590 0488 EE0F      		lsl r30
+ 1591 048a FF1F      		rol r31
+ 1592 048c E80F      		add r30,r24
+ 1593 048e F91F      		adc r31,r25
+ 1594 0490 E050      		subi r30,lo8(-(buffer+2))
+ 1595 0492 F040      		sbci r31,hi8(-(buffer+2))
+ 1596 0494 8081      		ld r24,Z
+ 1597 0496 8A01      		movw r16,r20
+ 1598 0498 20E0      		ldi r18,lo8(0)
+ 1599 049a 30E0      		ldi r19,hi8(0)
+ 1600 049c 462F      		mov r20,r22
+ 1601 049e 672F      		mov r22,r23
+ 1602 04a0 8170      		andi r24,lo8(1)
+ 1603 04a2 0E94 0000 		call execCommand
+ 1604               	/* epilogue: frame size=0 */
+ 1605 04a6 1F91      		pop r17
+ 1606 04a8 0F91      		pop r16
+ 1607 04aa 0895      		ret
+ 1608               	/* epilogue end (size=3) */
+ 1609               	/* function execRWBuffer size 25 (20) */
+ 1611               	.Lscope10:
+ 1617               	syncOrFlushAll:
+ 660:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** }                                                             
+ 661:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 662:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static int8_t newRequest(sos_pid_t pid, 
+ 663:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		uint8_t req, exflashpage_t page,           
+ 664:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		exflashoffset_t offset,                        
+ 665:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		void *reqdata, exflashoffset_t n)
+ 666:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** {            
+ 667:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	if (page >= EXFLASH_MAX_PAGES || offset >= EXFLASH_PAGE_SIZE ||     
+ 668:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 			n > EXFLASH_PAGE_SIZE || offset + n > EXFLASH_PAGE_SIZE)
+ 669:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		return -EINVAL;                                              
+ 670:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 671:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	if (request != IDLE || reqPid != NULL_PID)  {                                       return -EBUSY;
+ 672:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	}
+ 673:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 674:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	if (broken)  { 
+ 675:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		return -EIO; 
+ 676:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	}                                            
+ 677:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 678:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	reqPid = pid;
+ 679:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	request = req;                                              
+ 680:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	reqBuf = reqdata;                                           
+ 681:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	reqBytes = n;                                               
+ 682:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	reqPage = page;                                             
+ 683:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	reqOffset = offset;                                         
+ 684:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 685:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	if (page == buffer[0].page)                                 
+ 686:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		selected = 0;                                             
+ 687:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	else if (page == buffer[1].page)                            
+ 688:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		selected = 1;                                             
+ 689:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	else                                                        
+ 690:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		selected = !selected; // LRU with 2 buffers...            
+ 691:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 692:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	handleRWRequest();                                          
+ 693:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 694:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	return SOS_OK;                                             
+ 695:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** }                                                         
+ 696:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 697:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static int8_t syncOrFlush(sos_pid_t pid, exflashpage_t page, uint8_t newReq)
+ 698:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** {     
+ 699:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	if (request != IDLE || reqPid != NULL_PID) 
+ 700:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		return -EBUSY;                                              
+ 701:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 702:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	if (broken) {  
+ 703:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		return -EIO;                                             
+ 704:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	} else if (buffer[0].page == page)  
+ 705:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		selected = 0;                                             
+ 706:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	else if (buffer[1].page == page)                            
+ 707:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		selected = 1;                                             
+ 708:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	else {                                                         
+ 709:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		reqPid = pid;
+ 710:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		request = newReq;                                           
+ 711:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		requestDone(true);
+ 712:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		return SOS_OK; 
+ 713:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	}                                                         
+ 714:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 715:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	reqPid = pid;
+ 716:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	request = newReq;                                           
+ 717:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	buffer[selected].unchecked = 0;                             
+ 718:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	handleRWRequest();                                          
+ 719:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 720:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	return SOS_OK;                                             
+ 721:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** }                                                             
+ 722:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 723:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 724:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** static int8_t syncOrFlushAll(sos_pid_t pid, uint8_t newReq)
+ 725:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** {                     
+ 1619               	.LM145:
+ 1620               	/* prologue: frame size=0 */
+ 1621               	/* prologue end (size=0) */
+ 1622 04ac 282F      		mov r18,r24
+ 726:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	if (request != IDLE)                                        
+ 1624               	.LM146:
+ 1625 04ae 8091 0000 		lds r24,request
+ 1626 04b2 8823      		tst r24
+ 1627 04b4 19F0      		breq .L103
+ 727:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		return -EBUSY;                                              
+ 1629               	.LM147:
+ 1630 04b6 80EF      		ldi r24,lo8(-16)
+ 1631 04b8 9FEF      		ldi r25,hi8(-16)
+ 1632 04ba 0895      		ret
+ 1633               	.L103:
+ 728:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 729:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	if (broken) { 
+ 1635               	.LM148:
+ 1636 04bc 8091 0000 		lds r24,broken
+ 1637 04c0 8823      		tst r24
+ 1638 04c2 19F0      		breq .L104
+ 730:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		return -EIO;                                             
+ 1640               	.LM149:
+ 1641 04c4 8BEF      		ldi r24,lo8(-5)
+ 1642 04c6 9FEF      		ldi r25,hi8(-5)
+ 1643 04c8 0895      		ret
+ 1644               	.L104:
+ 731:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	}                                                         
+ 732:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	else if (!buffer[0].clean)                                  
+ 1646               	.LM150:
+ 1647 04ca 8091 0000 		lds r24,buffer+2
+ 1648 04ce 982F      		mov r25,r24
+ 1649 04d0 9270      		andi r25,lo8(2)
+ 1650 04d2 81FD      		sbrc r24,1
+ 1651 04d4 03C0      		rjmp .L106
+ 733:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		selected = 0;                                             
+ 1653               	.LM151:
+ 1654 04d6 9093 0000 		sts selected,r25
+ 1655 04da 12C0      		rjmp .L105
+ 1656               	.L106:
+ 734:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	else if (!buffer[1].clean)                                  
+ 1658               	.LM152:
+ 1659 04dc 8091 0000 		lds r24,buffer+5
+ 1660 04e0 81FD      		sbrc r24,1
+ 1661 04e2 04C0      		rjmp .L108
+ 735:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		selected = 1;                                             
+ 1663               	.LM153:
+ 1664 04e4 81E0      		ldi r24,lo8(1)
+ 1665 04e6 8093 0000 		sts selected,r24
+ 1666 04ea 0AC0      		rjmp .L105
+ 1667               	.L108:
+ 736:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	else {  
+ 737:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		reqPid = pid;
+ 1669               	.LM154:
+ 1670 04ec 2093 0000 		sts reqPid,r18
+ 738:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		request = newReq;                                           
+ 1672               	.LM155:
+ 1673 04f0 6093 0000 		sts request,r22
+ 739:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		requestDone(true);
+ 1675               	.LM156:
+ 1676 04f4 81E0      		ldi r24,lo8(1)
+ 1677 04f6 0E94 0000 		call requestDone
+ 740:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		return SOS_OK;                                             
+ 1679               	.LM157:
+ 1680 04fa 80E0      		ldi r24,lo8(0)
+ 1681 04fc 90E0      		ldi r25,hi8(0)
+ 1682 04fe 0895      		ret
+ 1683               	.L105:
+ 741:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	}                                                         
+ 742:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 743:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	reqPid = pid;
+ 1685               	.LM158:
+ 1686 0500 2093 0000 		sts reqPid,r18
+ 744:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	request = newReq;                                           
+ 1688               	.LM159:
+ 1689 0504 6093 0000 		sts request,r22
+ 745:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	buffer[selected].unchecked = 0;                             
+ 1691               	.LM160:
+ 1692 0508 8091 0000 		lds r24,selected
+ 1693 050c 9927      		clr r25
+ 1694 050e FC01      		movw r30,r24
+ 1695 0510 EE0F      		lsl r30
+ 1696 0512 FF1F      		rol r31
+ 1697 0514 E80F      		add r30,r24
+ 1698 0516 F91F      		adc r31,r25
+ 1699 0518 E050      		subi r30,lo8(-(buffer+2))
+ 1700 051a F040      		sbci r31,hi8(-(buffer+2))
+ 1701 051c 8081      		ld r24,Z
+ 1702 051e 877E      		andi r24,lo8(-25)
+ 1703 0520 8083      		st Z,r24
+ 746:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	handleRWRequest();                                          
+ 1705               	.LM161:
+ 1706 0522 0E94 0000 		call handleRWRequest
+ 747:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 748:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	return SOS_OK;                                             
+ 1708               	.LM162:
+ 1709 0526 80E0      		ldi r24,lo8(0)
+ 1710 0528 90E0      		ldi r25,hi8(0)
+ 749:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** }                                                             
+ 1712               	.LM163:
+ 1713 052a 0895      		ret
+ 1714               	/* epilogue: frame size=0 */
+ 1715 052c 0895      		ret
+ 1716               	/* epilogue end (size=1) */
+ 1717               	/* function syncOrFlushAll size 65 (64) */
+ 1719               	.Lscope11:
+ 1723               	handleRWRequest:
+ 1725               	.LM164:
+ 1726               	/* prologue: frame size=0 */
+ 1727 052e 0F93      		push r16
+ 1728 0530 1F93      		push r17
+ 1729               	/* prologue end (size=2) */
+ 1730               	.L144:
+ 1732               	.LM165:
+ 1733 0532 4091 0000 		lds r20,selected
+ 1734 0536 842F      		mov r24,r20
+ 1735 0538 9927      		clr r25
+ 1736 053a FC01      		movw r30,r24
+ 1737 053c EE0F      		lsl r30
+ 1738 053e FF1F      		rol r31
+ 1739 0540 E80F      		add r30,r24
+ 1740 0542 F91F      		adc r31,r25
+ 1741 0544 DF01      		movw r26,r30
+ 1742 0546 A050      		subi r26,lo8(-(buffer))
+ 1743 0548 B040      		sbci r27,hi8(-(buffer))
+ 1744 054a 2091 0000 		lds r18,reqPage
+ 1745 054e 3091 0000 		lds r19,(reqPage)+1
+ 1746 0552 8D91      		ld r24,X+
+ 1747 0554 9C91      		ld r25,X
+ 1748 0556 1197      		sbiw r26,1
+ 1749 0558 2817      		cp r18,r24
+ 1750 055a 3907      		cpc r19,r25
+ 1751 055c 09F0      		breq .+2
+ 1752 055e C0C0      		rjmp .L111
+ 1754               	.LM166:
+ 1755 0560 6091 0000 		lds r22,request
+ 1756 0564 862F      		mov r24,r22
+ 1757 0566 9927      		clr r25
+ 1758 0568 8430      		cpi r24,4
+ 1759 056a 9105      		cpc r25,__zero_reg__
+ 1760 056c B1F0      		breq .L113
+ 1761 056e 8530      		cpi r24,5
+ 1762 0570 9105      		cpc r25,__zero_reg__
+ 1763 0572 64F4      		brge .L137
+ 1764 0574 8230      		cpi r24,2
+ 1765 0576 9105      		cpc r25,__zero_reg__
+ 1766 0578 09F4      		brne .+2
+ 1767 057a 79C0      		rjmp .L131
+ 1768 057c 8330      		cpi r24,3
+ 1769 057e 9105      		cpc r25,__zero_reg__
+ 1770 0580 0CF0      		brlt .+2
+ 1771 0582 89C0      		rjmp .L134
+ 1772 0584 0197      		sbiw r24,1
+ 1773 0586 09F4      		brne .+2
+ 1774 0588 55C0      		rjmp .L128
+ 1775 058a D4C0      		rjmp .L110
+ 1776               	.L137:
+ 1777 058c 8730      		cpi r24,7
+ 1778 058e 9105      		cpc r25,__zero_reg__
+ 1779 0590 5CF1      		brlt .L119
+ 1780 0592 0997      		sbiw r24,9
+ 1781 0594 0CF0      		brlt .+2
+ 1782 0596 CEC0      		rjmp .L110
+ 1783 0598 32C0      		rjmp .L122
+ 1784               	.L113:
+ 1786               	.LM167:
+ 1787 059a 8091 0000 		lds r24,reqOffset
+ 1788 059e 9091 0000 		lds r25,(reqOffset)+1
+ 1789 05a2 8130      		cpi r24,1
+ 1790 05a4 9105      		cpc r25,__zero_reg__
+ 1791 05a6 99F0      		breq .L117
+ 1792 05a8 8130      		cpi r24,1
+ 1793 05aa 9105      		cpc r25,__zero_reg__
+ 1794 05ac 18F0      		brlo .L115
+ 1795 05ae 0297      		sbiw r24,2
+ 1796 05b0 49F0      		breq .L116
+ 1797 05b2 C0C0      		rjmp .L110
+ 1798               	.L115:
+ 1800               	.LM168:
+ 1801 05b4 86E0      		ldi r24,lo8(6)
+ 1802 05b6 8093 0000 		sts cmdPhase,r24
+ 1804               	.LM169:
+ 1805 05ba 00E0      		ldi r16,lo8(0)
+ 1806 05bc 10E0      		ldi r17,hi8(0)
+ 1807 05be 40E0      		ldi r20,lo8(0)
+ 1808 05c0 61E8      		ldi r22,lo8(-127)
+ 1809 05c2 B5C0      		rjmp .L151
+ 1810               	.L116:
+ 1812               	.LM170:
+ 1813 05c4 E050      		subi r30,lo8(-(buffer+2))
+ 1814 05c6 F040      		sbci r31,hi8(-(buffer+2))
+ 1815 05c8 8081      		ld r24,Z
+ 1816 05ca 8460      		ori r24,lo8(4)
+ 1817 05cc 8083      		st Z,r24
+ 1818               	.L117:
+ 1820               	.LM171:
+ 1821 05ce 842F      		mov r24,r20
+ 1822 05d0 9927      		clr r25
+ 1823 05d2 FC01      		movw r30,r24
+ 1824 05d4 EE0F      		lsl r30
+ 1825 05d6 FF1F      		rol r31
+ 1826 05d8 E80F      		add r30,r24
+ 1827 05da F91F      		adc r31,r25
+ 1828 05dc E050      		subi r30,lo8(-(buffer+2))
+ 1829 05de F040      		sbci r31,hi8(-(buffer+2))
+ 1830 05e0 8081      		ld r24,Z
+ 1831 05e2 8260      		ori r24,lo8(2)
+ 1832 05e4 8083      		st Z,r24
+ 1833 05e6 1BC0      		rjmp .L126
+ 1834               	.L119:
+ 1836               	.LM172:
+ 1837 05e8 E050      		subi r30,lo8(-(buffer+2))
+ 1838 05ea F040      		sbci r31,hi8(-(buffer+2))
+ 1839 05ec 8081      		ld r24,Z
+ 1840 05ee 81FF      		sbrs r24,1
+ 1841 05f0 06C0      		rjmp .L122
+ 1842 05f2 8695      		lsr r24
+ 1843 05f4 8695      		lsr r24
+ 1844 05f6 8695      		lsr r24
+ 1845 05f8 8370      		andi r24,lo8(3)
+ 1846 05fa 09F0      		breq .+2
+ 1847 05fc 7EC0      		rjmp .L150
+ 1848               	.L122:
+ 1850               	.LM173:
+ 1851 05fe 842F      		mov r24,r20
+ 1852 0600 9927      		clr r25
+ 1853 0602 FC01      		movw r30,r24
+ 1854 0604 EE0F      		lsl r30
+ 1855 0606 FF1F      		rol r31
+ 1856 0608 E80F      		add r30,r24
+ 1857 060a F91F      		adc r31,r25
+ 1858 060c E050      		subi r30,lo8(-(buffer+2))
+ 1859 060e F040      		sbci r31,hi8(-(buffer+2))
+ 1860 0610 8081      		ld r24,Z
+ 1861 0612 81FF      		sbrs r24,1
+ 1862 0614 6AC0      		rjmp .L149
+ 1864               	.LM174:
+ 1865 0616 6730      		cpi r22,lo8(7)
+ 1866 0618 11F0      		breq .L126
+ 1867 061a 6530      		cpi r22,lo8(5)
+ 1868 061c 21F4      		brne .L125
+ 1869               	.L126:
+ 1871               	.LM175:
+ 1872 061e 81E0      		ldi r24,lo8(1)
+ 1873 0620 0E94 0000 		call requestDone
+ 1874 0624 87C0      		rjmp .L110
+ 1875               	.L125:
+ 1876               	.LBB97:
+ 1878               	.LM176:
+ 1879 0626 1092 0000 		sts request,__zero_reg__
+ 1881               	.LM177:
+ 1882 062a 8091 0000 		lds r24,reqPid
+ 1883 062e 0E94 0000 		call syncOrFlushAll
+ 1884               	.LBE97:
+ 1886               	.LM178:
+ 1887 0632 80C0      		rjmp .L110
+ 1888               	.L128:
+ 1890               	.LM179:
+ 1891 0634 8091 0000 		lds r24,reqBuf
+ 1892 0638 9091 0000 		lds r25,(reqBuf)+1
+ 1893 063c 9093 0000 		sts (data)+1,r25
+ 1894 0640 8093 0000 		sts data,r24
+ 1896               	.LM180:
+ 1897 0644 8091 0000 		lds r24,reqBytes
+ 1898 0648 9091 0000 		lds r25,(reqBytes)+1
+ 1899 064c 9093 0000 		sts (dataCount)+1,r25
+ 1900 0650 8093 0000 		sts dataCount,r24
+ 1902               	.LM181:
+ 1903 0654 81E0      		ldi r24,lo8(1)
+ 1904 0656 8093 0000 		sts cmdPhase,r24
+ 1906               	.LM182:
+ 1907 065a 4423      		tst r20
+ 1908 065c 11F0      		breq .L129
+ 1909 065e 84ED      		ldi r24,lo8(-44)
+ 1910 0660 01C0      		rjmp .L130
+ 1911               	.L129:
+ 1912 0662 86ED      		ldi r24,lo8(-42)
+ 1913               	.L130:
+ 1914 0664 4091 0000 		lds r20,reqOffset
+ 1915 0668 5091 0000 		lds r21,(reqOffset)+1
+ 1916 066c 12C0      		rjmp .L152
+ 1917               	.L131:
+ 1919               	.LM183:
+ 1920 066e 8091 0000 		lds r24,reqBytes
+ 1921 0672 9091 0000 		lds r25,(reqBytes)+1
+ 1922 0676 9093 0000 		sts (dataCount)+1,r25
+ 1923 067a 8093 0000 		sts dataCount,r24
+ 1925               	.LM184:
+ 1926 067e 82E0      		ldi r24,lo8(2)
+ 1927 0680 8093 0000 		sts cmdPhase,r24
+ 1929               	.LM185:
+ 1930 0684 4423      		tst r20
+ 1931 0686 11F0      		breq .L132
+ 1932 0688 84ED      		ldi r24,lo8(-44)
+ 1933 068a 01C0      		rjmp .L133
+ 1934               	.L132:
+ 1935 068c 86ED      		ldi r24,lo8(-42)
+ 1936               	.L133:
+ 1937 068e 40E0      		ldi r20,lo8(0)
+ 1938 0690 50E0      		ldi r21,hi8(0)
+ 1939               	.L152:
+ 1940 0692 62E0      		ldi r22,lo8(2)
+ 1941 0694 22C0      		rjmp .L148
+ 1942               	.L134:
+ 1944               	.LM186:
+ 1945 0696 8091 0000 		lds r24,reqBuf
+ 1946 069a 9091 0000 		lds r25,(reqBuf)+1
+ 1947 069e 9093 0000 		sts (data)+1,r25
+ 1948 06a2 8093 0000 		sts data,r24
+ 1950               	.LM187:
+ 1951 06a6 8091 0000 		lds r24,reqBytes
+ 1952 06aa 9091 0000 		lds r25,(reqBytes)+1
+ 1953 06ae 9093 0000 		sts (dataCount)+1,r25
+ 1954 06b2 8093 0000 		sts dataCount,r24
+ 1956               	.LM188:
+ 1957 06b6 83E0      		ldi r24,lo8(3)
+ 1958 06b8 8093 0000 		sts cmdPhase,r24
+ 1960               	.LM189:
+ 1961 06bc E050      		subi r30,lo8(-(buffer+2))
+ 1962 06be F040      		sbci r31,hi8(-(buffer+2))
+ 1963 06c0 8081      		ld r24,Z
+ 1965               	.LM190:
+ 1966 06c2 857E      		andi r24,lo8(-27)
+ 1967 06c4 8083      		st Z,r24
+ 1969               	.LM191:
+ 1970 06c6 4423      		tst r20
+ 1971 06c8 11F0      		breq .L135
+ 1972 06ca 84E8      		ldi r24,lo8(-124)
+ 1973 06cc 01C0      		rjmp .L136
+ 1974               	.L135:
+ 1975 06ce 87E8      		ldi r24,lo8(-121)
+ 1976               	.L136:
+ 1977 06d0 4091 0000 		lds r20,reqOffset
+ 1978 06d4 5091 0000 		lds r21,(reqOffset)+1
+ 1979 06d8 60E0      		ldi r22,lo8(0)
+ 1980               	.L148:
+ 1981 06da 0E94 0000 		call execRWBuffer
+ 1983               	.LM192:
+ 1984 06de 2AC0      		rjmp .L110
+ 1985               	.L111:
+ 1987               	.LM193:
+ 1988 06e0 E050      		subi r30,lo8(-(buffer+2))
+ 1989 06e2 F040      		sbci r31,hi8(-(buffer+2))
+ 1990 06e4 8081      		ld r24,Z
+ 1991 06e6 81FD      		sbrc r24,1
+ 1992 06e8 03C0      		rjmp .L139
+ 1993               	.L149:
+ 1995               	.LM194:
+ 1996 06ea 0E94 0000 		call flushBuffer
+ 1997 06ee 22C0      		rjmp .L110
+ 1998               	.L139:
+ 2000               	.LM195:
+ 2001 06f0 8695      		lsr r24
+ 2002 06f2 8695      		lsr r24
+ 2003 06f4 8695      		lsr r24
+ 2004 06f6 8370      		andi r24,lo8(3)
+ 2005 06f8 21F0      		breq .L141
+ 2006               	.L150:
+ 2008               	.LM196:
+ 2009 06fa 842F      		mov r24,r20
+ 2010 06fc 0E94 0000 		call checkBuffer
+ 2011 0700 19C0      		rjmp .L110
+ 2012               	.L141:
+ 2014               	.LM197:
+ 2015 0702 8091 0000 		lds r24,request
+ 2016 0706 8430      		cpi r24,lo8(4)
+ 2017 0708 19F4      		brne .L143
+ 2019               	.LM198:
+ 2020 070a 2D93      		st X+,r18
+ 2021 070c 3C93      		st X,r19
+ 2023               	.LM199:
+ 2024 070e 11CF      		rjmp .L144
+ 2025               	.L143:
+ 2027               	.LM200:
+ 2028 0710 85E0      		ldi r24,lo8(5)
+ 2029 0712 8093 0000 		sts cmdPhase,r24
+ 2031               	.LM201:
+ 2032 0716 4423      		tst r20
+ 2033 0718 11F0      		breq .L146
+ 2034 071a 63E5      		ldi r22,lo8(83)
+ 2035 071c 01C0      		rjmp .L147
+ 2036               	.L146:
+ 2037 071e 65E5      		ldi r22,lo8(85)
+ 2038               	.L147:
+ 2039 0720 00E0      		ldi r16,lo8(0)
+ 2040 0722 10E0      		ldi r17,hi8(0)
+ 2041 0724 2091 0000 		lds r18,reqPage
+ 2042 0728 3091 0000 		lds r19,(reqPage)+1
+ 2043 072c 40E0      		ldi r20,lo8(0)
+ 2044               	.L151:
+ 2045 072e 81E0      		ldi r24,lo8(1)
+ 2046 0730 0E94 0000 		call execCommand
+ 2047               	.L110:
+ 2048               	/* epilogue: frame size=0 */
+ 2049 0734 1F91      		pop r17
+ 2050 0736 0F91      		pop r16
+ 2051 0738 0895      		ret
+ 2052               	/* epilogue end (size=3) */
+ 2053               	/* function handleRWRequest size 267 (262) */
+ 2055               	.Lscope12:
+ 2061               	exflash_handler:
+ 2063               	.LM202:
+ 2064               	/* prologue: frame size=0 */
+ 2065               	/* prologue end (size=0) */
+ 2066 073a FB01      		movw r30,r22
+ 2068               	.LM203:
+ 2069 073c 8681      		ldd r24,Z+6
+ 2070 073e 9927      		clr r25
+ 2071 0740 8238      		cpi r24,130
+ 2072 0742 9105      		cpc r25,__zero_reg__
+ 2073 0744 29F0      		breq .L155
+ 2075               	.LM204:
+ 2076 0746 8338      		cpi r24,131
+ 2077 0748 9105      		cpc r25,__zero_reg__
+ 2078 074a 09F4      		brne .+2
+ 2079 074c F4C0      		rjmp .L184
+ 2080 074e F5C0      		rjmp .L153
+ 2081               	.L155:
+ 2082               	.LBB98:
+ 2083               	.LBB99:
+ 2085               	.LM205:
+ 2086 0750 8091 0000 		lds r24,deselectRequested
+ 2087 0754 8823      		tst r24
+ 2088 0756 09F4      		brne .+2
+ 2089 0758 F0C0      		rjmp .L153
+ 2091               	.LM206:
+ 2092 075a 1092 0000 		sts deselectRequested,__zero_reg__
+ 2093               	.LBB100:
+ 2094               	.LBB101:
+ 2096               	.LM207:
+ 2097 075e 8091 0000 		lds r24,waiting
+ 2098 0762 2091 0000 		lds r18,cmdPhase
+ 2099 0766 8823      		tst r24
+ 2100 0768 09F4      		brne .+2
+ 2101 076a 4BC0      		rjmp .L157
+ 2103               	.LM208:
+ 2104 076c 9091 0000 		lds r25,buffer+5
+ 2105 0770 892F      		mov r24,r25
+ 2106 0772 8E7F      		andi r24,lo8(-2)
+ 2107 0774 8093 0000 		sts buffer+5,r24
+ 2108 0778 3091 0000 		lds r19,buffer+2
+ 2109 077c 832F      		mov r24,r19
+ 2110 077e 8E7F      		andi r24,lo8(-2)
+ 2111 0780 8093 0000 		sts buffer+2,r24
+ 2112 0784 1092 0000 		sts flashBusy,__zero_reg__
+ 2113 0788 1092 0000 		sts waiting,__zero_reg__
+ 2115               	.LM209:
+ 2116 078c 2830      		cpi r18,lo8(8)
+ 2117 078e 41F5      		brne .L158
+ 2119               	.LM210:
+ 2120 0790 2091 0000 		lds r18,compareOk
+ 2121 0794 8091 0000 		lds r24,checking
+ 2122 0798 2223      		tst r18
+ 2123 079a 59F0      		breq .L159
+ 2125               	.LM211:
+ 2126 079c 9927      		clr r25
+ 2127 079e FC01      		movw r30,r24
+ 2128 07a0 EE0F      		lsl r30
+ 2129 07a2 FF1F      		rol r31
+ 2130 07a4 E80F      		add r30,r24
+ 2131 07a6 F91F      		adc r31,r25
+ 2132 07a8 E050      		subi r30,lo8(-(buffer+2))
+ 2133 07aa F040      		sbci r31,hi8(-(buffer+2))
+ 2134 07ac 8081      		ld r24,Z
+ 2135 07ae 877E      		andi r24,lo8(-25)
+ 2136 07b0 9BC0      		rjmp .L190
+ 2137               	.L159:
+ 2139               	.LM212:
+ 2140 07b2 9927      		clr r25
+ 2141 07b4 FC01      		movw r30,r24
+ 2142 07b6 EE0F      		lsl r30
+ 2143 07b8 FF1F      		rol r31
+ 2144 07ba E80F      		add r30,r24
+ 2145 07bc F91F      		adc r31,r25
+ 2146 07be E050      		subi r30,lo8(-(buffer+2))
+ 2147 07c0 F040      		sbci r31,hi8(-(buffer+2))
+ 2148 07c2 9081      		ld r25,Z
+ 2149 07c4 892F      		mov r24,r25
+ 2150 07c6 8695      		lsr r24
+ 2151 07c8 8695      		lsr r24
+ 2152 07ca 8695      		lsr r24
+ 2153 07cc 8370      		andi r24,lo8(3)
+ 2154 07ce 8230      		cpi r24,lo8(2)
+ 2155 07d0 10F4      		brsh .L161
+ 2157               	.LM213:
+ 2158 07d2 9D7F      		andi r25,lo8(-3)
+ 2159 07d4 4AC0      		rjmp .L189
+ 2160               	.L161:
+ 2162               	.LM214:
+ 2163 07d6 81E0      		ldi r24,lo8(1)
+ 2164 07d8 8093 0000 		sts broken,r24
+ 2166               	.LM215:
+ 2167 07dc 822F      		mov r24,r18
+ 2168 07de A8C0      		rjmp .L188
+ 2169               	.L158:
+ 2171               	.LM216:
+ 2172 07e0 3871      		andi r19,lo8(24)
+ 2173 07e2 11F4      		brne .L166
+ 2174 07e4 9871      		andi r25,lo8(24)
+ 2175 07e6 51F0      		breq .L165
+ 2176               	.L166:
+ 2177 07e8 2750      		subi r18,lo8(-(-7))
+ 2178 07ea 2230      		cpi r18,lo8(2)
+ 2179 07ec 38F0      		brlo .L165
+ 2181               	.LM217:
+ 2182 07ee 80E0      		ldi r24,lo8(0)
+ 2183 07f0 3323      		tst r19
+ 2184 07f2 09F4      		brne .L167
+ 2185 07f4 81E0      		ldi r24,lo8(1)
+ 2186               	.L167:
+ 2187 07f6 0E94 0000 		call checkBuffer
+ 2188 07fa 9FC0      		rjmp .L153
+ 2189               	.L165:
+ 2191               	.LM218:
+ 2192 07fc 0E94 0000 		call sendFlashCommand
+ 2194               	.LM219:
+ 2195 0800 9CC0      		rjmp .L153
+ 2196               	.L157:
+ 2198               	.LM220:
+ 2199 0802 822F      		mov r24,r18
+ 2200 0804 9927      		clr r25
+ 2201 0806 8430      		cpi r24,4
+ 2202 0808 9105      		cpc r25,__zero_reg__
+ 2203 080a A1F0      		breq .L174
+ 2204 080c 8530      		cpi r24,5
+ 2205 080e 9105      		cpc r25,__zero_reg__
+ 2206 0810 1CF4      		brge .L182
+ 2207 0812 0197      		sbiw r24,1
+ 2208 0814 5CF0      		brlt .L170
+ 2209 0816 0CC0      		rjmp .L173
+ 2210               	.L182:
+ 2211 0818 8630      		cpi r24,6
+ 2212 081a 9105      		cpc r25,__zero_reg__
+ 2213 081c 09F4      		brne .+2
+ 2214 081e 68C0      		rjmp .L181
+ 2215 0820 8630      		cpi r24,6
+ 2216 0822 9105      		cpc r25,__zero_reg__
+ 2217 0824 0CF4      		brge .+2
+ 2218 0826 45C0      		rjmp .L180
+ 2219 0828 0797      		sbiw r24,7
+ 2220 082a 09F1      		breq .L175
+ 2221               	.L170:
+ 2223               	.LM221:
+ 2224 082c 80E0      		ldi r24,lo8(0)
+ 2225 082e 80C0      		rjmp .L188
+ 2226               	.L173:
+ 2228               	.LM222:
+ 2229 0830 81E0      		ldi r24,lo8(1)
+ 2230 0832 7EC0      		rjmp .L188
+ 2231               	.L174:
+ 2233               	.LM223:
+ 2234 0834 81E0      		ldi r24,lo8(1)
+ 2235 0836 8093 0000 		sts flashBusy,r24
+ 2237               	.LM224:
+ 2238 083a 8091 0000 		lds r24,selected
+ 2239 083e 9927      		clr r25
+ 2240 0840 FC01      		movw r30,r24
+ 2241 0842 EE0F      		lsl r30
+ 2242 0844 FF1F      		rol r31
+ 2243 0846 E80F      		add r30,r24
+ 2244 0848 F91F      		adc r31,r25
+ 2245 084a E050      		subi r30,lo8(-(buffer+2))
+ 2246 084c F040      		sbci r31,hi8(-(buffer+2))
+ 2247 084e 9081      		ld r25,Z
+ 2248 0850 9360      		ori r25,lo8(3)
+ 2250               	.LM225:
+ 2251 0852 892F      		mov r24,r25
+ 2252 0854 8695      		lsr r24
+ 2253 0856 8695      		lsr r24
+ 2254 0858 8695      		lsr r24
+ 2255 085a 8370      		andi r24,lo8(3)
+ 2256 085c 8F5F      		subi r24,lo8(-(1))
+ 2257 085e 8370      		andi r24,lo8(3)
+ 2258 0860 880F      		lsl r24
+ 2259 0862 880F      		lsl r24
+ 2260 0864 880F      		lsl r24
+ 2261 0866 937E      		andi r25,lo8(-29)
+ 2263               	.LM226:
+ 2264 0868 982B      		or r25,r24
+ 2265               	.L189:
+ 2266 086a 9083      		st Z,r25
+ 2267 086c 3EC0      		rjmp .L187
+ 2268               	.L175:
+ 2270               	.LM227:
+ 2271 086e 88E0      		ldi r24,lo8(8)
+ 2272 0870 8093 0000 		sts cmdPhase,r24
+ 2274               	.LM228:
+ 2275 0874 81E0      		ldi r24,lo8(1)
+ 2276 0876 8093 0000 		sts flashBusy,r24
+ 2278               	.LM229:
+ 2279 087a 8091 0000 		lds r24,checking
+ 2280 087e 9927      		clr r25
+ 2281 0880 FC01      		movw r30,r24
+ 2282 0882 EE0F      		lsl r30
+ 2283 0884 FF1F      		rol r31
+ 2284 0886 E80F      		add r30,r24
+ 2285 0888 F91F      		adc r31,r25
+ 2286 088a E050      		subi r30,lo8(-(buffer+2))
+ 2287 088c F040      		sbci r31,hi8(-(buffer+2))
+ 2288 088e 8081      		ld r24,Z
+ 2289 0890 8160      		ori r24,lo8(1)
+ 2290 0892 8083      		st Z,r24
+ 2291               	.LBB102:
+ 2293               	.LM230:
+ 2294 0894 8AE0      		ldi r24,lo8(10)
+ 2295 0896 90E0      		ldi r25,hi8(10)
+ 2296               	.L178:
+ 2297               	.LBB103:
+ 2299               	.LM231:
+ 2300               	/* #APP */
+ 2301 0898 0000      		nop
+ 2303               	.LM232:
+ 2304 089a 0000      		nop
+ 2306               	.LM233:
+ 2307 089c 0000      		nop
+ 2309               	.LM234:
+ 2310 089e 0000      		nop
+ 2312               	.LM235:
+ 2313 08a0 0000      		nop
+ 2315               	.LM236:
+ 2316 08a2 0000      		nop
+ 2318               	.LM237:
+ 2319 08a4 0000      		nop
+ 2321               	.LM238:
+ 2322 08a6 0000      		nop
+ 2324               	.LM239:
+ 2325               	/* #NOAPP */
+ 2326 08a8 0197      		sbiw r24,1
+ 2327 08aa B1F7      		brne .L178
+ 2328               	.LBE103:
+ 2329               	.LBE102:
+ 2331               	.LM240:
+ 2332 08ac 0E94 0000 		call requestFlashStatus
+ 2334               	.LM241:
+ 2335 08b0 44C0      		rjmp .L153
+ 2336               	.L180:
+ 2338               	.LM242:
+ 2339 08b2 81E0      		ldi r24,lo8(1)
+ 2340 08b4 8093 0000 		sts flashBusy,r24
+ 2342               	.LM243:
+ 2343 08b8 8091 0000 		lds r24,selected
+ 2344 08bc 282F      		mov r18,r24
+ 2345 08be 3327      		clr r19
+ 2346 08c0 C901      		movw r24,r18
+ 2347 08c2 880F      		lsl r24
+ 2348 08c4 991F      		rol r25
+ 2349 08c6 820F      		add r24,r18
+ 2350 08c8 931F      		adc r25,r19
+ 2351 08ca FC01      		movw r30,r24
+ 2352 08cc E050      		subi r30,lo8(-(buffer))
+ 2353 08ce F040      		sbci r31,hi8(-(buffer))
+ 2354 08d0 2091 0000 		lds r18,reqPage
+ 2355 08d4 3091 0000 		lds r19,(reqPage)+1
+ 2356 08d8 2083      		st Z,r18
+ 2357 08da 3183      		std Z+1,r19
+ 2359               	.LM244:
+ 2360 08dc FC01      		movw r30,r24
+ 2361 08de E050      		subi r30,lo8(-(buffer+2))
+ 2362 08e0 F040      		sbci r31,hi8(-(buffer+2))
+ 2363 08e2 8081      		ld r24,Z
+ 2364 08e4 8360      		ori r24,lo8(3)
+ 2366               	.LM245:
+ 2367 08e6 8B7F      		andi r24,lo8(-5)
+ 2368               	.L190:
+ 2369 08e8 8083      		st Z,r24
+ 2370               	.L187:
+ 2372               	.LM246:
+ 2373 08ea 0E94 0000 		call handleRWRequest
+ 2375               	.LM247:
+ 2376 08ee 25C0      		rjmp .L153
+ 2377               	.L181:
+ 2379               	.LM248:
+ 2380 08f0 41E0      		ldi r20,lo8(1)
+ 2381 08f2 4093 0000 		sts flashBusy,r20
+ 2383               	.LM249:
+ 2384 08f6 8091 0000 		lds r24,selected
+ 2385 08fa 282F      		mov r18,r24
+ 2386 08fc 3327      		clr r19
+ 2387 08fe C901      		movw r24,r18
+ 2388 0900 042E      		mov r0,r20
+ 2389 0902 02C0      		rjmp 2f
+ 2390 0904 880F      	1:	lsl r24
+ 2391 0906 991F      		rol r25
+ 2392 0908 0A94      	2:	dec r0
+ 2393 090a E2F7      		brpl 1b
+ 2394 090c 820F      		add r24,r18
+ 2395 090e 931F      		adc r25,r19
+ 2396 0910 FC01      		movw r30,r24
+ 2397 0912 E050      		subi r30,lo8(-(buffer))
+ 2398 0914 F040      		sbci r31,hi8(-(buffer))
+ 2399 0916 2091 0000 		lds r18,reqPage
+ 2400 091a 3091 0000 		lds r19,(reqPage)+1
+ 2401 091e 2083      		st Z,r18
+ 2402 0920 3183      		std Z+1,r19
+ 2404               	.LM250:
+ 2405 0922 FC01      		movw r30,r24
+ 2406 0924 E050      		subi r30,lo8(-(buffer+2))
+ 2407 0926 F040      		sbci r31,hi8(-(buffer+2))
+ 2408 0928 8081      		ld r24,Z
+ 2410               	.LM251:
+ 2411 092a 8660      		ori r24,lo8(6)
+ 2412 092c 8083      		st Z,r24
+ 2414               	.LM252:
+ 2415 092e 842F      		mov r24,r20
+ 2416               	.L188:
+ 2417 0930 0E94 0000 		call requestDone
+ 2418               	.LBE101:
+ 2419               	.LBE100:
+ 2420               	.LBE99:
+ 2421               	.LBE98:
+ 2423               	.LM253:
+ 2424 0934 02C0      		rjmp .L153
+ 2425               	.L184:
+ 2427               	.LM254:
+ 2428 0936 0E94 0000 		call FlashIdle_available
+ 2429               	.L153:
+ 2431               	.LM255:
+ 2432 093a 80E0      		ldi r24,lo8(0)
+ 2433 093c 90E0      		ldi r25,hi8(0)
+ 2434               	/* epilogue: frame size=0 */
+ 2435 093e 0895      		ret
+ 2436               	/* epilogue end (size=1) */
+ 2437               	/* function exflash_handler size 272 (271) */
+ 2442               	.Lscope13:
+ 2452               	newRequest:
+ 2454               	.LM256:
+ 2455               	/* prologue: frame size=0 */
+ 2456 0940 EF92      		push r14
+ 2457 0942 FF92      		push r15
+ 2458 0944 0F93      		push r16
+ 2459 0946 1F93      		push r17
+ 2460               	/* prologue end (size=4) */
+ 2461 0948 E82F      		mov r30,r24
+ 2463               	.LM257:
+ 2464 094a 78E0      		ldi r23,hi8(2048)
+ 2465 094c 4030      		cpi r20,lo8(2048)
+ 2466 094e 5707      		cpc r21,r23
+ 2467 0950 78F4      		brsh .L193
+ 2469               	.LM258:
+ 2470 0952 81E0      		ldi r24,hi8(264)
+ 2471 0954 2830      		cpi r18,lo8(264)
+ 2472 0956 3807      		cpc r19,r24
+ 2473 0958 58F4      		brsh .L193
+ 2474 095a 79E0      		ldi r23,lo8(265)
+ 2475 095c E716      		cp r14,r23
+ 2476 095e 71E0      		ldi r23,hi8(265)
+ 2477 0960 F706      		cpc r15,r23
+ 2478 0962 30F4      		brsh .L193
+ 2479 0964 C901      		movw r24,r18
+ 2480 0966 8E0D      		add r24,r14
+ 2481 0968 9F1D      		adc r25,r15
+ 2482 096a 8950      		subi r24,lo8(265)
+ 2483 096c 9140      		sbci r25,hi8(265)
+ 2484 096e 18F0      		brlo .L192
+ 2485               	.L193:
+ 2487               	.LM259:
+ 2488 0970 8AEE      		ldi r24,lo8(-22)
+ 2489 0972 9FEF      		ldi r25,hi8(-22)
+ 2490 0974 47C0      		rjmp .L191
+ 2491               	.L192:
+ 2493               	.LM260:
+ 2494 0976 8091 0000 		lds r24,request
+ 2495 097a 8823      		tst r24
+ 2496 097c 21F4      		brne .L195
+ 2497 097e 8091 0000 		lds r24,reqPid
+ 2498 0982 8F3F      		cpi r24,lo8(-1)
+ 2499 0984 19F0      		breq .L194
+ 2500               	.L195:
+ 2501 0986 80EF      		ldi r24,lo8(-16)
+ 2502 0988 9FEF      		ldi r25,hi8(-16)
+ 2503 098a 3CC0      		rjmp .L191
+ 2504               	.L194:
+ 2506               	.LM261:
+ 2507 098c 7091 0000 		lds r23,broken
+ 2508 0990 7723      		tst r23
+ 2509 0992 19F0      		breq .L196
+ 2511               	.LM262:
+ 2512 0994 8BEF      		ldi r24,lo8(-5)
+ 2513 0996 9FEF      		ldi r25,hi8(-5)
+ 2514 0998 35C0      		rjmp .L191
+ 2515               	.L196:
+ 2517               	.LM263:
+ 2518 099a E093 0000 		sts reqPid,r30
+ 2520               	.LM264:
+ 2521 099e 6093 0000 		sts request,r22
+ 2523               	.LM265:
+ 2524 09a2 1093 0000 		sts (reqBuf)+1,r17
+ 2525 09a6 0093 0000 		sts reqBuf,r16
+ 2527               	.LM266:
+ 2528 09aa F092 0000 		sts (reqBytes)+1,r15
+ 2529 09ae E092 0000 		sts reqBytes,r14
+ 2531               	.LM267:
+ 2532 09b2 5093 0000 		sts (reqPage)+1,r21
+ 2533 09b6 4093 0000 		sts reqPage,r20
+ 2535               	.LM268:
+ 2536 09ba 3093 0000 		sts (reqOffset)+1,r19
+ 2537 09be 2093 0000 		sts reqOffset,r18
+ 2539               	.LM269:
+ 2540 09c2 8091 0000 		lds r24,buffer
+ 2541 09c6 9091 0000 		lds r25,(buffer)+1
+ 2542 09ca 4817      		cp r20,r24
+ 2543 09cc 5907      		cpc r21,r25
+ 2544 09ce 19F4      		brne .L197
+ 2546               	.LM270:
+ 2547 09d0 7093 0000 		sts selected,r23
+ 2548 09d4 13C0      		rjmp .L198
+ 2549               	.L197:
+ 2551               	.LM271:
+ 2552 09d6 8091 0000 		lds r24,buffer+3
+ 2553 09da 9091 0000 		lds r25,(buffer+3)+1
+ 2554 09de 4817      		cp r20,r24
+ 2555 09e0 5907      		cpc r21,r25
+ 2556 09e2 21F4      		brne .L199
+ 2558               	.LM272:
+ 2559 09e4 81E0      		ldi r24,lo8(1)
+ 2560 09e6 8093 0000 		sts selected,r24
+ 2561 09ea 08C0      		rjmp .L198
+ 2562               	.L199:
+ 2564               	.LM273:
+ 2565 09ec 972F      		mov r25,r23
+ 2566 09ee 8091 0000 		lds r24,selected
+ 2567 09f2 8823      		tst r24
+ 2568 09f4 09F4      		brne .L201
+ 2569 09f6 91E0      		ldi r25,lo8(1)
+ 2570               	.L201:
+ 2571 09f8 9093 0000 		sts selected,r25
+ 2572               	.L198:
+ 2574               	.LM274:
+ 2575 09fc 0E94 0000 		call handleRWRequest
+ 2577               	.LM275:
+ 2578 0a00 80E0      		ldi r24,lo8(0)
+ 2579 0a02 90E0      		ldi r25,hi8(0)
+ 2580               	.L191:
+ 2581               	/* epilogue: frame size=0 */
+ 2582 0a04 1F91      		pop r17
+ 2583 0a06 0F91      		pop r16
+ 2584 0a08 FF90      		pop r15
+ 2585 0a0a EF90      		pop r14
+ 2586 0a0c 0895      		ret
+ 2587               	/* epilogue end (size=5) */
+ 2588               	/* function newRequest size 104 (95) */
+ 2590               	.Lscope14:
+ 2597               	syncOrFlush:
+ 2599               	.LM276:
+ 2600               	/* prologue: frame size=0 */
+ 2601               	/* prologue end (size=0) */
+ 2602 0a0e 382F      		mov r19,r24
+ 2604               	.LM277:
+ 2605 0a10 8091 0000 		lds r24,request
+ 2606 0a14 8823      		tst r24
+ 2607 0a16 21F4      		brne .L204
+ 2609               	.LM278:
+ 2610 0a18 8091 0000 		lds r24,reqPid
+ 2611 0a1c 8F3F      		cpi r24,lo8(-1)
+ 2612 0a1e 19F0      		breq .L203
+ 2613               	.L204:
+ 2615               	.LM279:
+ 2616 0a20 80EF      		ldi r24,lo8(-16)
+ 2617 0a22 9FEF      		ldi r25,hi8(-16)
+ 2618 0a24 0895      		ret
+ 2619               	.L203:
+ 2621               	.LM280:
+ 2622 0a26 2091 0000 		lds r18,broken
+ 2623 0a2a 2223      		tst r18
+ 2624 0a2c 19F0      		breq .L205
+ 2626               	.LM281:
+ 2627 0a2e 8BEF      		ldi r24,lo8(-5)
+ 2628 0a30 9FEF      		ldi r25,hi8(-5)
+ 2629 0a32 0895      		ret
+ 2630               	.L205:
+ 2632               	.LM282:
+ 2633 0a34 8091 0000 		lds r24,buffer
+ 2634 0a38 9091 0000 		lds r25,(buffer)+1
+ 2635 0a3c 8617      		cp r24,r22
+ 2636 0a3e 9707      		cpc r25,r23
+ 2637 0a40 19F4      		brne .L207
+ 2639               	.LM283:
+ 2640 0a42 2093 0000 		sts selected,r18
+ 2641 0a46 15C0      		rjmp .L206
+ 2642               	.L207:
+ 2644               	.LM284:
+ 2645 0a48 8091 0000 		lds r24,buffer+3
+ 2646 0a4c 9091 0000 		lds r25,(buffer+3)+1
+ 2647 0a50 8617      		cp r24,r22
+ 2648 0a52 9707      		cpc r25,r23
+ 2649 0a54 21F4      		brne .L209
+ 2651               	.LM285:
+ 2652 0a56 81E0      		ldi r24,lo8(1)
+ 2653 0a58 8093 0000 		sts selected,r24
+ 2654 0a5c 0AC0      		rjmp .L206
+ 2655               	.L209:
+ 2657               	.LM286:
+ 2658 0a5e 3093 0000 		sts reqPid,r19
+ 2660               	.LM287:
+ 2661 0a62 4093 0000 		sts request,r20
+ 2663               	.LM288:
+ 2664 0a66 81E0      		ldi r24,lo8(1)
+ 2665 0a68 0E94 0000 		call requestDone
+ 2667               	.LM289:
+ 2668 0a6c 80E0      		ldi r24,lo8(0)
+ 2669 0a6e 90E0      		ldi r25,hi8(0)
+ 2670 0a70 0895      		ret
+ 2671               	.L206:
+ 2673               	.LM290:
+ 2674 0a72 3093 0000 		sts reqPid,r19
+ 2676               	.LM291:
+ 2677 0a76 4093 0000 		sts request,r20
+ 2679               	.LM292:
+ 2680 0a7a 8091 0000 		lds r24,selected
+ 2681 0a7e 9927      		clr r25
+ 2682 0a80 FC01      		movw r30,r24
+ 2683 0a82 EE0F      		lsl r30
+ 2684 0a84 FF1F      		rol r31
+ 2685 0a86 E80F      		add r30,r24
+ 2686 0a88 F91F      		adc r31,r25
+ 2687 0a8a E050      		subi r30,lo8(-(buffer+2))
+ 2688 0a8c F040      		sbci r31,hi8(-(buffer+2))
+ 2689 0a8e 8081      		ld r24,Z
+ 2690 0a90 877E      		andi r24,lo8(-25)
+ 2691 0a92 8083      		st Z,r24
+ 2693               	.LM293:
+ 2694 0a94 0E94 0000 		call handleRWRequest
+ 2696               	.LM294:
+ 2697 0a98 80E0      		ldi r24,lo8(0)
+ 2698 0a9a 90E0      		ldi r25,hi8(0)
+ 2700               	.LM295:
+ 2701 0a9c 0895      		ret
+ 2702               	/* epilogue: frame size=0 */
+ 2703 0a9e 0895      		ret
+ 2704               	/* epilogue end (size=1) */
+ 2705               	/* function syncOrFlush size 73 (72) */
+ 2707               	.Lscope15:
+ 2715               	.global	ker_exflash_read
+ 2717               	ker_exflash_read:
+ 750:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 751:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 752:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 753:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** /*---------------------------------------------------------------------*/
+ 754:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** /* Function Definitions (External)                                     */
+ 755:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** /*---------------------------------------------------------------------*/
+ 756:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 757:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** int8_t ker_exflash_read(sos_pid_t pid, 
+ 758:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		exflashpage_t page, exflashoffset_t offset,
+ 759:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		void *reqdata, exflashoffset_t n)
+ 760:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** {       
+ 2719               	.LM296:
+ 2720               	/* prologue: frame size=0 */
+ 2721 0aa0 EF92      		push r14
+ 2722 0aa2 FF92      		push r15
+ 2723 0aa4 0F93      		push r16
+ 2724 0aa6 1F93      		push r17
+ 2725               	/* prologue end (size=4) */
+ 2726 0aa8 FB01      		movw r30,r22
+ 2727 0aaa BA01      		movw r22,r20
+ 2728 0aac A901      		movw r20,r18
+ 761:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	return newRequest(pid, R_READ, page, offset, reqdata, n);        
+ 2730               	.LM297:
+ 2731 0aae 7801      		movw r14,r16
+ 2732 0ab0 8A01      		movw r16,r20
+ 2733 0ab2 9B01      		movw r18,r22
+ 2734 0ab4 AF01      		movw r20,r30
+ 2735 0ab6 61E0      		ldi r22,lo8(1)
+ 2736 0ab8 0E94 0000 		call newRequest
+ 762:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** }                                                             
+ 2738               	.LM298:
+ 2739 0abc 9927      		clr r25
+ 2740 0abe 87FD      		sbrc r24,7
+ 2741 0ac0 9095      		com r25
+ 2742               	/* epilogue: frame size=0 */
+ 2743 0ac2 1F91      		pop r17
+ 2744 0ac4 0F91      		pop r16
+ 2745 0ac6 FF90      		pop r15
+ 2746 0ac8 EF90      		pop r14
+ 2747 0aca 0895      		ret
+ 2748               	/* epilogue end (size=5) */
+ 2749               	/* function ker_exflash_read size 22 (13) */
+ 2751               	.Lscope16:
+ 2758               	.global	ker_exflash_computeCrc
+ 2760               	ker_exflash_computeCrc:
+ 763:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 764:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 765:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** int8_t ker_exflash_computeCrc(sos_pid_t pid, 
+ 766:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		exflashpage_t page,     
+ 767:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		exflashoffset_t offset,                 
+ 768:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		exflashoffset_t n) 
+ 769:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** {                    
+ 2762               	.LM299:
+ 2763               	/* prologue: frame size=0 */
+ 2764 0acc EF92      		push r14
+ 2765 0ace FF92      		push r15
+ 2766 0ad0 0F93      		push r16
+ 2767 0ad2 1F93      		push r17
+ 2768               	/* prologue end (size=4) */
+ 2769 0ad4 7901      		movw r14,r18
+ 770:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	if (n == 0) {  
+ 2771               	.LM300:
+ 2772 0ad6 2115      		cp r18,__zero_reg__
+ 2773 0ad8 3105      		cpc r19,__zero_reg__
+ 2774 0ada 69F4      		brne .L213
+ 771:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		reqPid = pid;
+ 2776               	.LM301:
+ 2777 0adc 8093 0000 		sts reqPid,r24
+ 772:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		request = R_READCRC;                                        
+ 2779               	.LM302:
+ 2780 0ae0 82E0      		ldi r24,lo8(2)
+ 2781 0ae2 8093 0000 		sts request,r24
+ 773:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		computedCrc = 0;                                            
+ 2783               	.LM303:
+ 2784 0ae6 3093 0000 		sts (computedCrc)+1,r19
+ 2785 0aea 2093 0000 		sts computedCrc,r18
+ 774:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		requestDone(true);
+ 2787               	.LM304:
+ 2788 0aee 81E0      		ldi r24,lo8(1)
+ 2789 0af0 0E94 0000 		call requestDone
+ 775:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		return SOS_OK;                                             
+ 2791               	.LM305:
+ 2792 0af4 0BC0      		rjmp .L212
+ 2793               	.L213:
+ 776:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	}                                                         
+ 777:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	else                                                        
+ 778:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		return newRequest(pid, R_READCRC, page, offset, NULL, n);      
+ 2795               	.LM306:
+ 2796 0af6 00E0      		ldi r16,lo8(0)
+ 2797 0af8 10E0      		ldi r17,hi8(0)
+ 2798 0afa 9A01      		movw r18,r20
+ 2799 0afc AB01      		movw r20,r22
+ 2800 0afe 62E0      		ldi r22,lo8(2)
+ 2801 0b00 0E94 0000 		call newRequest
+ 2802 0b04 E82E      		mov r14,r24
+ 2803 0b06 FF24      		clr r15
+ 2804 0b08 E7FC      		sbrc r14,7
+ 2805 0b0a F094      		com r15
+ 2806               	.L212:
+ 779:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** }                                                             
+ 2808               	.LM307:
+ 2809 0b0c C701      		movw r24,r14
+ 2810               	/* epilogue: frame size=0 */
+ 2811 0b0e 1F91      		pop r17
+ 2812 0b10 0F91      		pop r16
+ 2813 0b12 FF90      		pop r15
+ 2814 0b14 EF90      		pop r14
+ 2815 0b16 0895      		ret
+ 2816               	/* epilogue end (size=5) */
+ 2817               	/* function ker_exflash_computeCrc size 38 (29) */
+ 2819               	.Lscope17:
+ 2827               	.global	ker_exflash_write
+ 2829               	ker_exflash_write:
+ 780:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 781:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** int8_t ker_exflash_write(sos_pid_t pid, 
+ 782:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		exflashpage_t page, exflashoffset_t offset,
+ 783:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 		void *reqdata, exflashoffset_t n)
+ 784:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** {      
+ 2831               	.LM308:
+ 2832               	/* prologue: frame size=0 */
+ 2833 0b18 EF92      		push r14
+ 2834 0b1a FF92      		push r15
+ 2835 0b1c 0F93      		push r16
+ 2836 0b1e 1F93      		push r17
+ 2837               	/* prologue end (size=4) */
+ 2838 0b20 FB01      		movw r30,r22
+ 2839 0b22 BA01      		movw r22,r20
+ 2840 0b24 A901      		movw r20,r18
+ 785:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	return newRequest(pid, R_WRITE, page, offset, reqdata, n);       
+ 2842               	.LM309:
+ 2843 0b26 7801      		movw r14,r16
+ 2844 0b28 8A01      		movw r16,r20
+ 2845 0b2a 9B01      		movw r18,r22
+ 2846 0b2c AF01      		movw r20,r30
+ 2847 0b2e 63E0      		ldi r22,lo8(3)
+ 2848 0b30 0E94 0000 		call newRequest
+ 786:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** }                                                             
+ 2850               	.LM310:
+ 2851 0b34 9927      		clr r25
+ 2852 0b36 87FD      		sbrc r24,7
+ 2853 0b38 9095      		com r25
+ 2854               	/* epilogue: frame size=0 */
+ 2855 0b3a 1F91      		pop r17
+ 2856 0b3c 0F91      		pop r16
+ 2857 0b3e FF90      		pop r15
+ 2858 0b40 EF90      		pop r14
+ 2859 0b42 0895      		ret
+ 2860               	/* epilogue end (size=5) */
+ 2861               	/* function ker_exflash_write size 22 (13) */
+ 2863               	.Lscope18:
+ 2869               	.global	ker_exflash_erase
+ 2871               	ker_exflash_erase:
+ 787:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 788:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** int8_t ker_exflash_erase(sos_pid_t pid, exflashpage_t page, uint8_t eraseKind)
+ 789:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** {
+ 2873               	.LM311:
+ 2874               	/* prologue: frame size=0 */
+ 2875 0b44 EF92      		push r14
+ 2876 0b46 FF92      		push r15
+ 2877 0b48 0F93      		push r16
+ 2878 0b4a 1F93      		push r17
+ 2879               	/* prologue end (size=4) */
+ 790:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	return newRequest(pid, R_ERASE, page, eraseKind, NULL, 0);       
+ 2881               	.LM312:
+ 2882 0b4c 242F      		mov r18,r20
+ 2883 0b4e 3327      		clr r19
+ 2884 0b50 EE24      		clr r14
+ 2885 0b52 FF24      		clr r15
+ 2886 0b54 8701      		movw r16,r14
+ 2887 0b56 AB01      		movw r20,r22
+ 2888 0b58 64E0      		ldi r22,lo8(4)
+ 2889 0b5a 0E94 0000 		call newRequest
+ 791:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** }                                                             
+ 2891               	.LM313:
+ 2892 0b5e 9927      		clr r25
+ 2893 0b60 87FD      		sbrc r24,7
+ 2894 0b62 9095      		com r25
+ 2895               	/* epilogue: frame size=0 */
+ 2896 0b64 1F91      		pop r17
+ 2897 0b66 0F91      		pop r16
+ 2898 0b68 FF90      		pop r15
+ 2899 0b6a EF90      		pop r14
+ 2900 0b6c 0895      		ret
+ 2901               	/* epilogue end (size=5) */
+ 2902               	/* function ker_exflash_erase size 21 (12) */
+ 2904               	.Lscope19:
+ 2909               	.global	ker_exflash_sync
+ 2911               	ker_exflash_sync:
+ 792:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 793:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** int8_t ker_exflash_sync(sos_pid_t pid, exflashpage_t page)
+ 794:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** {         
+ 2913               	.LM314:
+ 2914               	/* prologue: frame size=0 */
+ 2915               	/* prologue end (size=0) */
+ 795:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	return syncOrFlush(pid, page, R_SYNC);                           
+ 2917               	.LM315:
+ 2918 0b6e 45E0      		ldi r20,lo8(5)
+ 2919 0b70 0E94 0000 		call syncOrFlush
+ 796:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** }                                                             
+ 2921               	.LM316:
+ 2922 0b74 9927      		clr r25
+ 2923 0b76 87FD      		sbrc r24,7
+ 2924 0b78 9095      		com r25
+ 2925               	/* epilogue: frame size=0 */
+ 2926 0b7a 0895      		ret
+ 2927               	/* epilogue end (size=1) */
+ 2928               	/* function ker_exflash_sync size 7 (6) */
+ 2930               	.Lscope20:
+ 2935               	.global	ker_exflash_flush
+ 2937               	ker_exflash_flush:
+ 797:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 798:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** int8_t ker_exflash_flush(sos_pid_t pid, exflashpage_t page)
+ 799:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** {        
+ 2939               	.LM317:
+ 2940               	/* prologue: frame size=0 */
+ 2941               	/* prologue end (size=0) */
+ 800:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	return syncOrFlush(pid, page, R_FLUSH);                          
+ 2943               	.LM318:
+ 2944 0b7c 47E0      		ldi r20,lo8(7)
+ 2945 0b7e 0E94 0000 		call syncOrFlush
+ 801:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** } 
+ 2947               	.LM319:
+ 2948 0b82 9927      		clr r25
+ 2949 0b84 87FD      		sbrc r24,7
+ 2950 0b86 9095      		com r25
+ 2951               	/* epilogue: frame size=0 */
+ 2952 0b88 0895      		ret
+ 2953               	/* epilogue end (size=1) */
+ 2954               	/* function ker_exflash_flush size 7 (6) */
+ 2956               	.Lscope21:
+ 2960               	.global	ker_exflash_syncAll
+ 2962               	ker_exflash_syncAll:
+ 802:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 803:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** int8_t ker_exflash_syncAll(sos_pid_t pid)
+ 804:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** {                       
+ 2964               	.LM320:
+ 2965               	/* prologue: frame size=0 */
+ 2966               	/* prologue end (size=0) */
+ 805:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	return syncOrFlushAll(pid, R_SYNCALL);                           
+ 2968               	.LM321:
+ 2969 0b8a 66E0      		ldi r22,lo8(6)
+ 2970 0b8c 0E94 0000 		call syncOrFlushAll
+ 806:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** }                                                             
+ 2972               	.LM322:
+ 2973 0b90 9927      		clr r25
+ 2974 0b92 87FD      		sbrc r24,7
+ 2975 0b94 9095      		com r25
+ 2976               	/* epilogue: frame size=0 */
+ 2977 0b96 0895      		ret
+ 2978               	/* epilogue end (size=1) */
+ 2979               	/* function ker_exflash_syncAll size 7 (6) */
+ 2981               	.Lscope22:
+ 2985               	.global	ker_exflash_flushAll
+ 2987               	ker_exflash_flushAll:
+ 807:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 
+ 808:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** int8_t ker_exflash_flushAll(sos_pid_t pid)
+ 809:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** {                      
+ 2989               	.LM323:
+ 2990               	/* prologue: frame size=0 */
+ 2991               	/* prologue end (size=0) */
+ 810:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** 	return syncOrFlushAll(pid, R_FLUSHALL);                          
+ 2993               	.LM324:
+ 2994 0b98 68E0      		ldi r22,lo8(8)
+ 2995 0b9a 0E94 0000 		call syncOrFlushAll
+ 811:/Users/Administrator/sos-2x/platform/micaz/exflash.c **** }                                                  
+ 2997               	.LM325:
+ 2998 0b9e 9927      		clr r25
+ 2999 0ba0 87FD      		sbrc r24,7
+ 3000 0ba2 9095      		com r25
+ 3001               	/* epilogue: frame size=0 */
+ 3002 0ba4 0895      		ret
+ 3003               	/* epilogue end (size=1) */
+ 3004               	/* function ker_exflash_flushAll size 7 (6) */
+ 3006               	.Lscope23:
+ 3008               		.lcomm exflash_module,8
+ 3009               		.lcomm request,1
+ 3010               		.lcomm reqBuf,2
+ 3011               		.lcomm reqOffset,2
+ 3012               		.lcomm reqBytes,2
+ 3013               		.lcomm reqPage,2
+ 3014               		.lcomm deselectRequested,1
+ 3015               		.lcomm broken,1
+ 3016               		.lcomm compareOk,1
+ 3017               		.lcomm cmdPhase,1
+ 3018               		.lcomm waiting,1
+ 3019               		.lcomm data,2
+ 3020               		.lcomm cmd,4
+ 3021               		.lcomm cmdCount,1
+ 3022               		.lcomm dataCount,2
+ 3023               		.lcomm computedCrc,2
+ 3024               		.lcomm buffer,6
+ 3025               		.lcomm selected,1
+ 3026               		.lcomm checking,1
+ 3027               		.lcomm flashBusy,1
+ 3028               		.lcomm reqPid,1
+ 3051               		.text
+ 3053               	Letext:
+ 3054               	/* File "/Users/Administrator/sos-2x/platform/micaz/exflash.c": code 1605 = 0x0645 (1448), prologue
+DEFINED SYMBOLS
+                            *ABS*:00000000 exflash.c
+                            *ABS*:0000003f __SREG__
+                            *ABS*:0000003e __SP_H__
+                            *ABS*:0000003d __SP_L__
+                            *ABS*:00000000 __tmp_reg__
+                            *ABS*:00000001 __zero_reg__
+/var/tmp//cc4IKmzw.s:293    .progmem.data:00000000 mod_header
+/var/tmp//cc4IKmzw.s:2061   .text:0000073a exflash_handler
+/var/tmp//cc4IKmzw.s:305    .text:00000000 FlashSPI_txByte
+/var/tmp//cc4IKmzw.s:441    .text:00000072 __vector_3
+/var/tmp//cc4IKmzw.s:517    .text:000000e4 exflash_init
+/var/tmp//cc4IKmzw.s:3008   .bss:00000008 request
+/var/tmp//cc4IKmzw.s:3013   .bss:00000011 deselectRequested
+/var/tmp//cc4IKmzw.s:3017   .bss:00000015 waiting
+/var/tmp//cc4IKmzw.s:3026   .bss:00000029 flashBusy
+/var/tmp//cc4IKmzw.s:3023   .bss:00000021 buffer
+/var/tmp//cc4IKmzw.s:3027   .bss:0000002a reqPid
+                             .bss:00000000 exflash_module
+/var/tmp//cc4IKmzw.s:684    .text:00000170 FlashIdle_available
+/var/tmp//cc4IKmzw.s:3016   .bss:00000014 cmdPhase
+/var/tmp//cc4IKmzw.s:3015   .bss:00000013 compareOk
+/var/tmp//cc4IKmzw.s:815    .text:000001c8 requestFlashStatus
+/var/tmp//cc4IKmzw.s:1007   .text:0000022a sendFlashCommand
+/var/tmp//cc4IKmzw.s:3019   .bss:00000018 cmd
+/var/tmp//cc4IKmzw.s:3020   .bss:0000001c cmdCount
+/var/tmp//cc4IKmzw.s:3022   .bss:0000001f computedCrc
+/var/tmp//cc4IKmzw.s:3018   .bss:00000016 data
+/var/tmp//cc4IKmzw.s:3021   .bss:0000001d dataCount
+/var/tmp//cc4IKmzw.s:1279   .text:0000030e execCommand
+/var/tmp//cc4IKmzw.s:1345   .text:0000035e checkBuffer
+/var/tmp//cc4IKmzw.s:3025   .bss:00000028 checking
+/var/tmp//cc4IKmzw.s:1398   .text:000003a0 flushBuffer
+/var/tmp//cc4IKmzw.s:3024   .bss:00000027 selected
+/var/tmp//cc4IKmzw.s:1464   .text:000003fa requestDone
+/var/tmp//cc4IKmzw.s:1577   .text:0000047a execRWBuffer
+/var/tmp//cc4IKmzw.s:1617   .text:000004ac syncOrFlushAll
+/var/tmp//cc4IKmzw.s:3014   .bss:00000012 broken
+/var/tmp//cc4IKmzw.s:1723   .text:0000052e handleRWRequest
+/var/tmp//cc4IKmzw.s:3012   .bss:0000000f reqPage
+/var/tmp//cc4IKmzw.s:3010   .bss:0000000b reqOffset
+/var/tmp//cc4IKmzw.s:3009   .bss:00000009 reqBuf
+/var/tmp//cc4IKmzw.s:3011   .bss:0000000d reqBytes
+/var/tmp//cc4IKmzw.s:2452   .text:00000940 newRequest
+/var/tmp//cc4IKmzw.s:2597   .text:00000a0e syncOrFlush
+/var/tmp//cc4IKmzw.s:2717   .text:00000aa0 ker_exflash_read
+/var/tmp//cc4IKmzw.s:2760   .text:00000acc ker_exflash_computeCrc
+/var/tmp//cc4IKmzw.s:2829   .text:00000b18 ker_exflash_write
+/var/tmp//cc4IKmzw.s:2871   .text:00000b44 ker_exflash_erase
+/var/tmp//cc4IKmzw.s:2911   .text:00000b6e ker_exflash_sync
+/var/tmp//cc4IKmzw.s:2937   .text:00000b7c ker_exflash_flush
+/var/tmp//cc4IKmzw.s:2962   .text:00000b8a ker_exflash_syncAll
+/var/tmp//cc4IKmzw.s:2987   .text:00000b98 ker_exflash_flushAll
+/var/tmp//cc4IKmzw.s:3053   .text:00000ba6 Letext
+
+UNDEFINED SYMBOLS
+__do_copy_data
+__do_clear_bss
+post_short
+sched_register_kernel_module
+crcTable

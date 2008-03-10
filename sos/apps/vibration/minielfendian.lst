@@ -1,0 +1,187 @@
+   1               		.file	"minielfendian.c"
+   2               		.arch atmega128
+   3               	__SREG__ = 0x3f
+   4               	__SP_H__ = 0x3e
+   5               	__SP_L__ = 0x3d
+   6               	__tmp_reg__ = 0
+   7               	__zero_reg__ = 1
+   8               		.global __do_copy_data
+   9               		.global __do_clear_bss
+  12               		.text
+  13               	.Ltext0:
+  95               	.global	entoh_Mhdr
+  97               	entoh_Mhdr:
+   1:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** /**
+   2:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c ****  * \file minielfendian.c
+   3:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c ****  * \brief Fix the endian-ness of Mini-ELF data structures
+   4:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c ****  * \author Ram Kumar {ram@ee.ucla.edu}
+   5:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c ****  */
+   6:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** 
+   7:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** #include <minielfendian.h>
+   8:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** //#include <proc_minielf.h>
+   9:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** #include <sos_endian.h>
+  10:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** 
+  11:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** // ---- ENTOH ------
+  12:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** void entoh_Mhdr(Melf_Mhdr* mhdr)
+  13:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** {
+  99               	.LM1:
+ 100               	/* prologue: frame size=0 */
+ 101               	/* prologue end (size=0) */
+ 102               	/* epilogue: frame size=0 */
+ 103 0000 0895      		ret
+ 104               	/* epilogue end (size=1) */
+ 105               	/* function entoh_Mhdr size 1 (0) */
+ 107               	.Lscope0:
+ 111               	.global	entoh_Shdr
+ 113               	entoh_Shdr:
+  14:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c ****   mhdr->m_shnum = entoh_Melf_Half(mhdr->m_shnum);
+  15:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c ****   mhdr->m_modhdrndx = entoh_Melf_Word(mhdr->m_modhdrndx);
+  16:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c ****   return;
+  17:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** }
+  18:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** 
+  19:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** void entoh_Shdr(Melf_Shdr* shdr)
+  20:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** {
+ 115               	.LM2:
+ 116               	/* prologue: frame size=0 */
+ 117               	/* prologue end (size=0) */
+ 118               	/* epilogue: frame size=0 */
+ 119 0002 0895      		ret
+ 120               	/* epilogue end (size=1) */
+ 121               	/* function entoh_Shdr size 1 (0) */
+ 123               	.Lscope1:
+ 127               	.global	entoh_Sym
+ 129               	entoh_Sym:
+  21:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c ****   shdr->sh_id = entoh_Melf_Half(shdr->sh_id);
+  22:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c ****   shdr->sh_type = entoh_Melf_Half(shdr->sh_type);
+  23:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c ****   shdr->sh_offset = entoh_Melf_Off(shdr->sh_offset);
+  24:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c ****   shdr->sh_size = entoh_Melf_Word(shdr->sh_size);
+  25:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c ****   shdr->sh_link = entoh_Melf_Half(shdr->sh_link);
+  26:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c ****   shdr->sh_info = entoh_Melf_Half(shdr->sh_info);
+  27:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c ****   return;
+  28:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** }
+  29:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** 
+  30:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** void entoh_Sym(Melf_Sym* sym)
+  31:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** {
+ 131               	.LM3:
+ 132               	/* prologue: frame size=0 */
+ 133               	/* prologue end (size=0) */
+ 134               	/* epilogue: frame size=0 */
+ 135 0004 0895      		ret
+ 136               	/* epilogue end (size=1) */
+ 137               	/* function entoh_Sym size 1 (0) */
+ 139               	.Lscope2:
+ 143               	.global	entoh_Rela
+ 145               	entoh_Rela:
+  32:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c ****   sym->st_value = entoh_Melf_Addr(sym->st_value);
+  33:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c ****   sym->st_shid = entoh_Melf_Half(sym->st_shid);
+  34:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c ****   return;
+  35:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** }
+  36:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** 
+  37:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** void entoh_Rela(Melf_Rela* rela)
+  38:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** {
+ 147               	.LM4:
+ 148               	/* prologue: frame size=0 */
+ 149               	/* prologue end (size=0) */
+ 150               	/* epilogue: frame size=0 */
+ 151 0006 0895      		ret
+ 152               	/* epilogue end (size=1) */
+ 153               	/* function entoh_Rela size 1 (0) */
+ 155               	.Lscope3:
+ 159               	.global	ehton_Mhdr
+ 161               	ehton_Mhdr:
+  39:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c ****   rela->r_offset = entoh_Melf_Addr(rela->r_offset);
+  40:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c ****   rela->r_symbol = entoh_Melf_Word(rela->r_symbol);
+  41:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c ****   rela->r_addend = entoh_Melf_Sword(rela->r_addend);
+  42:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c ****   return;
+  43:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** }
+  44:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** 
+  45:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** 
+  46:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** // ---- EHTON ------
+  47:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** void ehton_Mhdr(Melf_Mhdr* mhdr)
+  48:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** {
+ 163               	.LM5:
+ 164               	/* prologue: frame size=0 */
+ 165               	/* prologue end (size=0) */
+ 166               	/* epilogue: frame size=0 */
+ 167 0008 0895      		ret
+ 168               	/* epilogue end (size=1) */
+ 169               	/* function ehton_Mhdr size 1 (0) */
+ 171               	.Lscope4:
+ 175               	.global	ehton_Shdr
+ 177               	ehton_Shdr:
+  49:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c ****   mhdr->m_shnum = ehton_Melf_Half(mhdr->m_shnum);
+  50:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c ****   mhdr->m_modhdrndx = ehton_Melf_Word(mhdr->m_modhdrndx);
+  51:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c ****   return;
+  52:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** }
+  53:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** 
+  54:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** void ehton_Shdr(Melf_Shdr* shdr)
+  55:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** {
+ 179               	.LM6:
+ 180               	/* prologue: frame size=0 */
+ 181               	/* prologue end (size=0) */
+ 182               	/* epilogue: frame size=0 */
+ 183 000a 0895      		ret
+ 184               	/* epilogue end (size=1) */
+ 185               	/* function ehton_Shdr size 1 (0) */
+ 187               	.Lscope5:
+ 191               	.global	ehton_Sym
+ 193               	ehton_Sym:
+  56:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c ****   shdr->sh_id = ehton_Melf_Half(shdr->sh_id);
+  57:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c ****   shdr->sh_type = ehton_Melf_Half(shdr->sh_type);
+  58:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c ****   shdr->sh_offset = ehton_Melf_Off(shdr->sh_offset);
+  59:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c ****   shdr->sh_size = ehton_Melf_Word(shdr->sh_size);
+  60:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c ****   shdr->sh_link = ehton_Melf_Half(shdr->sh_link);
+  61:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c ****   shdr->sh_info = ehton_Melf_Half(shdr->sh_info);
+  62:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c ****   return;
+  63:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** }
+  64:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** 
+  65:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** void ehton_Sym(Melf_Sym* sym)
+  66:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** {
+ 195               	.LM7:
+ 196               	/* prologue: frame size=0 */
+ 197               	/* prologue end (size=0) */
+ 198               	/* epilogue: frame size=0 */
+ 199 000c 0895      		ret
+ 200               	/* epilogue end (size=1) */
+ 201               	/* function ehton_Sym size 1 (0) */
+ 203               	.Lscope6:
+ 207               	.global	ehton_Rela
+ 209               	ehton_Rela:
+  67:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c ****   sym->st_value = ehton_Melf_Addr(sym->st_value);
+  68:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c ****   sym->st_shid = ehton_Melf_Half(sym->st_shid);
+  69:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c ****   return;
+  70:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** }
+  71:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** 
+  72:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** void ehton_Rela(Melf_Rela* rela)
+  73:/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c **** {
+ 211               	.LM8:
+ 212               	/* prologue: frame size=0 */
+ 213               	/* prologue end (size=0) */
+ 214               	/* epilogue: frame size=0 */
+ 215 000e 0895      		ret
+ 216               	/* epilogue end (size=1) */
+ 217               	/* function ehton_Rela size 1 (0) */
+ 219               	.Lscope7:
+ 221               		.text
+ 223               	Letext:
+ 224               	/* File "/Users/Administrator/sos-2x/tools/elfloader/minielf/minielfendian.c": code    8 = 0x0008 (
+DEFINED SYMBOLS
+                            *ABS*:00000000 minielfendian.c
+                            *ABS*:0000003f __SREG__
+                            *ABS*:0000003e __SP_H__
+                            *ABS*:0000003d __SP_L__
+                            *ABS*:00000000 __tmp_reg__
+                            *ABS*:00000001 __zero_reg__
+/var/tmp//ccHr9zjx.s:97     .text:00000000 entoh_Mhdr
+/var/tmp//ccHr9zjx.s:113    .text:00000002 entoh_Shdr
+/var/tmp//ccHr9zjx.s:129    .text:00000004 entoh_Sym
+/var/tmp//ccHr9zjx.s:145    .text:00000006 entoh_Rela
+/var/tmp//ccHr9zjx.s:161    .text:00000008 ehton_Mhdr
+/var/tmp//ccHr9zjx.s:177    .text:0000000a ehton_Shdr
+/var/tmp//ccHr9zjx.s:193    .text:0000000c ehton_Sym
+/var/tmp//ccHr9zjx.s:209    .text:0000000e ehton_Rela
+/var/tmp//ccHr9zjx.s:223    .text:00000010 Letext
+
+UNDEFINED SYMBOLS
+__do_copy_data
+__do_clear_bss

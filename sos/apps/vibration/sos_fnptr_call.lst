@@ -1,0 +1,172 @@
+GAS LISTING /var/tmp//ccDZYrtq.s 			page 1
+
+
+   1               	# 1 "/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S"
+   2               	# 1 "<built-in>"
+   1               	__SREG__ = 0x3f
+   0               	
+   0               	
+   2               	__SP_H__ = 0x3e
+   3               	__SP_L__ = 0x3d
+   4               	xptr_l = 26
+   5               	xptr_h = 27
+   6               	zptr_l = 30
+   7               	zptr_h = 31
+   8               	word_l = 24
+   9               	word_h = 25
+  10               	temp_reg0 = 0
+  11               	temp_reg1 = 1
+  12               	RAMPZ  = 59
+  13               	
+  14               	.section .text
+  15               	.global ker_sys_fnptr_call
+  16               	ker_sys_fnptr_call:
+  17:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 	clr  xptr_l         ;
+  18:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 	movw zptr_l, word_l	; load parameters to Z register
+  19:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 	lsl  zptr_l         ; shift left
+  20:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 	rol  zptr_h         ;
+  21:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 	rol  xptr_l         ; get the carry bit
+  22:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 	out  RAMPZ, xptr_l  ; set to RAMPZ
+  23:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 	elpm xptr_l, Z+     ; load the real function lcoation from FCB
+  24:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 	elpm xptr_h, Z      ;
+  25:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 	push xptr_l         ; push xptr into stack so that we can reuse xptr
+  26:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 	push xptr_h         ;
+  27:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 	  adiw zptr_l, 5      ; move Z pointer to the location of pid
+  28:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 		in   temp_reg0, __SREG__ ; save Status register for critical section
+  29:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 		cli                 ;
+  30               			; Get current executing PID from variable
+  31:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 		lds  temp_reg1, (curr_pid);
+  32:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 		lds  xptr_l, (pid_sp)   ;  load the stack pointer for pid
+  33:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 		lds  xptr_h, (pid_sp+1) ;
+  34:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 		st   X+, temp_reg1  ;  save curr_pid to pid stack
+  35:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 		sts  pid_sp, xptr_l ;
+  36:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 		sts  (pid_sp+1), xptr_h ;
+  37:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 		elpm xptr_l, Z   ;	destination PID is in R1
+  38:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 		cpi  xptr_l, 255 ; check whether this is RUNTIME_PID
+  39:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 		brne label_store_curr_pid;
+  40:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 		lds  xptr_l, (curr_pid);
+  41               	label_store_curr_pid:
+  42:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 		sts  (curr_pid), xptr_l ;  update curr_pid to destination PID
+  43               	#ifdef SOS_USE_PREEMPTION
+  44:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S ****                 adiw zptr_l, 2 ; move Z pointer to the location of priority
+  45:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S ****                 lds temp_reg1, (curr_pri); load the current priority
+  46:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S ****                 lds xptr_l, (pri_sp) ; load the priority stack pointer
+  47:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S ****                 lds xptr_h, (pri_sp+1);
+  48:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S ****                 st X+, temp_reg1 ; save curr_pri to the priority stack
+  49:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S ****                 sts pri_sp, xptr_l; update the priority stack pointer
+  50:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S ****                 sts pri_sp, xptr_h;
+  51:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S ****                 elpm xptr_l, Z; load the destination priority
+  52:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S ****                 lds xptr_l, (curr_pri); store it to current priority
+  53:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** #endif
+GAS LISTING /var/tmp//ccDZYrtq.s 			page 2
+
+
+  54:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 		out  __SREG__, temp_reg0 ;  leave critical section
+  55               		;movw zptr_l, xptr_l ; move to Z register for iCall
+  56:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 	pop  zptr_h         ; get the function location from the stack
+  57:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 	pop  zptr_l         ;
+  58:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 	clr  temp_reg1      ; clear R1 for gcc
+  59               	#ifdef SOS_SFI
+  60               		call ker_icall_check
+  61               	#else	
+  62:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 	icall               ;
+  63               	#endif//SOS_SFI	
+  64:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 		in   temp_reg0, __SREG__ ; save Status register for critical section
+  65:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 		cli                 ;
+  66:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 		lds  xptr_l, (pid_sp)   ;  load the stack pointer for pid
+  67:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 		lds  xptr_h, (pid_sp+1) ;
+  68:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 		ld   temp_reg1, -X  ;
+  69:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 		sts  pid_sp, xptr_l ;
+  70:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 		sts  (pid_sp+1), xptr_h ;
+  71:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 		sts  (curr_pid), temp_reg1;
+  72               	#ifdef SOS_USE_PREEMPTION
+  73:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S ****                 lds xptr_l, (pri_sp) ; load the priority stack pointer
+  74:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S ****                 lds xptr_h, (pri_sp+1);
+  75:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S ****                 ld  temp_reg1, -X    ; pop the previous priority value
+  76:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S ****                 sts pid_sp, xptr_l   ; update the priority stack pointer
+  77:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S ****                 sts (pid_sp+1), xptr_h ;
+  78:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S ****                 sts (curr_pri), temp_reg1 ; store the popped value to current priority
+  79:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** #endif
+  80:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 		out  __SREG__, temp_reg0 ;  leave critical section
+  81:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 	clr  temp_reg1      ; clear R1 for gcc 
+  82:/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S **** 	ret
+  83               					;
+  84               	#ifdef SOS_SFI
+  85               	;;; Replicate above function for the time begin !!
+  86               	.global ker_sys_fnptr_from_ker_call
+  87               	ker_sys_fnptr_from_ker_call:
+  88               		clr  xptr_l         ;
+  89               		movw zptr_l, word_l	; load parameters to Z register
+  90               		lsl  zptr_l         ; shift left
+  91               		rol  zptr_h         ;
+  92               		rol  xptr_l         ; get the carry bit
+  93               		out  RAMPZ, xptr_l  ; set to RAMPZ
+  94               		elpm xptr_l, Z+     ; load the real function lcoation from FCB
+  95               		elpm xptr_h, Z      ;
+  96               		push xptr_l         ; push xptr into stack so that we can reuse xptr
+  97               		push xptr_h         ;
+  98               		  adiw zptr_l, 5      ; move Z pointer to the location of pid
+  99               			in   temp_reg0, __SREG__ ; save Status register for critical section
+ 100               			cli                 ;
+ 101               			; Get current executing PID from variable
+ 102               			lds  temp_reg1, (curr_pid);
+ 103               			lds  xptr_l, (pid_sp)   ;  load the stack pointer for pid
+ 104               			lds  xptr_h, (pid_sp+1) ;
+ 105               			st   X+, temp_reg1  ;  save curr_pid to pid stack
+ 106               			sts  pid_sp, xptr_l ;
+ 107               			sts  (pid_sp+1), xptr_h ;
+ 108               			elpm xptr_l, Z   ;	destination PID is in R1
+ 109               			cpi  xptr_l, 255 ; check whether this is RUNTIME_PID
+ 110               			brne label_store_curr_pid_sfi;
+GAS LISTING /var/tmp//ccDZYrtq.s 			page 3
+
+
+ 111               			lds  xptr_l, (curr_pid);
+ 112               	label_store_curr_pid_sfi:
+ 113               			sts  (curr_pid), xptr_l ;  update curr_pid to destination PID
+ 114               			out  __SREG__, temp_reg0 ;  leave critical section
+ 115               		;movw zptr_l, xptr_l ; move to Z register for iCall
+ 116               		pop  zptr_h         ; get the function location from the stack
+ 117               		pop  zptr_l         ;
+ 118               		clr  temp_reg1      ; clear R1 for gcc
+ 119               		call ker_icall_from_kernel_check
+ 120               			in   temp_reg0, __SREG__ ; save Status register for critical section
+ 121               			cli                 ;
+ 122               			lds  xptr_l, (pid_sp)   ;  load the stack pointer for pid
+ 123               			lds  xptr_h, (pid_sp+1) ;
+ 124               			ld   temp_reg1, -X  ;
+ 125               			sts  pid_sp, xptr_l ;
+ 126               			sts  (pid_sp+1), xptr_h ;
+ 127               			sts  (curr_pid), temp_reg1;
+ 128               			out  __SREG__, temp_reg0 ;  leave critical section
+ 129               		clr  temp_reg1      ; clear R1 for gcc 
+ 130               		ret                 ;
+ 131               	#endif
+ 132               		
+ 133               	;;; End of file
+GAS LISTING /var/tmp//ccDZYrtq.s 			page 4
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 /Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S
+                            *ABS*:00000000 <command line>
+                            *ABS*:00000000 <built-in>
+                            *ABS*:00000000 /Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S
+                            *ABS*:0000003f __SREG__
+                            *ABS*:0000003e __SP_H__
+                            *ABS*:0000003d __SP_L__
+                            *ABS*:0000001a xptr_l
+                            *ABS*:0000001b xptr_h
+                            *ABS*:0000001e zptr_l
+                            *ABS*:0000001f zptr_h
+                            *ABS*:00000018 word_l
+                            *ABS*:00000019 word_h
+                            *ABS*:00000000 temp_reg0
+                            *ABS*:00000001 temp_reg1
+                            *ABS*:0000003b RAMPZ
+/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S:16     .text:00000000 ker_sys_fnptr_call
+/Users/Administrator/sos-2x/processor/avr/sos_fnptr_call.S:41     .text:0000003a label_store_curr_pid
+
+UNDEFINED SYMBOLS
+curr_pid
+pid_sp

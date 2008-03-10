@@ -1,0 +1,1391 @@
+   1               		.file	"vhal.c"
+   2               		.arch atmega128
+   3               	__SREG__ = 0x3f
+   4               	__SP_H__ = 0x3e
+   5               	__SP_L__ = 0x3d
+   6               	__tmp_reg__ = 0
+   7               	__zero_reg__ = 1
+   8               		.global __do_copy_data
+   9               		.global __do_clear_bss
+  12               		.text
+  13               	.Ltext0:
+ 288               	.global	Radio_Wakeup
+ 290               	Radio_Wakeup:
+   1:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** /* "Copyright (c) 2000-2003 The Regents of the University  of California.  
+   2:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** * All rights reserved.
+   3:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** *
+   4:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** * Permission to use, copy, modify, and distribute this software and its
+   5:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** * documentation for any purpose, without fee, and without written agreement is
+   6:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** * hereby granted, provided that the above copyright notice, the following
+   7:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** * two paragraphs and the author appear in all copies of this software.
+   8:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** * 
+   9:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** * IN NO EVENT SHALL THE UNIVERSITY OF CALIFORNIA BE LIABLE TO ANY PARTY FOR
+  10:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** * DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES ARISING OUT
+  11:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** * OF THE USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF THE UNIVERSITY OF
+  12:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** * CALIFORNIA HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  13:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** * 
+  14:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** * THE UNIVERSITY OF CALIFORNIA SPECIFICALLY DISCLAIMS ANY WARRANTIES,
+  15:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
+  16:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** * AND FITNESS FOR A PARTICULAR PURPOSE.  THE SOFTWARE PROVIDED HEREUNDER IS
+  17:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** * ON AN "AS IS" BASIS, AND THE UNIVERSITY OF CALIFORNIA HAS NO OBLIGATION TO
+  18:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** * PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS."
+  19:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** *
+  20:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** * Copyright (c) 2002-2003 Intel Corporation
+  21:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** * All rights reserved.
+  22:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** *
+  23:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** * This file is distributed under the terms in the attached INTEL-LICENSE     
+  24:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** * file. If you do not find these files, copies can be found by writing to
+  25:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** * Intel Research Berkeley, 2150 Shattuck Avenue, Suite 1300, Berkeley, CA, 
+  26:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** * 94704.  Attention:  Intel License Inquiry.
+  27:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** *
+  28:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** */
+  29:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+  30:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** /**
+  31:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c ****  * @file vhal.c
+  32:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c ****  * @brief virtual radio Hardware Abstraction Layer
+  33:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c ****  * @author hubert wu {hubertwu@cs.ucla.edu}
+  34:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c ****  * @author Dimitrios Lymberopoulos {dimitrios.lymberopoulos@yale.edu}
+  35:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c ****  */
+  36:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** //--------------------------------------------------------
+  37:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** // INCLUDES
+  38:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** //--------------------------------------------------------
+  39:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** #include <hardware.h>
+  40:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** #include <spi_hal.h>
+  41:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** #include <vhal.h>
+  42:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** //#define LED_DEBUG
+  43:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** #include <led_dbg.h>
+  44:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+  45:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** // Implemented in vmac.c
+  46:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** void _MacRecvAck(uint8_t ack_seq);
+  47:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** //keep the sequence number of the last received ACK
+  48:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** //static uint8_t received_ack_seq = 0;
+  49:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+  50:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** void Radio_Init()
+  51:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** {	
+  52:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	HAS_CRITICAL_SECTION;
+  53:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	
+  54:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	uint16_t SRC_ADDRESS;
+  55:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	uint16_t PANID;
+  56:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	ENTER_CRITICAL_SECTION();
+  57:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+  58:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	TC_INIT_PINS();
+  59:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	Radio_On();
+  60:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	TC_UWAIT(50);
+  61:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	Radio_Reset();
+  62:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	Radio_Wakeup();
+  63:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+  64:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	TC_SET_CCA_MODE(1);
+  65:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** //	TC_SET_CCA_HYST(0);
+  66:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** //	TC_SET_LENGTH_THRESHOLD(64);
+  67:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** //	Radio_Disable_ADDR_CHK();
+  68:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** //	Radio_Disable_Auto_CRC();
+  69:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	Radio_Enable_Address_Check();
+  70:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+  71:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c ****         // Maximum Power Level
+  72:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c ****         // TC_SET_REG(CC2420_TXCTRL,15,8,0xA0); //MSB
+  73:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c ****         // TC_SET_REG(CC2420_TXCTRL,7,0,0xFF); //LSB
+  74:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c ****         // Minimum Power level
+  75:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	//TC_SET_REG(CC2420_TXCTRL,15,8,0xA0); //MSB
+  76:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c ****         //TC_SET_REG(CC2420_TXCTRL,7,0,0xE3); //LSB
+  77:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+  78:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	// Enable Automatic Packet Acknowledgment
+  79:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	TC_SET_REG(CC2420_MDMCTRL0,4,4,1);
+  80:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+  81:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	//Set parameters
+  82:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	SRC_ADDRESS = node_address;
+  83:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	TC_SET_SHORTADR(&SRC_ADDRESS);
+  84:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+  85:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	PANID = VMAC_PANID;
+  86:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	TC_SET_PANID(&PANID);
+  87:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+  88:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	LEAVE_CRITICAL_SECTION();
+  89:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** }
+  90:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+  91:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** void Radio_Wakeup()
+  92:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** {	
+ 292               	.LM1:
+ 293               	/* prologue: frame size=0 */
+ 294               	/* prologue end (size=0) */
+  93:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	TC_STROBE(CC2420_SXOSCON);
+ 296               	.LM2:
+ 297 0000 81E0      		ldi r24,lo8(1)
+ 298               	.L8:
+ 300               	.LM3:
+ 301 0002 0E94 0000 		call TC_STROBE
+  94:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	while(!TC_IS_XOSC16M_STABLE)
+  95:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		TC_STROBE(CC2420_SNOP);
+ 303               	.LM4:
+ 304 0006 8091 0000 		lds r24,_current_stat
+ 305 000a 86FD      		sbrc r24,6
+ 306 000c 02C0      		rjmp .L7
+ 307 000e 80E0      		ldi r24,lo8(0)
+ 308 0010 F8CF      		rjmp .L8
+ 309               	.L7:
+  96:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+  97:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	TC_FLUSH_RX;
+ 311               	.LM5:
+ 312 0012 88E0      		ldi r24,lo8(8)
+ 313 0014 0E94 0000 		call TC_STROBE
+ 314 0018 88E0      		ldi r24,lo8(8)
+ 315 001a 0E94 0000 		call TC_STROBE
+  98:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	TC_FLUSH_TX;
+ 317               	.LM6:
+ 318 001e 89E0      		ldi r24,lo8(9)
+ 319 0020 0E94 0000 		call TC_STROBE
+  99:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	TC_STROBE(CC2420_SRXON);
+ 321               	.LM7:
+ 322 0024 83E0      		ldi r24,lo8(3)
+ 323 0026 0E94 0000 		call TC_STROBE
+ 324               	/* epilogue: frame size=0 */
+ 325 002a 0895      		ret
+ 326               	/* epilogue end (size=1) */
+ 327               	/* function Radio_Wakeup size 22 (21) */
+ 329               	.Lscope0:
+ 332               	.global	Radio_Init
+ 334               	Radio_Init:
+ 336               	.LM8:
+ 337               	/* prologue: frame size=4 */
+ 338 002c 1F93      		push r17
+ 339 002e CF93      		push r28
+ 340 0030 DF93      		push r29
+ 341 0032 CDB7      		in r28,__SP_L__
+ 342 0034 DEB7      		in r29,__SP_H__
+ 343 0036 2497      		sbiw r28,4
+ 344 0038 0FB6      		in __tmp_reg__,__SREG__
+ 345 003a F894      		cli
+ 346 003c DEBF      		out __SP_H__,r29
+ 347 003e 0FBE      		out __SREG__,__tmp_reg__
+ 348 0040 CDBF      		out __SP_L__,r28
+ 349               	/* prologue end (size=11) */
+ 351               	.LM9:
+ 352               	/* #APP */
+ 353 0042 1FB7      		in r17, __SREG__
+ 354 0044 F894      		cli
+ 355               		
+ 357               	.LM10:
+ 358               	/* #NOAPP */
+ 359 0046 0E94 0000 		call TC_INIT_PINS
+ 361               	.LM11:
+ 362 004a DD9A      		sbi 59-0x20,5
+ 364               	.LM12:
+ 365 004c 82E3      		ldi r24,lo8(50)
+ 366 004e 90E0      		ldi r25,hi8(50)
+ 367 0050 0E94 0000 		call TC_UWAIT
+ 369               	.LM13:
+ 370 0054 DE98      		cbi 59-0x20,6
+ 371 0056 84E1      		ldi r24,lo8(20)
+ 372 0058 90E0      		ldi r25,hi8(20)
+ 373 005a 0E94 0000 		call TC_UWAIT
+ 374 005e DE9A      		sbi 59-0x20,6
+ 376               	.LM14:
+ 377 0060 0E94 0000 		call Radio_Wakeup
+ 379               	.LM15:
+ 380 0064 21E0      		ldi r18,lo8(1)
+ 381 0066 30E0      		ldi r19,hi8(1)
+ 382 0068 46E0      		ldi r20,lo8(6)
+ 383 006a 67E0      		ldi r22,lo8(7)
+ 384 006c 81E1      		ldi r24,lo8(17)
+ 385 006e 0E94 0000 		call TC_SET_REG
+ 387               	.LM16:
+ 388 0072 21E0      		ldi r18,lo8(1)
+ 389 0074 30E0      		ldi r19,hi8(1)
+ 390 0076 4BE0      		ldi r20,lo8(11)
+ 391 0078 642F      		mov r22,r20
+ 392 007a 81E1      		ldi r24,lo8(17)
+ 393 007c 0E94 0000 		call TC_SET_REG
+ 395               	.LM17:
+ 396 0080 21E0      		ldi r18,lo8(1)
+ 397 0082 30E0      		ldi r19,hi8(1)
+ 398 0084 44E0      		ldi r20,lo8(4)
+ 399 0086 642F      		mov r22,r20
+ 400 0088 81E1      		ldi r24,lo8(17)
+ 401 008a 0E94 0000 		call TC_SET_REG
+ 403               	.LM18:
+ 404 008e 8091 0000 		lds r24,node_address
+ 405 0092 9091 0000 		lds r25,(node_address)+1
+ 406 0096 8983      		std Y+1,r24
+ 407 0098 9A83      		std Y+2,r25
+ 408               	.LBB2:
+ 410               	.LM19:
+ 411 009a C09A      		sbi 56-0x20,0
+ 412 009c C098      		cbi 56-0x20,0
+ 413 009e 8AEE      		ldi r24,lo8(-22)
+ 414 00a0 0E94 0000 		call TC_WRITE_BYTE
+ 415 00a4 80E8      		ldi r24,lo8(-128)
+ 416 00a6 0E94 0000 		call TC_WRITE_BYTE
+ 417 00aa 8981      		ldd r24,Y+1
+ 418 00ac 0E94 0000 		call TC_WRITE_BYTE
+ 419 00b0 FE01      		movw r30,r28
+ 420 00b2 3196      		adiw r30,1
+ 421 00b4 8181      		ldd r24,Z+1
+ 422 00b6 0E94 0000 		call TC_WRITE_BYTE
+ 423 00ba C09A      		sbi 56-0x20,0
+ 424 00bc C098      		cbi 56-0x20,0
+ 425               	.LBE2:
+ 427               	.LM20:
+ 428 00be 80E2      		ldi r24,lo8(9248)
+ 429 00c0 94E2      		ldi r25,hi8(9248)
+ 430 00c2 8B83      		std Y+3,r24
+ 431 00c4 9C83      		std Y+4,r25
+ 432               	.LBB3:
+ 434               	.LM21:
+ 435 00c6 C09A      		sbi 56-0x20,0
+ 436 00c8 C098      		cbi 56-0x20,0
+ 437 00ca 88EE      		ldi r24,lo8(-24)
+ 438 00cc 0E94 0000 		call TC_WRITE_BYTE
+ 439 00d0 80E8      		ldi r24,lo8(-128)
+ 440 00d2 0E94 0000 		call TC_WRITE_BYTE
+ 441 00d6 8B81      		ldd r24,Y+3
+ 442 00d8 0E94 0000 		call TC_WRITE_BYTE
+ 443 00dc 8C81      		ldd r24,Y+4
+ 444 00de 0E94 0000 		call TC_WRITE_BYTE
+ 445 00e2 C09A      		sbi 56-0x20,0
+ 446 00e4 C098      		cbi 56-0x20,0
+ 447               	.LBE3:
+ 449               	.LM22:
+ 450               	/* #APP */
+ 451 00e6 1FBF      		out __SREG__, r17
+ 452               		
+ 453               	/* #NOAPP */
+ 454               	/* epilogue: frame size=4 */
+ 455 00e8 2496      		adiw r28,4
+ 456 00ea 0FB6      		in __tmp_reg__,__SREG__
+ 457 00ec F894      		cli
+ 458 00ee DEBF      		out __SP_H__,r29
+ 459 00f0 0FBE      		out __SREG__,__tmp_reg__
+ 460 00f2 CDBF      		out __SP_L__,r28
+ 461 00f4 DF91      		pop r29
+ 462 00f6 CF91      		pop r28
+ 463 00f8 1F91      		pop r17
+ 464 00fa 0895      		ret
+ 465               	/* epilogue end (size=10) */
+ 466               	/* function Radio_Init size 111 (90) */
+ 473               	.Lscope1:
+ 476               	.global	Radio_Check_CCA
+ 478               	Radio_Check_CCA:
+ 100:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** }
+ 101:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+ 102:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** int8_t Radio_Check_CCA()	//normal it will return 1. because once TC_CCA_IS_SET can let it return 1
+ 103:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** {
+ 480               	.LM23:
+ 481               	/* prologue: frame size=0 */
+ 482 00fc CF93      		push r28
+ 483 00fe DF93      		push r29
+ 484               	/* prologue end (size=2) */
+ 104:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	int count;
+ 105:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	count=0;
+ 486               	.LM24:
+ 487 0100 C0E0      		ldi r28,lo8(0)
+ 488 0102 D0E0      		ldi r29,hi8(0)
+ 106:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+ 107:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	TC_STROBE(CC2420_SNOP);
+ 490               	.LM25:
+ 491 0104 80E0      		ldi r24,lo8(0)
+ 492 0106 0E94 0000 		call TC_STROBE
+ 108:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	if(TC_IS_TX_ACTIVE) {	//it is busy on sending
+ 494               	.LM26:
+ 495 010a 8091 0000 		lds r24,_current_stat
+ 496 010e 83FF      		sbrs r24,3
+ 497 0110 05C0      		rjmp .L33
+ 109:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		return 0;
+ 499               	.LM27:
+ 500 0112 CE01      		movw r24,r28
+ 501 0114 1FC0      		rjmp .L32
+ 502               	.L45:
+ 110:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	}
+ 111:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	
+ 112:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	TC_STROBE(CC2420_SRXON);
+ 113:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	while(!TC_IS_RSSI_VALID)
+ 114:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		TC_STROBE(CC2420_SNOP);
+ 115:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	
+ 116:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	while(count<MAXCOUNTCCA) {
+ 117:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		TC_STROBE(CC2420_SNOP);
+ 118:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		if(TC_CCA_IS_SET) {
+ 119:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 			return 1;
+ 504               	.LM28:
+ 505 0116 81E0      		ldi r24,lo8(1)
+ 506 0118 90E0      		ldi r25,hi8(1)
+ 507 011a 1CC0      		rjmp .L32
+ 508               	.L33:
+ 510               	.LM29:
+ 511 011c 83E0      		ldi r24,lo8(3)
+ 512               	.L46:
+ 513 011e 0E94 0000 		call TC_STROBE
+ 515               	.LM30:
+ 516 0122 8091 0000 		lds r24,_current_stat
+ 517 0126 81FD      		sbrc r24,1
+ 518 0128 02C0      		rjmp .L40
+ 519 012a 80E0      		ldi r24,lo8(0)
+ 520 012c F8CF      		rjmp .L46
+ 521               	.L40:
+ 523               	.LM31:
+ 524 012e 80E0      		ldi r24,lo8(0)
+ 525 0130 0E94 0000 		call TC_STROBE
+ 527               	.LM32:
+ 528 0134 80B3      		in r24,48-0x20
+ 529 0136 9927      		clr r25
+ 530 0138 8074      		andi r24,lo8(64)
+ 531 013a 9070      		andi r25,hi8(64)
+ 532 013c 26E0      		ldi r18,6
+ 533 013e 9595      	1:	asr r25
+ 534 0140 8795      		ror r24
+ 535 0142 2A95      		dec r18
+ 536 0144 E1F7      		brne 1b
+ 537 0146 0097      		sbiw r24,0
+ 538 0148 31F7      		brne .L45
+ 120:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		}
+ 121:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		count++;
+ 540               	.LM33:
+ 541 014a 2196      		adiw r28,1
+ 542 014c 23E0      		ldi r18,hi8(1000)
+ 543 014e C83E      		cpi r28,lo8(1000)
+ 544 0150 D207      		cpc r29,r18
+ 545 0152 6CF3      		brlt .L40
+ 546               	.L32:
+ 547               	/* epilogue: frame size=0 */
+ 548 0154 DF91      		pop r29
+ 549 0156 CF91      		pop r28
+ 550 0158 0895      		ret
+ 551               	/* epilogue end (size=3) */
+ 552               	/* function Radio_Check_CCA size 47 (42) */
+ 557               	.Lscope2:
+ 560               	.global	Radio_Check_SFD
+ 562               	Radio_Check_SFD:
+ 122:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	}
+ 123:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	return 0;
+ 124:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** }
+ 125:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+ 126:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** int8_t Radio_Check_SFD() {
+ 564               	.LM34:
+ 565               	/* prologue: frame size=0 */
+ 566 015a CF93      		push r28
+ 567 015c DF93      		push r29
+ 568               	/* prologue end (size=2) */
+ 127:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	int count;
+ 128:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	int16_t timestamp;
+ 129:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	count=0;
+ 570               	.LM35:
+ 571 015e C0E0      		ldi r28,lo8(0)
+ 572 0160 D0E0      		ldi r29,hi8(0)
+ 130:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	TC_STROBE(CC2420_SNOP);
+ 574               	.LM36:
+ 575 0162 80E0      		ldi r24,lo8(0)
+ 576 0164 0E94 0000 		call TC_STROBE
+ 131:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	while( !TC_SFD_IS_SET && ++count<MAXCOUNTSFD )
+ 132:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		TC_STROBE(CC2420_SNOP);
+ 578               	.LM37:
+ 579 0168 8499      		sbic 48-0x20,4
+ 580 016a 0CC0      		rjmp .L49
+ 582               	.LM38:
+ 583 016c C1E0      		ldi r28,lo8(1)
+ 584 016e D0E0      		ldi r29,hi8(1)
+ 585               	.L50:
+ 586 0170 80E0      		ldi r24,lo8(0)
+ 587 0172 0E94 0000 		call TC_STROBE
+ 588 0176 8499      		sbic 48-0x20,4
+ 589 0178 05C0      		rjmp .L49
+ 590 017a 2196      		adiw r28,1
+ 591 017c 83E0      		ldi r24,hi8(1000)
+ 592 017e C83E      		cpi r28,lo8(1000)
+ 593 0180 D807      		cpc r29,r24
+ 594 0182 B4F3      		brlt .L50
+ 595               	.L49:
+ 133:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	if(count<MAXCOUNTSFD) { 
+ 597               	.LM39:
+ 598 0184 C85E      		subi r28,lo8(1000)
+ 599 0186 D340      		sbci r29,hi8(1000)
+ 600 0188 94F4      		brge .L51
+ 134:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		if(_SFD_IS_SET_CALL) {
+ 602               	.LM40:
+ 603 018a 8091 0000 		lds r24,_SFD_IS_SET_CALL
+ 604 018e 9091 0000 		lds r25,(_SFD_IS_SET_CALL)+1
+ 605 0192 892B      		or r24,r25
+ 606 0194 49F0      		breq .L52
+ 135:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 			timestamp = getTime();
+ 608               	.LM41:
+ 609 0196 0E94 0000 		call ker_systime32
+ 610 019a DC01      		movw r26,r24
+ 611 019c CB01      		movw r24,r22
+ 136:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 			_SFD_IS_SET_CALL(timestamp);
+ 613               	.LM42:
+ 614 019e E091 0000 		lds r30,_SFD_IS_SET_CALL
+ 615 01a2 F091 0000 		lds r31,(_SFD_IS_SET_CALL)+1
+ 616 01a6 0995      		icall
+ 617               	.L52:
+ 137:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		}
+ 138:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		return 1;
+ 619               	.LM43:
+ 620 01a8 81E0      		ldi r24,lo8(1)
+ 621 01aa 90E0      		ldi r25,hi8(1)
+ 622 01ac 02C0      		rjmp .L47
+ 623               	.L51:
+ 139:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	}
+ 140:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	return 0;
+ 625               	.LM44:
+ 626 01ae 80E0      		ldi r24,lo8(0)
+ 627 01b0 90E0      		ldi r25,hi8(0)
+ 628               	.L47:
+ 629               	/* epilogue: frame size=0 */
+ 630 01b2 DF91      		pop r29
+ 631 01b4 CF91      		pop r28
+ 632 01b6 0895      		ret
+ 633               	/* epilogue end (size=3) */
+ 634               	/* function Radio_Check_SFD size 48 (43) */
+ 639               	.Lscope3:
+ 644               	.global	Radio_Send_CCA
+ 646               	Radio_Send_CCA:
+ 141:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** }
+ 142:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+ 143:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** int8_t Radio_Send_CCA(uint8_t *bytes, uint8_t num)
+ 144:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** {	
+ 648               	.LM45:
+ 649               	/* prologue: frame size=0 */
+ 650 01b8 0F93      		push r16
+ 651 01ba 1F93      		push r17
+ 652 01bc CF93      		push r28
+ 653 01be DF93      		push r29
+ 654               	/* prologue end (size=4) */
+ 655 01c0 EC01      		movw r28,r24
+ 656 01c2 162F      		mov r17,r22
+ 145:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	int i;
+ 146:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	TC_SELECT_RADIO;
+ 658               	.LM46:
+ 659 01c4 C098      		cbi 56-0x20,0
+ 147:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	TC_WRITE_BYTE(CC2420_TXFIFO);
+ 661               	.LM47:
+ 662 01c6 8EE3      		ldi r24,lo8(62)
+ 663 01c8 0E94 0000 		call TC_WRITE_BYTE
+ 148:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	TC_WRITE_BYTE(num);
+ 665               	.LM48:
+ 666 01cc 812F      		mov r24,r17
+ 667 01ce 0E94 0000 		call TC_WRITE_BYTE
+ 149:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	for(i=0;i<num;i++)
+ 669               	.LM49:
+ 670 01d2 812F      		mov r24,r17
+ 671 01d4 9927      		clr r25
+ 672 01d6 0097      		sbiw r24,0
+ 673 01d8 49F0      		breq .L62
+ 674 01da 8E01      		movw r16,r28
+ 675 01dc EC01      		movw r28,r24
+ 676               	.L58:
+ 150:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		TC_WRITE_BYTE(bytes[i]);
+ 678               	.LM50:
+ 679 01de F801      		movw r30,r16
+ 680 01e0 8191      		ld r24,Z+
+ 681 01e2 8F01      		movw r16,r30
+ 682 01e4 0E94 0000 		call TC_WRITE_BYTE
+ 684               	.LM51:
+ 685 01e8 2197      		sbiw r28,1
+ 686 01ea C9F7      		brne .L58
+ 687               	.L62:
+ 151:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	TC_UNSELECT_RADIO;
+ 689               	.LM52:
+ 690 01ec C09A      		sbi 56-0x20,0
+ 152:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	TC_STROBE(CC2420_STXONCCA);
+ 692               	.LM53:
+ 693 01ee 85E0      		ldi r24,lo8(5)
+ 694 01f0 0E94 0000 		call TC_STROBE
+ 153:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	if( TC_IS_TX_UNDERFLOW || !TC_IS_TX_ACTIVE  ) {
+ 696               	.LM54:
+ 697 01f4 8091 0000 		lds r24,_current_stat
+ 698 01f8 9927      		clr r25
+ 699 01fa 85FD      		sbrc r24,5
+ 700 01fc 02C0      		rjmp .L60
+ 701 01fe 83FD      		sbrc r24,3
+ 702 0200 06C0      		rjmp .L59
+ 703               	.L60:
+ 154:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		TC_FLUSH_TX;
+ 705               	.LM55:
+ 706 0202 89E0      		ldi r24,lo8(9)
+ 707 0204 0E94 0000 		call TC_STROBE
+ 155:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		return 0;
+ 709               	.LM56:
+ 710 0208 80E0      		ldi r24,lo8(0)
+ 711 020a 90E0      		ldi r25,hi8(0)
+ 712 020c 02C0      		rjmp .L54
+ 713               	.L59:
+ 156:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	}
+ 157:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	return 1;
+ 715               	.LM57:
+ 716 020e 81E0      		ldi r24,lo8(1)
+ 717 0210 90E0      		ldi r25,hi8(1)
+ 718               	.L54:
+ 719               	/* epilogue: frame size=0 */
+ 720 0212 DF91      		pop r29
+ 721 0214 CF91      		pop r28
+ 722 0216 1F91      		pop r17
+ 723 0218 0F91      		pop r16
+ 724 021a 0895      		ret
+ 725               	/* epilogue end (size=5) */
+ 726               	/* function Radio_Send_CCA size 51 (42) */
+ 731               	.Lscope4:
+ 734               	.global	Radio_Check_Preamble
+ 736               	Radio_Check_Preamble:
+ 158:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** }
+ 159:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+ 160:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** int8_t Radio_Check_Preamble()
+ 161:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** {	
+ 738               	.LM58:
+ 739               	/* prologue: frame size=0 */
+ 740 021c CF93      		push r28
+ 741 021e DF93      		push r29
+ 742               	/* prologue end (size=2) */
+ 162:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	int count;
+ 163:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	count=0;
+ 744               	.LM59:
+ 745 0220 C0E0      		ldi r28,lo8(0)
+ 746 0222 D0E0      		ldi r29,hi8(0)
+ 164:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	
+ 165:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	//Check that channel has signal
+ 166:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	if( !TC_IS_RSSI_VALID ) {
+ 748               	.LM60:
+ 749 0224 8091 0000 		lds r24,_current_stat
+ 750 0228 81FD      		sbrc r24,1
+ 751 022a 09C0      		rjmp .L71
+ 167:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		TC_STROBE(CC2420_SRXON);
+ 753               	.LM61:
+ 754 022c 83E0      		ldi r24,lo8(3)
+ 755               	.L76:
+ 756 022e 0E94 0000 		call TC_STROBE
+ 168:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		while(!TC_IS_RSSI_VALID)
+ 169:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 			TC_STROBE(CC2420_SNOP);
+ 758               	.LM62:
+ 759 0232 8091 0000 		lds r24,_current_stat
+ 760 0236 81FD      		sbrc r24,1
+ 761 0238 02C0      		rjmp .L71
+ 762 023a 80E0      		ldi r24,lo8(0)
+ 763 023c F8CF      		rjmp .L76
+ 764               	.L71:
+ 170:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	}	
+ 171:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	while(count<MAXCOUNTCCA) {
+ 172:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		if(!TC_CCA_IS_SET) {
+ 766               	.LM63:
+ 767 023e 869B      		sbis 48-0x20,6
+ 768 0240 0BC0      		rjmp .L75
+ 173:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 			count = -1;
+ 174:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 			break;
+ 175:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		}
+ 176:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		count++;
+ 770               	.LM64:
+ 771 0242 2196      		adiw r28,1
+ 772 0244 83E0      		ldi r24,hi8(1000)
+ 773 0246 C83E      		cpi r28,lo8(1000)
+ 774 0248 D807      		cpc r29,r24
+ 775 024a CCF3      		brlt .L71
+ 776               	.L69:
+ 177:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	}
+ 178:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+ 179:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	if( count == -1 ) {	//if yes, check SFD
+ 778               	.LM65:
+ 779 024c CF5F      		subi r28,lo8(-1)
+ 780 024e DF4F      		sbci r29,hi8(-1)
+ 781 0250 31F4      		brne .L72
+ 180:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** //		if( Radio_Check_SFD() )	//? we don't need to check SFD, if !CCA, means has data
+ 181:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 			return 1;
+ 783               	.LM66:
+ 784 0252 81E0      		ldi r24,lo8(1)
+ 785 0254 90E0      		ldi r25,hi8(1)
+ 786 0256 05C0      		rjmp .L63
+ 787               	.L75:
+ 789               	.LM67:
+ 790 0258 CFEF      		ldi r28,lo8(-1)
+ 791 025a DFEF      		ldi r29,hi8(-1)
+ 793               	.LM68:
+ 794 025c F7CF      		rjmp .L69
+ 795               	.L72:
+ 182:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	}
+ 183:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	return 0;
+ 797               	.LM69:
+ 798 025e 80E0      		ldi r24,lo8(0)
+ 799 0260 90E0      		ldi r25,hi8(0)
+ 800               	.L63:
+ 801               	/* epilogue: frame size=0 */
+ 802 0262 DF91      		pop r29
+ 803 0264 CF91      		pop r28
+ 804 0266 0895      		ret
+ 805               	/* epilogue end (size=3) */
+ 806               	/* function Radio_Check_Preamble size 39 (34) */
+ 811               	.Lscope5:
+ 816               	.global	Radio_Send_Pack
+ 818               	Radio_Send_Pack:
+ 184:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** }
+ 185:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+ 186:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** void Radio_Send_Pack(vhal_data *vd, int16_t *timestamp)
+ 187:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** {	
+ 820               	.LM70:
+ 821               	/* prologue: frame size=0 */
+ 822 0268 EF92      		push r14
+ 823 026a FF92      		push r15
+ 824 026c 0F93      		push r16
+ 825 026e 1F93      		push r17
+ 826 0270 CF93      		push r28
+ 827 0272 DF93      		push r29
+ 828               	/* prologue end (size=6) */
+ 829 0274 8C01      		movw r16,r24
+ 830 0276 7B01      		movw r14,r22
+ 188:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	int i;
+ 189:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	uint8_t num;
+ 190:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+ 191:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	num = vd->pre_payload_len + vd->payload_len + vd->post_payload_len;
+ 832               	.LM71:
+ 833 0278 FC01      		movw r30,r24
+ 834 027a C081      		ld r28,Z
+ 835 027c 8181      		ldd r24,Z+1
+ 836 027e C80F      		add r28,r24
+ 837 0280 8281      		ldd r24,Z+2
+ 838 0282 C80F      		add r28,r24
+ 192:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	if( num > MAXBUFFSIZE ) {
+ 840               	.LM72:
+ 841 0284 C138      		cpi r28,lo8(-127)
+ 842 0286 38F0      		brlo .L78
+ 193:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		TC_FLUSH_TX;
+ 844               	.LM73:
+ 845 0288 89E0      		ldi r24,lo8(9)
+ 846 028a 0E94 0000 		call TC_STROBE
+ 194:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		TC_STROBE(CC2420_SNOP);
+ 848               	.LM74:
+ 849 028e 80E0      		ldi r24,lo8(0)
+ 850 0290 0E94 0000 		call TC_STROBE
+ 195:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		return;
+ 852               	.LM75:
+ 853 0294 49C0      		rjmp .L77
+ 854               	.L78:
+ 196:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	}
+ 197:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+ 198:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	// Flush the TXFIFO before you transmit.
+ 199:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	TC_FLUSH_TX;
+ 856               	.LM76:
+ 857 0296 89E0      		ldi r24,lo8(9)
+ 858 0298 0E94 0000 		call TC_STROBE
+ 200:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+ 201:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	TC_SELECT_RADIO;
+ 860               	.LM77:
+ 861 029c C098      		cbi 56-0x20,0
+ 202:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	TC_WRITE_BYTE(CC2420_TXFIFO);
+ 863               	.LM78:
+ 864 029e 8EE3      		ldi r24,lo8(62)
+ 865 02a0 0E94 0000 		call TC_WRITE_BYTE
+ 203:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	TC_WRITE_BYTE(num);
+ 867               	.LM79:
+ 868 02a4 8C2F      		mov r24,r28
+ 869 02a6 0E94 0000 		call TC_WRITE_BYTE
+ 204:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+ 205:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	// FCF, Sequence Number
+ 206:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	for(i=0;i<3;i++)
+ 871               	.LM80:
+ 872 02aa C0E0      		ldi r28,lo8(0)
+ 873 02ac D0E0      		ldi r29,hi8(0)
+ 874               	.L82:
+ 207:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		TC_WRITE_BYTE(vd->pre_payload[i]);
+ 876               	.LM81:
+ 877 02ae F801      		movw r30,r16
+ 878 02b0 A381      		ldd r26,Z+3
+ 879 02b2 B481      		ldd r27,Z+4
+ 880 02b4 AC0F      		add r26,r28
+ 881 02b6 BD1F      		adc r27,r29
+ 882 02b8 8C91      		ld r24,X
+ 883 02ba 0E94 0000 		call TC_WRITE_BYTE
+ 885               	.LM82:
+ 886 02be 2196      		adiw r28,1
+ 887 02c0 C330      		cpi r28,3
+ 888 02c2 D105      		cpc r29,__zero_reg__
+ 889 02c4 A4F3      		brlt .L82
+ 208:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+ 209:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	// Skip the forth byte to work around msp430 gcc
+ 210:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+ 211:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	// PANID, Destination Address, Source Address
+ 212:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	// Did, Sid, Message Type 
+ 213:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	for(i=4; i<13;i++)
+ 891               	.LM83:
+ 892 02c6 C4E0      		ldi r28,lo8(4)
+ 893 02c8 D0E0      		ldi r29,hi8(4)
+ 894               	.L86:
+ 214:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		TC_WRITE_BYTE(vd->pre_payload[i]);
+ 896               	.LM84:
+ 897 02ca F801      		movw r30,r16
+ 898 02cc A381      		ldd r26,Z+3
+ 899 02ce B481      		ldd r27,Z+4
+ 900 02d0 AC0F      		add r26,r28
+ 901 02d2 BD1F      		adc r27,r29
+ 902 02d4 8C91      		ld r24,X
+ 903 02d6 0E94 0000 		call TC_WRITE_BYTE
+ 905               	.LM85:
+ 906 02da 2196      		adiw r28,1
+ 907 02dc CD30      		cpi r28,13
+ 908 02de D105      		cpc r29,__zero_reg__
+ 909 02e0 A4F3      		brlt .L86
+ 215:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+ 216:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	// Actual message payload
+ 217:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	for(i=0;i<vd->payload_len;i++)
+ 911               	.LM86:
+ 912 02e2 F801      		movw r30,r16
+ 913 02e4 8181      		ldd r24,Z+1
+ 914 02e6 C0E0      		ldi r28,lo8(0)
+ 915 02e8 D0E0      		ldi r29,hi8(0)
+ 916 02ea 8823      		tst r24
+ 917 02ec 79F0      		breq .L96
+ 918               	.L90:
+ 218:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		TC_WRITE_BYTE(vd->payload[i]);
+ 920               	.LM87:
+ 921 02ee F801      		movw r30,r16
+ 922 02f0 A581      		ldd r26,Z+5
+ 923 02f2 B681      		ldd r27,Z+6
+ 924 02f4 AC0F      		add r26,r28
+ 925 02f6 BD1F      		adc r27,r29
+ 926 02f8 8C91      		ld r24,X
+ 927 02fa 0E94 0000 		call TC_WRITE_BYTE
+ 929               	.LM88:
+ 930 02fe 2196      		adiw r28,1
+ 931 0300 F801      		movw r30,r16
+ 932 0302 8181      		ldd r24,Z+1
+ 933 0304 9927      		clr r25
+ 934 0306 C817      		cp r28,r24
+ 935 0308 D907      		cpc r29,r25
+ 936 030a 8CF3      		brlt .L90
+ 937               	.L96:
+ 219:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+ 220:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	TC_UNSELECT_RADIO;
+ 939               	.LM89:
+ 940 030c C09A      		sbi 56-0x20,0
+ 221:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	TC_STROBE(CC2420_STXONCCA);
+ 942               	.LM90:
+ 943 030e 85E0      		ldi r24,lo8(5)
+ 944 0310 0E94 0000 		call TC_STROBE
+ 222:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	TC_STROBE(CC2420_SNOP);
+ 946               	.LM91:
+ 947 0314 80E0      		ldi r24,lo8(0)
+ 948 0316 0E94 0000 		call TC_STROBE
+ 223:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+ 224:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		// ACK was received! Everything went fine...
+ 225:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	*timestamp = getTime();
+ 950               	.LM92:
+ 951 031a 0E94 0000 		call ker_systime32
+ 952 031e DC01      		movw r26,r24
+ 953 0320 CB01      		movw r24,r22
+ 954 0322 F701      		movw r30,r14
+ 955 0324 8083      		st Z,r24
+ 956 0326 9183      		std Z+1,r25
+ 957               	.L77:
+ 958               	/* epilogue: frame size=0 */
+ 959 0328 DF91      		pop r29
+ 960 032a CF91      		pop r28
+ 961 032c 1F91      		pop r17
+ 962 032e 0F91      		pop r16
+ 963 0330 FF90      		pop r15
+ 964 0332 EF90      		pop r14
+ 965 0334 0895      		ret
+ 966               	/* epilogue end (size=7) */
+ 967               	/* function Radio_Send_Pack size 103 (90) */
+ 973               	.Lscope6:
+ 977               	.global	Radio_Recv_Pack
+ 979               	Radio_Recv_Pack:
+ 226:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	return;
+ 227:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** }
+ 228:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+ 229:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** int8_t Radio_Recv_Pack(vhal_data *vd)
+ 230:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** {	
+ 981               	.LM93:
+ 982               	/* prologue: frame size=3 */
+ 983 0336 CF92      		push r12
+ 984 0338 DF92      		push r13
+ 985 033a EF92      		push r14
+ 986 033c FF92      		push r15
+ 987 033e 0F93      		push r16
+ 988 0340 1F93      		push r17
+ 989 0342 CF93      		push r28
+ 990 0344 DF93      		push r29
+ 991 0346 CDB7      		in r28,__SP_L__
+ 992 0348 DEB7      		in r29,__SP_H__
+ 993 034a 2397      		sbiw r28,3
+ 994 034c 0FB6      		in __tmp_reg__,__SREG__
+ 995 034e F894      		cli
+ 996 0350 DEBF      		out __SP_H__,r29
+ 997 0352 0FBE      		out __SREG__,__tmp_reg__
+ 998 0354 CDBF      		out __SP_L__,r28
+ 999               	/* prologue end (size=16) */
+ 1000 0356 7C01      		movw r14,r24
+ 231:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	uint8_t i;
+ 232:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	uint8_t num;
+ 233:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	uint8_t tmp_byte;
+ 234:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	uint16_t FCF;
+ 235:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	uint8_t CRC;
+ 236:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** #ifndef MICAZ_PLATFORM
+ 237:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	uint8_t break_flag;
+ 238:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	
+ 239:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	break_flag=0;
+ 240:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** #endif
+ 241:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+ 242:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	if( TC_IS_RX_OVERFLOW ) {
+ 1002               	.LM94:
+ 1003 0358 80B3      		in r24,48-0x20
+ 1004 035a 082F      		mov r16,r24
+ 1005 035c 1127      		clr r17
+ 1006 035e 000F      		lsl r16
+ 1007 0360 012F      		mov r16,r17
+ 1008 0362 001F      		rol r16
+ 1009 0364 110B      		sbc r17,r17
+ 1010 0366 1195      		neg r17
+ 1011 0368 0115      		cp r16,__zero_reg__
+ 1012 036a 1105      		cpc r17,__zero_reg__
+ 1013 036c 11F4      		brne .L98
+ 1015               	.LM95:
+ 1016 036e 0E99      		sbic 33-0x20,6
+ 1017 0370 70C0      		rjmp .L138
+ 1018               	.L98:
+ 243:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		TC_FLUSH_RX;
+ 244:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		TC_STROBE(CC2420_SNOP);
+ 245:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		return 0;
+ 246:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	}
+ 247:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+ 248:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	TC_SELECT_RADIO;
+ 1020               	.LM96:
+ 1021 0372 C098      		cbi 56-0x20,0
+ 249:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	TC_WRITE_BYTE( ( 0x40 | CC2420_RXFIFO ) );
+ 1023               	.LM97:
+ 1024 0374 8FE7      		ldi r24,lo8(127)
+ 1025 0376 0E94 0000 		call TC_WRITE_BYTE
+ 250:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	TC_READ_BYTE(&num);
+ 1027               	.LM98:
+ 1028 037a CE01      		movw r24,r28
+ 1029 037c 0196      		adiw r24,1
+ 1030 037e 0E94 0000 		call TC_READ_BYTE
+ 251:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	num = num & 0x7F; // The MSB of the length byte is not used!!!
+ 1032               	.LM99:
+ 1033 0382 8981      		ldd r24,Y+1
+ 1034 0384 8F77      		andi r24,lo8(127)
+ 1035 0386 8983      		std Y+1,r24
+ 252:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+ 253:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+ 254:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	// Frame Control Field
+ 255:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	TC_READ_BYTE(&(vd->pre_payload[0]));
+ 1037               	.LM100:
+ 1038 0388 F701      		movw r30,r14
+ 1039 038a 8381      		ldd r24,Z+3
+ 1040 038c 9481      		ldd r25,Z+4
+ 1041 038e 0E94 0000 		call TC_READ_BYTE
+ 256:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	TC_READ_BYTE(&(vd->pre_payload[1]));
+ 1043               	.LM101:
+ 1044 0392 F701      		movw r30,r14
+ 1045 0394 8381      		ldd r24,Z+3
+ 1046 0396 9481      		ldd r25,Z+4
+ 1047 0398 0196      		adiw r24,1
+ 1048 039a 0E94 0000 		call TC_READ_BYTE
+ 257:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	FCF = vd->pre_payload[0];
+ 1050               	.LM102:
+ 1051 039e F701      		movw r30,r14
+ 1052 03a0 A381      		ldd r26,Z+3
+ 1053 03a2 B481      		ldd r27,Z+4
+ 1054 03a4 8C91      		ld r24,X
+ 1055 03a6 C82E      		mov r12,r24
+ 1056 03a8 DD24      		clr r13
+ 258:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	FCF |= ((uint16_t) (vd->pre_payload[1] << 8) );
+ 1058               	.LM103:
+ 1059 03aa FD01      		movw r30,r26
+ 1060 03ac 8181      		ldd r24,Z+1
+ 1061 03ae 9927      		clr r25
+ 1062 03b0 982F      		mov r25,r24
+ 1063 03b2 8827      		clr r24
+ 1064 03b4 C82A      		or r12,r24
+ 1065 03b6 D92A      		or r13,r25
+ 259:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+ 260:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	// Sequence number
+ 261:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	TC_READ_BYTE(&(vd->pre_payload[2]));
+ 1067               	.LM104:
+ 1068 03b8 CD01      		movw r24,r26
+ 1069 03ba 0296      		adiw r24,2
+ 1070 03bc 0E94 0000 		call TC_READ_BYTE
+ 262:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+ 263:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	//error check
+ 264:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	if(num < BASIC_RF_ACK_PACKET_SIZE)
+ 1072               	.LM105:
+ 1073 03c0 2981      		ldd r18,Y+1
+ 1074 03c2 2530      		cpi r18,lo8(5)
+ 1075 03c4 78F1      		brlo .L107
+ 265:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	{
+ 266:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		// ignore everything
+ 267:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		TC_UNSELECT_RADIO;
+ 268:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		TC_FLUSH_RX;
+ 269:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		TC_STROBE(CC2420_SNOP);
+ 270:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		return 0;
+ 271:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	} else if ((num == BASIC_RF_ACK_PACKET_SIZE) && (FCF == BASIC_RF_ACK_FCF))
+ 1077               	.LM106:
+ 1078 03c6 2530      		cpi r18,lo8(5)
+ 1079 03c8 F1F4      		brne .L102
+ 1080 03ca F2E0      		ldi r31,lo8(2)
+ 1081 03cc CF16      		cp r12,r31
+ 1082 03ce D104      		cpc r13,__zero_reg__
+ 1083 03d0 D1F4      		brne .L102
+ 272:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	{
+ 273:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		// An ACK packet has been received!
+ 274:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		// Footer
+ 275:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		TC_READ_BYTE(&tmp_byte);
+ 1085               	.LM107:
+ 1086 03d2 CE01      		movw r24,r28
+ 1087 03d4 0296      		adiw r24,2
+ 1088 03d6 0E94 0000 		call TC_READ_BYTE
+ 276:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		TC_READ_BYTE(&CRC);
+ 1090               	.LM108:
+ 1091 03da CE01      		movw r24,r28
+ 1092 03dc 0396      		adiw r24,3
+ 1093 03de 0E94 0000 		call TC_READ_BYTE
+ 277:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		if(((FCF & (BASIC_RF_FCF_BM)) && (CRC & BASIC_RF_CRC_OK_BM)))
+ 1095               	.LM109:
+ 1096 03e2 8B81      		ldd r24,Y+3
+ 1097 03e4 87FF      		sbrs r24,7
+ 1098 03e6 07C0      		rjmp .L104
+ 278:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		{
+ 279:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 			_MacRecvAck(vd->pre_payload[2]);
+ 1100               	.LM110:
+ 1101 03e8 F701      		movw r30,r14
+ 1102 03ea A381      		ldd r26,Z+3
+ 1103 03ec B481      		ldd r27,Z+4
+ 1104 03ee FD01      		movw r30,r26
+ 1105 03f0 8281      		ldd r24,Z+2
+ 1106 03f2 0E94 0000 		call _MacRecvAck
+ 1107               	.L104:
+ 280:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 			//received_ack_seq = vd->pre_payload[2]; // notify the Transmitter that the ACK was received!
+ 281:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		}
+ 282:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		// Even if the CRC is correct do not pass the ACKs directly to the application layer
+ 283:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		TC_UNSELECT_RADIO;
+ 1109               	.LM111:
+ 1110 03f6 C09A      		sbi 56-0x20,0
+ 284:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		TC_FLUSH_RX;
+ 1112               	.LM112:
+ 1113 03f8 88E0      		ldi r24,lo8(8)
+ 1114 03fa 0E94 0000 		call TC_STROBE
+ 1115 03fe 88E0      		ldi r24,lo8(8)
+ 1116               	.L139:
+ 1117 0400 0E94 0000 		call TC_STROBE
+ 1118 0404 88C0      		rjmp .L137
+ 1119               	.L102:
+ 285:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		return 0;
+ 286:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	}
+ 287:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+ 288:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+ 289:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	// A regular data packet has been received!
+ 290:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	vd->payload_len = num - vd->pre_payload_len - vd->post_payload_len;
+ 1121               	.LM113:
+ 1122 0406 F701      		movw r30,r14
+ 1123 0408 9081      		ld r25,Z
+ 1124 040a 822F      		mov r24,r18
+ 1125 040c 891B      		sub r24,r25
+ 1126 040e 3281      		ldd r19,Z+2
+ 1127 0410 831B      		sub r24,r19
+ 1128 0412 8183      		std Z+1,r24
+ 291:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	if( num>MAXBUFFSIZE || vd->pre_payload_len>=num || vd->payload_len>=num || vd->post_payload_len>=n
+ 1130               	.LM114:
+ 1131 0414 2138      		cpi r18,lo8(-127)
+ 1132 0416 30F4      		brsh .L107
+ 1133 0418 9217      		cp r25,r18
+ 1134 041a 20F4      		brsh .L107
+ 1135 041c 8217      		cp r24,r18
+ 1136 041e 10F4      		brsh .L107
+ 1137 0420 3217      		cp r19,r18
+ 1138 0422 48F0      		brlo .L106
+ 1139               	.L107:
+ 292:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		TC_UNSELECT_RADIO;
+ 1141               	.LM115:
+ 1142 0424 C09A      		sbi 56-0x20,0
+ 293:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		TC_FLUSH_RX;
+ 1144               	.LM116:
+ 1145 0426 88E0      		ldi r24,lo8(8)
+ 1146 0428 0E94 0000 		call TC_STROBE
+ 1147 042c 88E0      		ldi r24,lo8(8)
+ 1148 042e 0E94 0000 		call TC_STROBE
+ 294:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		TC_STROBE(CC2420_SNOP);
+ 1150               	.LM117:
+ 1151 0432 80E0      		ldi r24,lo8(0)
+ 1152 0434 E5CF      		rjmp .L139
+ 1153               	.L106:
+ 295:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		return 0;
+ 296:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	}
+ 297:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+ 298:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	if( vd->payload_len > 0 ) {
+ 1155               	.LM118:
+ 1156 0436 8823      		tst r24
+ 1157 0438 B9F0      		breq .L109
+ 1158               	.LBB4:
+ 1159               	.LBB5:
+ 1161               	.Ltext1:
+   1:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /* -*- Mode: C; tab-width:4 -*- */
+   2:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /* ex: set ts=4: */
+   3:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /*
+   4:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * Copyright (c) 2003 The Regents of the University of California.
+   5:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * All rights reserved.
+   6:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *
+   7:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * Redistribution and use in source and binary forms, with or without
+   8:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * modification, are permitted provided that the following conditions
+   9:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * are met:
+  10:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * 1. Redistributions of source code must retain the above copyright
+  11:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *    notice, this list of conditions and the following disclaimer.
+  12:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * 2. Redistributions in binary form must reproduce the above
+  13:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *    copyright notice, this list of conditions and the following
+  14:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *    disclaimer in the documentation and/or other materials provided
+  15:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *    with the distribution.
+  16:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * 3. All advertising materials mentioning features or use of this
+  17:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *    software must display the following acknowledgement:
+  18:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *       This product includes software developed by Networked &
+  19:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *       Embedded Systems Lab at UCLA
+  20:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * 4. Neither the name of the University nor that of the Laboratory
+  21:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *    may be used to endorse or promote products derived from this
+  22:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *    software without specific prior written permission.
+  23:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *
+  24:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS''
+  25:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+  26:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+  27:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE REGENTS
+  28:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+  29:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+  30:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+  31:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+  32:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+  33:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+  34:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+  35:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * SUCH DAMAGE.
+  36:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *
+  37:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief    Allocte and free dynamic memory 
+  38:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @author   Roy Shea (roy@cs.ucla.edu) 
+  39:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+  40:/Users/Administrator/sos-2x/kernel/include/malloc.h **** #ifndef _MALLOC_H_
+  41:/Users/Administrator/sos-2x/kernel/include/malloc.h **** #define _MALLOC_H_
+  42:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  43:/Users/Administrator/sos-2x/kernel/include/malloc.h **** #include <sos_types.h>
+  44:/Users/Administrator/sos-2x/kernel/include/malloc.h **** #include <pid.h>
+  45:/Users/Administrator/sos-2x/kernel/include/malloc.h **** #include <malloc_conf.h>
+  46:/Users/Administrator/sos-2x/kernel/include/malloc.h **** #include <sos_module_types.h>
+  47:/Users/Administrator/sos-2x/kernel/include/malloc.h **** #ifdef FAULT_TOLERANT_SOS
+  48:/Users/Administrator/sos-2x/kernel/include/malloc.h **** #include <malloc_domains.h>
+  49:/Users/Administrator/sos-2x/kernel/include/malloc.h **** #endif
+  50:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  51:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+  52:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Init function for memory manager
+  53:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+  54:/Users/Administrator/sos-2x/kernel/include/malloc.h **** extern void mem_init(void);
+  55:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  56:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+  57:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Starting memory module interface
+  58:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+  59:/Users/Administrator/sos-2x/kernel/include/malloc.h **** extern void mem_start(void);
+  60:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  61:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+  62:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Allocate a chunk of blocks from the heap
+  63:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+  64:/Users/Administrator/sos-2x/kernel/include/malloc.h **** extern void *sos_blk_mem_alloc(uint16_t size, sos_pid_t id, bool bCallFromModule);
+  65:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  66:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+  67:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Free a block back into the heap
+  68:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+  69:/Users/Administrator/sos-2x/kernel/include/malloc.h **** extern void sos_blk_mem_free(void* ptr, bool bCallFromModule);
+  70:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  71:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+  72:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Re-allocate a block of memory from the heap
+  73:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+  74:/Users/Administrator/sos-2x/kernel/include/malloc.h **** extern void *sos_blk_mem_realloc(void* pntr, uint16_t newSize, bool bCallFromModule);
+  75:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  76:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+  77:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Change memory ownership of a segment of memory
+  78:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+  79:/Users/Administrator/sos-2x/kernel/include/malloc.h **** extern int8_t sos_blk_mem_change_own(void* ptr, sos_pid_t id, bool bCallFromModule);
+  80:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  81:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+  82:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Allocate a block of memory for long term usage
+  83:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+  84:/Users/Administrator/sos-2x/kernel/include/malloc.h **** extern void *sos_blk_mem_longterm_alloc(uint16_t size, sos_pid_t id, bool bCallFromModule);
+  85:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  86:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  87:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+  88:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Allocate dynamic memory
+  89:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @param size Number of bytes to allocate
+  90:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @param id Node responsible for the memory
+  91:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @return Returns a pointer to the allocated memory.
+  92:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * Will return a NULL pointer if the call to sys_malloc fails.
+  93:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+  94:/Users/Administrator/sos-2x/kernel/include/malloc.h **** static inline void *ker_malloc(uint16_t size, sos_pid_t id)
+  95:/Users/Administrator/sos-2x/kernel/include/malloc.h **** {
+  96:/Users/Administrator/sos-2x/kernel/include/malloc.h ****   return sos_blk_mem_alloc(size, id, false);
+ 1163               	.LM119:
+ 1164 043a 40E0      		ldi r20,lo8(0)
+ 1165 043c 63E6      		ldi r22,lo8(99)
+ 1166 043e 9927      		clr r25
+ 1167 0440 0E94 0000 		call sos_blk_mem_alloc
+ 1168 0444 8C01      		movw r16,r24
+ 1169               	.LBE5:
+ 1170               	.LBE4:
+ 1172               	.LM120:
+ 1173 0446 F701      		movw r30,r14
+ 1174 0448 8583      		std Z+5,r24
+ 1175 044a 9683      		std Z+6,r25
+ 1177               	.Ltext2:
+ 299:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		vd->payload = (uint8_t*)ker_malloc(vd->payload_len, VHALPID);
+ 300:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		if( vd->payload == NULL) {
+ 1179               	.LM121:
+ 1180 044c 892B      		or r24,r25
+ 1181 044e 61F4      		brne .L109
+ 301:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 			TC_UNSELECT_RADIO;
+ 1183               	.LM122:
+ 1184 0450 C09A      		sbi 56-0x20,0
+ 1185               	.L138:
+ 302:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 			TC_FLUSH_RX;
+ 1187               	.LM123:
+ 1188 0452 88E0      		ldi r24,lo8(8)
+ 1189 0454 0E94 0000 		call TC_STROBE
+ 1190 0458 88E0      		ldi r24,lo8(8)
+ 1191 045a 0E94 0000 		call TC_STROBE
+ 303:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 			TC_STROBE(CC2420_SNOP);
+ 1193               	.LM124:
+ 1194 045e 80E0      		ldi r24,lo8(0)
+ 1195 0460 0E94 0000 		call TC_STROBE
+ 304:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 			return 0;
+ 1197               	.LM125:
+ 1198 0464 C801      		movw r24,r16
+ 1199 0466 59C0      		rjmp .L97
+ 1200               	.L109:
+ 305:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		}
+ 306:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	}
+ 307:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+ 308:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	//for(i=3;i<vd->pre_payload_len;i++){
+ 309:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	// Simon: skip the forth byte when filling the buffer to avoid mspgcc problem
+ 310:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	for(i=4;i<(vd->pre_payload_len+1);i++){
+ 1202               	.LM126:
+ 1203 0468 14E0      		ldi r17,lo8(4)
+ 1204 046a F701      		movw r30,r14
+ 1205 046c 8081      		ld r24,Z
+ 1206 046e 9927      		clr r25
+ 1207 0470 0196      		adiw r24,1
+ 1208 0472 0597      		sbiw r24,5
+ 1209 0474 8CF0      		brlt .L130
+ 1210               	.L116:
+ 311:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** #ifndef MICAZ_PLATFORM
+ 312:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		if(!TC_FIFO_IS_SET)
+ 313:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		{
+ 314:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 			break_flag=1;
+ 315:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 			break;
+ 316:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		}
+ 317:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** #endif
+ 318:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		TC_READ_BYTE(&(vd->pre_payload[i]));
+ 1212               	.LM127:
+ 1213 0476 F701      		movw r30,r14
+ 1214 0478 8381      		ldd r24,Z+3
+ 1215 047a 9481      		ldd r25,Z+4
+ 1216 047c 810F      		add r24,r17
+ 1217 047e 911D      		adc r25,__zero_reg__
+ 1218 0480 0E94 0000 		call TC_READ_BYTE
+ 1220               	.LM128:
+ 1221 0484 1F5F      		subi r17,lo8(-(1))
+ 1222 0486 212F      		mov r18,r17
+ 1223 0488 3327      		clr r19
+ 1224 048a F701      		movw r30,r14
+ 1225 048c 8081      		ld r24,Z
+ 1226 048e 9927      		clr r25
+ 1227 0490 0196      		adiw r24,1
+ 1228 0492 2817      		cp r18,r24
+ 1229 0494 3907      		cpc r19,r25
+ 1230 0496 7CF3      		brlt .L116
+ 1231               	.L130:
+ 319:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	}
+ 320:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	for(i=0;i<vd->payload_len;i++){
+ 1233               	.LM129:
+ 1234 0498 10E0      		ldi r17,lo8(0)
+ 1235               	.L135:
+ 1236 049a F701      		movw r30,r14
+ 1237 049c 8181      		ldd r24,Z+1
+ 1238 049e 1817      		cp r17,r24
+ 1239 04a0 48F4      		brsh .L132
+ 321:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** #ifndef MICAZ_PLATFORM
+ 322:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		if(!TC_FIFO_IS_SET)
+ 323:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		{
+ 324:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 			break_flag=1;
+ 325:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 			break;
+ 326:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		}
+ 327:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** #endif
+ 328:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		TC_READ_BYTE(&(vd->payload[i]));
+ 1241               	.LM130:
+ 1242 04a2 F701      		movw r30,r14
+ 1243 04a4 8581      		ldd r24,Z+5
+ 1244 04a6 9681      		ldd r25,Z+6
+ 1245 04a8 810F      		add r24,r17
+ 1246 04aa 911D      		adc r25,__zero_reg__
+ 1247 04ac 0E94 0000 		call TC_READ_BYTE
+ 1249               	.LM131:
+ 1250 04b0 1F5F      		subi r17,lo8(-(1))
+ 1251 04b2 F3CF      		rjmp .L135
+ 1252               	.L132:
+ 329:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	}
+ 330:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	for(i=0;i<vd->post_payload_len;i++){
+ 1254               	.LM132:
+ 1255 04b4 10E0      		ldi r17,lo8(0)
+ 1256               	.L136:
+ 1257 04b6 F701      		movw r30,r14
+ 1258 04b8 8281      		ldd r24,Z+2
+ 1259 04ba 1817      		cp r17,r24
+ 1260 04bc 48F4      		brsh .L134
+ 331:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** #ifndef MICAZ_PLATFORM
+ 332:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		if(!TC_FIFO_IS_SET)
+ 333:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		{
+ 334:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 			break_flag=1;
+ 335:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 			break;
+ 336:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		}
+ 337:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** #endif
+ 338:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		TC_READ_BYTE(&(vd->post_payload[i]));
+ 1262               	.LM133:
+ 1263 04be F701      		movw r30,r14
+ 1264 04c0 8781      		ldd r24,Z+7
+ 1265 04c2 9085      		ldd r25,Z+8
+ 1266 04c4 810F      		add r24,r17
+ 1267 04c6 911D      		adc r25,__zero_reg__
+ 1268 04c8 0E94 0000 		call TC_READ_BYTE
+ 1270               	.LM134:
+ 1271 04cc 1F5F      		subi r17,lo8(-(1))
+ 1272 04ce F3CF      		rjmp .L136
+ 1273               	.L134:
+ 339:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	}
+ 340:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	TC_UNSELECT_RADIO;
+ 1275               	.LM135:
+ 1276 04d0 C09A      		sbi 56-0x20,0
+ 341:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	TC_FLUSH_RX;
+ 1278               	.LM136:
+ 1279 04d2 88E0      		ldi r24,lo8(8)
+ 1280 04d4 0E94 0000 		call TC_STROBE
+ 1281 04d8 88E0      		ldi r24,lo8(8)
+ 1282 04da 0E94 0000 		call TC_STROBE
+ 342:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	TC_STROBE(CC2420_SNOP);
+ 1284               	.LM137:
+ 1285 04de 80E0      		ldi r24,lo8(0)
+ 1286 04e0 0E94 0000 		call TC_STROBE
+ 343:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+ 344:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** #ifndef MICAZ_PLATFORM
+ 345:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	if(break_flag==1) {
+ 346:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		ker_free(vd->payload);
+ 347:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		return 0;
+ 348:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	}
+ 349:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** #endif
+ 350:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 
+ 351:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	// vd->postpayload[i-1] corresponds to the CRC
+ 352:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	CRC = (uint8_t) vd->post_payload[i-1];
+ 1288               	.LM138:
+ 1289 04e4 F701      		movw r30,r14
+ 1290 04e6 A781      		ldd r26,Z+7
+ 1291 04e8 B085      		ldd r27,Z+8
+ 1292 04ea A10F      		add r26,r17
+ 1293 04ec B11D      		adc r27,__zero_reg__
+ 1294 04ee 1197      		sbiw r26,1
+ 1295 04f0 EC91      		ld r30,X
+ 1296 04f2 EB83      		std Y+3,r30
+ 353:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	if(((FCF & (BASIC_RF_FCF_BM)) && (CRC & BASIC_RF_CRC_OK_BM)))
+ 1298               	.LM139:
+ 1299 04f4 8FED      		ldi r24,lo8(-33)
+ 1300 04f6 9FEF      		ldi r25,hi8(-33)
+ 1301 04f8 C822      		and r12,r24
+ 1302 04fa D922      		and r13,r25
+ 1303 04fc CD28      		or r12,r13
+ 1304 04fe 29F0      		breq .L126
+ 1305 0500 E7FF      		sbrs r30,7
+ 1306 0502 03C0      		rjmp .L126
+ 354:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	{
+ 355:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		// CRC is correct!
+ 356:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		return 1;
+ 1308               	.LM140:
+ 1309 0504 81E0      		ldi r24,lo8(1)
+ 1310 0506 90E0      		ldi r25,hi8(1)
+ 1311 0508 08C0      		rjmp .L97
+ 1312               	.L126:
+ 1313               	.LBB6:
+ 1314               	.LBB7:
+ 1316               	.Ltext3:
+  97:/Users/Administrator/sos-2x/kernel/include/malloc.h **** }
+  98:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  99:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+ 100:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Reallocate dynamic memory
+ 101:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @param pntr Pointer to the currently held block of memory
+ 102:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @param newSize Number of bytes to be allocated
+ 103:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @return Returns the pointer to the reallocated memory.
+ 104:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * Returns a NULL if unable to reallocate but the original pointer is still valid.
+ 105:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+ 106:/Users/Administrator/sos-2x/kernel/include/malloc.h **** static inline void* ker_realloc(void* pntr, uint16_t newSize)
+ 107:/Users/Administrator/sos-2x/kernel/include/malloc.h **** {
+ 108:/Users/Administrator/sos-2x/kernel/include/malloc.h ****   return sos_blk_mem_realloc(pntr, newSize, false);
+ 109:/Users/Administrator/sos-2x/kernel/include/malloc.h **** }
+ 110:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+ 111:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+ 112:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Free memory pointed to by ptr
+ 113:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @param ptr Pointer to the memory that should be released
+ 114:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @return void
+ 115:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+ 116:/Users/Administrator/sos-2x/kernel/include/malloc.h **** static inline void ker_free(void* ptr)
+ 117:/Users/Administrator/sos-2x/kernel/include/malloc.h **** {
+ 118:/Users/Administrator/sos-2x/kernel/include/malloc.h ****   sos_blk_mem_free(ptr, false);
+ 1318               	.LM141:
+ 1319 050a 60E0      		ldi r22,lo8(0)
+ 1320 050c F701      		movw r30,r14
+ 1321 050e 8581      		ldd r24,Z+5
+ 1322 0510 9681      		ldd r25,Z+6
+ 1323 0512 0E94 0000 		call sos_blk_mem_free
+ 1324               	.L137:
+ 1325               	.LBE7:
+ 1326               	.LBE6:
+ 1328               	.Ltext4:
+ 357:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	}
+ 358:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	else
+ 359:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 	{
+ 360:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		// CRC is wrong...
+ 361:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		ker_free(vd->payload);
+ 362:/Users/Administrator/sos-2x/drivers/cc2420/vhal.c **** 		return 0;
+ 1330               	.LM142:
+ 1331 0516 80E0      		ldi r24,lo8(0)
+ 1332 0518 90E0      		ldi r25,hi8(0)
+ 1333               	.L97:
+ 1334               	/* epilogue: frame size=3 */
+ 1335 051a 2396      		adiw r28,3
+ 1336 051c 0FB6      		in __tmp_reg__,__SREG__
+ 1337 051e F894      		cli
+ 1338 0520 DEBF      		out __SP_H__,r29
+ 1339 0522 0FBE      		out __SREG__,__tmp_reg__
+ 1340 0524 CDBF      		out __SP_L__,r28
+ 1341 0526 DF91      		pop r29
+ 1342 0528 CF91      		pop r28
+ 1343 052a 1F91      		pop r17
+ 1344 052c 0F91      		pop r16
+ 1345 052e FF90      		pop r15
+ 1346 0530 EF90      		pop r14
+ 1347 0532 DF90      		pop r13
+ 1348 0534 CF90      		pop r12
+ 1349 0536 0895      		ret
+ 1350               	/* epilogue end (size=15) */
+ 1351               	/* function Radio_Recv_Pack size 258 (227) */
+ 1360               	.Lscope7:
+ 1362               		.text
+ 1364               	Letext:
+ 1365               	/* File "/Users/Administrator/sos-2x/drivers/cc2420/vhal.c": code  679 = 0x02a7 ( 589), prologues  
+DEFINED SYMBOLS
+                            *ABS*:00000000 vhal.c
+                            *ABS*:0000003f __SREG__
+                            *ABS*:0000003e __SP_H__
+                            *ABS*:0000003d __SP_L__
+                            *ABS*:00000000 __tmp_reg__
+                            *ABS*:00000001 __zero_reg__
+/var/tmp//cc8oYURp.s:290    .text:00000000 Radio_Wakeup
+/var/tmp//cc8oYURp.s:334    .text:0000002c Radio_Init
+/var/tmp//cc8oYURp.s:478    .text:000000fc Radio_Check_CCA
+/var/tmp//cc8oYURp.s:562    .text:0000015a Radio_Check_SFD
+/var/tmp//cc8oYURp.s:646    .text:000001b8 Radio_Send_CCA
+/var/tmp//cc8oYURp.s:736    .text:0000021c Radio_Check_Preamble
+/var/tmp//cc8oYURp.s:818    .text:00000268 Radio_Send_Pack
+/var/tmp//cc8oYURp.s:979    .text:00000336 Radio_Recv_Pack
+/var/tmp//cc8oYURp.s:1364   .text:00000538 Letext
+
+UNDEFINED SYMBOLS
+__do_copy_data
+__do_clear_bss
+TC_STROBE
+_current_stat
+TC_INIT_PINS
+TC_UWAIT
+TC_SET_REG
+node_address
+TC_WRITE_BYTE
+_SFD_IS_SET_CALL
+ker_systime32
+TC_READ_BYTE
+_MacRecvAck
+sos_blk_mem_alloc
+sos_blk_mem_free

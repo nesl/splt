@@ -1,0 +1,66 @@
+   1               		.file	"arfid.c"
+   2               		.arch atmega128
+   3               	__SREG__ = 0x3f
+   4               	__SP_H__ = 0x3e
+   5               	__SP_L__ = 0x3d
+   6               	__tmp_reg__ = 0
+   7               	__zero_reg__ = 1
+   8               		.global __do_copy_data
+   9               		.global __do_clear_bss
+  12               		.text
+  13               	.Ltext0:
+ 208               	.global	sos_start
+ 210               	sos_start:
+   1:arfid.c       **** #include <sos.h>
+   2:arfid.c       **** #if 0
+   3:arfid.c       **** //#ifdef SOS_SIM
+   4:arfid.c       **** #include <sim_interface.h>
+   5:arfid.c       **** mod_header_ptr blink_get_header();
+   6:arfid.c       **** mod_header_ptr surge_get_header();
+   7:arfid.c       **** mod_header_ptr neighbor_get_header();
+   8:arfid.c       **** mod_header_ptr tree_routing_get_header();
+   9:arfid.c       **** mod_header_ptr test_param_get_header();
+  10:arfid.c       **** #endif
+  11:arfid.c       **** 
+  12:arfid.c       **** //! forward declaration
+  13:arfid.c       **** //mod_header_ptr loader_get_header();
+  14:arfid.c       **** //mod_header_ptr neighbor_get_header();
+  15:arfid.c       **** //mod_header_ptr tree_routing_get_header();
+  16:arfid.c       **** //mod_header_ptr rfidtag_get_header();
+  17:arfid.c       **** mod_header_ptr irtag_get_header();
+  18:arfid.c       **** 
+  19:arfid.c       **** void sos_start(void){
+ 212               	.LM1:
+ 213               	/* prologue: frame size=0 */
+ 214               	/* prologue end (size=0) */
+  20:arfid.c       **** //	ker_register_module(loader_get_header());
+  21:arfid.c       **** //	ker_register_module(neighbor_get_header());
+  22:arfid.c       **** //	ker_register_module(tree_routing_get_header());
+  23:arfid.c       **** //	ker_register_module(rfidtag_get_header());
+  24:arfid.c       **** 	ker_register_module(irtag_get_header());
+ 216               	.LM2:
+ 217 0000 0E94 0000 		call irtag_get_header
+ 218 0004 0E94 0000 		call ker_register_module
+ 219               	/* epilogue: frame size=0 */
+ 220 0008 0895      		ret
+ 221               	/* epilogue end (size=1) */
+ 222               	/* function sos_start size 5 (4) */
+ 224               	.Lscope0:
+ 226               		.text
+ 228               	Letext:
+ 229               	/* File "arfid.c": code    5 = 0x0005 (   4), prologues   0, epilogues   1 */
+DEFINED SYMBOLS
+                            *ABS*:00000000 arfid.c
+                            *ABS*:0000003f __SREG__
+                            *ABS*:0000003e __SP_H__
+                            *ABS*:0000003d __SP_L__
+                            *ABS*:00000000 __tmp_reg__
+                            *ABS*:00000001 __zero_reg__
+/var/tmp//ccEqA6Ox.s:210    .text:00000000 sos_start
+/var/tmp//ccEqA6Ox.s:228    .text:0000000a Letext
+
+UNDEFINED SYMBOLS
+__do_copy_data
+__do_clear_bss
+irtag_get_header
+ker_register_module

@@ -1,0 +1,671 @@
+   1               		.file	"flash_api.c"
+   2               		.arch atmega128
+   3               	__SREG__ = 0x3f
+   4               	__SP_H__ = 0x3e
+   5               	__SP_L__ = 0x3d
+   6               	__tmp_reg__ = 0
+   7               	__zero_reg__ = 1
+   8               		.global __do_copy_data
+   9               		.global __do_clear_bss
+  12               		.text
+  13               	.Ltext0:
+ 290               	.global	flash_init
+ 292               	flash_init:
+   1:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** /* -*- Mode: C; tab-width:4 -*- */
+   2:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** /* ex: set ts=4: */
+   3:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 
+   4:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** #include <avr/io.h>
+   5:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** #include <avr/eeprom.h>
+   6:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** #include <sos_types.h>
+   7:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** #include <hardware.h>
+   8:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** #include <codemem_conf.h>
+   9:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 
+  10:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** #include "flash.h"
+  11:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 
+  12:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** extern void* __text_end;
+  13:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 
+  14:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** uint32_t flash_init( void )
+  15:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** {
+ 294               	.LM1:
+ 295               	/* prologue: frame size=0 */
+ 296               	/* prologue end (size=0) */
+  16:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	// The __text_end pointer returned by GCC is 16-bit,
+  17:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	// but program memory on AVR can be referenced by
+  18:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	// 17 bits. GCC does not let us typecast a pointer to
+  19:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	// uint32_t. Thus, following checks try to determine
+  20:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	// the lost MSB of __text_end.
+  21:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	uint16_t tmp = (uint16_t)&(__text_end);
+ 298               	.LM2:
+ 299 0000 20E0      		ldi r18,lo8(__text_end)
+ 300 0002 30E0      		ldi r19,hi8(__text_end)
+  22:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	
+  23:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	if( tmp > (65536L - FLASHMEM_PAGE_SIZE) ) {
+ 302               	.LM3:
+ 303 0004 4FEF      		ldi r20,hi8(-255)
+ 304 0006 2130      		cpi r18,lo8(-255)
+ 305 0008 3407      		cpc r19,r20
+ 306 000a 28F0      		brlo .L2
+  24:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		// tmp is 16 bit wide. Its close to 64 KB boundary.
+  25:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		// So, round it up manually to next page.
+  26:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		return (uint32_t)(256L * FLASHMEM_PAGE_SIZE);
+ 308               	.LM4:
+ 309 000c 60E0      		ldi r22,lo8(65536)
+ 310 000e 70E0      		ldi r23,hi8(65536)
+ 311 0010 81E0      		ldi r24,hlo8(65536)
+ 312 0012 90E0      		ldi r25,hhi8(65536)
+ 313 0014 0895      		ret
+ 314               	.L2:
+ 315 0016 B901      		movw r22,r18
+ 316 0018 8827      		clr r24
+ 317 001a 9927      		clr r25
+  27:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	}
+  28:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	if( tmp < (20L * 1024L) ) {
+ 319               	.LM5:
+ 320 001c 2050      		subi r18,lo8(20480)
+ 321 001e 3045      		sbci r19,hi8(20480)
+ 322 0020 A8F4      		brsh .L3
+  29:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		// Assumption: SOS kernel (and compiled-in modules) occupy 
+  30:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		// atleast 20 KB and atmost 64+20 KB. Thus, the __text_end 
+  31:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		// pointer lies in second half of program memory on AVR.
+  32:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		tmp = ((tmp + (FLASHMEM_PAGE_SIZE - 1)) / FLASHMEM_PAGE_SIZE) + 256L;
+ 324               	.LM6:
+ 325 0022 DC01      		movw r26,r24
+ 326 0024 CB01      		movw r24,r22
+ 327 0026 8150      		subi r24,lo8(-(255))
+ 328 0028 9F4F      		sbci r25,hi8(-(255))
+ 329 002a AF4F      		sbci r26,hlo8(-(255))
+ 330 002c BF4F      		sbci r27,hhi8(-(255))
+ 331 002e 892F      		mov r24,r25
+ 332 0030 9A2F      		mov r25,r26
+ 333 0032 AB2F      		mov r26,r27
+ 334 0034 BB27      		clr r27
+ 335 0036 9C01      		movw r18,r24
+ 336 0038 2050      		subi r18,lo8(-(256))
+ 337 003a 3F4F      		sbci r19,hi8(-(256))
+  33:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		return (uint32_t) ((uint32_t)tmp * FLASHMEM_PAGE_SIZE );
+ 339               	.LM7:
+ 340 003c C901      		movw r24,r18
+ 341 003e AA27      		clr r26
+ 342 0040 BB27      		clr r27
+ 343 0042 6627      		clr r22
+ 344 0044 782F      		mov r23,r24
+ 345 0046 892F      		mov r24,r25
+ 346 0048 9A2F      		mov r25,r26
+ 347 004a 0895      		ret
+ 348               	.L3:
+  34:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	}
+  35:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	return (uint32_t)( (((uint32_t)tmp + (FLASHMEM_PAGE_SIZE - 1)) 
+ 350               	.LM8:
+ 351 004c 6150      		subi r22,lo8(-(255))
+ 352 004e 7F4F      		sbci r23,hi8(-(255))
+ 353 0050 8F4F      		sbci r24,hlo8(-(255))
+ 354 0052 9F4F      		sbci r25,hhi8(-(255))
+ 355 0054 6070      		andi r22,lo8(130816)
+ 356 0056 8170      		andi r24,hlo8(130816)
+ 357 0058 9070      		andi r25,hhi8(130816)
+  36:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 					/ FLASHMEM_PAGE_SIZE) * FLASHMEM_PAGE_SIZE );
+  37:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** }
+ 359               	.LM9:
+ 360 005a 0895      		ret
+ 361               	/* epilogue: frame size=0 */
+ 362 005c 0895      		ret
+ 363               	/* epilogue end (size=1) */
+ 364               	/* function flash_init size 48 (47) */
+ 369               	.Lscope0:
+ 371               		.section	.sos_bls,"ax",@progbits
+ 375               	.global	flash_erase
+ 377               	flash_erase:
+  38:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 
+  39:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** void flash_erase( uint32_t address, uint16_t len )
+  40:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** {
+ 379               	.LM10:
+ 380               	/* prologue: frame size=0 */
+ 381               	/* prologue end (size=0) */
+ 382               	/* epilogue: frame size=0 */
+ 383 0000 0895      		ret
+ 384               	/* epilogue end (size=1) */
+ 385               	/* function flash_erase size 1 (0) */
+ 387               	.Lscope1:
+ 393               	.global	flash_write
+ 395               	flash_write:
+  41:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	//
+  42:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	// No need to do anything as we always rewrite the entire page
+  43:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	//
+  44:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** } 
+  45:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** /*
+  46:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** {
+  47:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	uint16_t page;
+  48:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	HAS_CRITICAL_SECTION;
+  49:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	
+  50:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	ENTER_CRITICAL_SECTION();
+  51:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	//! making sure that EEPROM is not busy
+  52:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	eeprom_busy_wait ();
+  53:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	
+  54:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	if( address >= 65536L ) {
+  55:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		RAMPZ = 1;
+  56:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	} else {
+  57:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		RAMPZ = 0;
+  58:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	}
+  59:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		
+  60:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	SpmCommand((uint16_t)address, (1 << PGERS) | (1 << SPMEN));
+  61:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	SpmCommand(0, (1 << RWWSRE) | (1 << SPMEN));
+  62:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	
+  63:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	RAMPZ = 0;
+  64:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	LEAVE_CRITICAL_SECTION();
+  65:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** }
+  66:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** */
+  67:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** #include <led.h>
+  68:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 
+  69:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** void flash_write( uint32_t address, uint8_t *data, uint16_t len )
+  70:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** {
+ 397               	.LM11:
+ 398               	/* prologue: frame size=3 */
+ 399 0002 2F92      		push r2
+ 400 0004 3F92      		push r3
+ 401 0006 4F92      		push r4
+ 402 0008 5F92      		push r5
+ 403 000a 6F92      		push r6
+ 404 000c 7F92      		push r7
+ 405 000e 8F92      		push r8
+ 406 0010 9F92      		push r9
+ 407 0012 AF92      		push r10
+ 408 0014 BF92      		push r11
+ 409 0016 CF92      		push r12
+ 410 0018 DF92      		push r13
+ 411 001a EF92      		push r14
+ 412 001c FF92      		push r15
+ 413 001e 0F93      		push r16
+ 414 0020 1F93      		push r17
+ 415 0022 CF93      		push r28
+ 416 0024 DF93      		push r29
+ 417 0026 CDB7      		in r28,__SP_L__
+ 418 0028 DEB7      		in r29,__SP_H__
+ 419 002a 2397      		sbiw r28,3
+ 420 002c 0FB6      		in __tmp_reg__,__SREG__
+ 421 002e F894      		cli
+ 422 0030 DEBF      		out __SP_H__,r29
+ 423 0032 0FBE      		out __SREG__,__tmp_reg__
+ 424 0034 CDBF      		out __SP_L__,r28
+ 425               	/* prologue end (size=26) */
+ 426 0036 7B01      		movw r14,r22
+ 427 0038 8C01      		movw r16,r24
+ 428 003a 2A01      		movw r4,r20
+ 429 003c 5901      		movw r10,r18
+  71:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	uint16_t page;
+  72:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	uint16_t offset;
+  73:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	uint16_t i;
+  74:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	uint32_t page_address;
+  75:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	HAS_CRITICAL_SECTION;
+  76:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	
+  77:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	//if( address < ((uint32_t)(&__text_end)) || address > FLASHMEM_SIZE) {
+  78:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	//	led_red_toggle();
+  79:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		// Disallow writing to kernel or bootloader
+  80:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	//	return;
+  81:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	//}
+  82:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	ENTER_CRITICAL_SECTION();
+ 431               	.LM12:
+ 432               	/* #APP */
+ 433 003e 2FB7      		in r18, __SREG__
+ 434 0040 F894      		cli
+ 435               		
+ 436               	/* #NOAPP */
+ 437 0042 2983      		std Y+1,r18
+ 438               	.L6:
+  83:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	//! making sure that EEPROM is not busy
+  84:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	eeprom_busy_wait ();
+ 440               	.LM13:
+ 441 0044 E199      		sbic 60-0x20,1
+ 442 0046 FECF      		rjmp .L6
+ 443               	.L33:
+  85:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	
+  86:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	//
+  87:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	// For each different page
+  88:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	//
+  89:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	while( len > 0 ) {
+  90:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		page   = (uint16_t)(address >> 8);
+  91:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		offset = (uint16_t)(address & 0x000000ff);
+  92:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		//
+  93:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		// Load data from the page into temperary buffer
+  94:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		//
+  95:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		page_address = address & 0xffffff00;
+  96:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		
+  97:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		for( i = 0; i < offset; i+=2 ) {
+  98:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 			uint16_t w = pgm_read_word_far( page_address + i );
+  99:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 			SpmBufferFill( i, w );
+ 100:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		}
+ 101:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		//
+ 102:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		// Modify the content
+ 103:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		//
+ 104:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		for( ; len > 0 && i < 256L; i+=2 ) {
+ 105:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 			uint16_t w = *data++;
+ 106:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 			w += (*data++) << 8;
+ 107:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 			len -= 2;
+ 108:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 			SpmBufferFill( i, w ); 
+ 109:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		} 
+ 110:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	
+ 111:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		//
+ 112:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		// load the rest of the page
+ 113:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		//	
+ 114:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		for( ; i < 256L; i+=2 ) {
+ 115:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 			uint16_t w = pgm_read_word_far( page_address + i );
+ 116:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 			SpmBufferFill( i, w );	
+ 117:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		}
+ 118:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	
+ 119:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		//
+ 120:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		// Write it back
+ 121:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		//
+ 122:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		if( page >= 256L ) {
+ 123:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 			RAMPZ = 1;
+ 124:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		} else {
+ 125:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 			RAMPZ = 0;
+ 126:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		}
+ 127:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		
+ 128:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		//
+ 129:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		// Prepare the page address
+ 130:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		//
+ 131:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		page <<= 8;
+ 132:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		
+ 133:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		SpmCommand(page, (1 << PGERS) | (1 << SPMEN));
+ 134:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		SpmCommand(page, (1 << PGWRT) | (1 << SPMEN)); 
+ 135:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		SpmCommand(0, (1 << RWWSRE) | (1 << SPMEN));
+ 136:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		
+ 137:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		address += (256L - offset);
+ 445               	.LM14:
+ 446 0048 A114      		cp r10,__zero_reg__
+ 447 004a B104      		cpc r11,__zero_reg__
+ 448 004c 09F4      		brne .+2
+ 449 004e A5C0      		rjmp .L27
+ 451               	.LM15:
+ 452 0050 BB27      		clr r27
+ 453 0052 A12F      		mov r26,r17
+ 454 0054 902F      		mov r25,r16
+ 455 0056 8F2D      		mov r24,r15
+ 456 0058 6C01      		movw r12,r24
+ 458               	.LM16:
+ 459 005a 7FEF      		ldi r23,lo8(255)
+ 460 005c 272E      		mov r2,r23
+ 461 005e 312C      		mov r3,__zero_reg__
+ 462 0060 2E20      		and r2,r14
+ 463 0062 3F20      		and r3,r15
+ 465               	.LM17:
+ 466 0064 612C      		mov r6,__zero_reg__
+ 467 0066 6FEF      		ldi r22,hi8(-256)
+ 468 0068 762E      		mov r7,r22
+ 469 006a 6FEF      		ldi r22,hlo8(-256)
+ 470 006c 862E      		mov r8,r22
+ 471 006e 6FEF      		ldi r22,hhi8(-256)
+ 472 0070 962E      		mov r9,r22
+ 473 0072 6E20      		and r6,r14
+ 474 0074 7F20      		and r7,r15
+ 475 0076 8022      		and r8,r16
+ 476 0078 9122      		and r9,r17
+ 478               	.LM18:
+ 479 007a 1A82      		std Y+2,__zero_reg__
+ 480 007c 1B82      		std Y+3,__zero_reg__
+ 481 007e 80E0      		ldi r24,lo8(0)
+ 482 0080 90E0      		ldi r25,hi8(0)
+ 483 0082 8215      		cp r24,r2
+ 484 0084 9305      		cpc r25,r3
+ 485 0086 D8F4      		brsh .L29
+ 486               	.L14:
+ 487               	.LBB2:
+ 488               	.LBB3:
+ 490               	.LM19:
+ 491 0088 EA81      		ldd r30,Y+2
+ 492 008a FB81      		ldd r31,Y+3
+ 493 008c CF01      		movw r24,r30
+ 494 008e AA27      		clr r26
+ 495 0090 BB27      		clr r27
+ 496 0092 860D      		add r24,r6
+ 497 0094 971D      		adc r25,r7
+ 498 0096 A81D      		adc r26,r8
+ 499 0098 B91D      		adc r27,r9
+ 500               	/* #APP */
+ 501 009a ABBF      		out 59, r26
+ 502 009c FC01      		movw r30, r24
+ 503 009e 8791      		elpm r24, Z+
+ 504 00a0 9691      		elpm r25, Z
+ 505               		
+ 506               	/* #NOAPP */
+ 507               	.LBE3:
+ 509               	.LM20:
+ 510 00a2 BC01      		movw r22,r24
+ 511 00a4 8A81      		ldd r24,Y+2
+ 512 00a6 9B81      		ldd r25,Y+3
+ 513 00a8 0E94 0000 		call SpmBufferFill
+ 514               	.LBE2:
+ 516               	.LM21:
+ 517 00ac 2A81      		ldd r18,Y+2
+ 518 00ae 3B81      		ldd r19,Y+3
+ 519 00b0 2E5F      		subi r18,lo8(-(2))
+ 520 00b2 3F4F      		sbci r19,hi8(-(2))
+ 521 00b4 2A83      		std Y+2,r18
+ 522 00b6 3B83      		std Y+3,r19
+ 523 00b8 2215      		cp r18,r2
+ 524 00ba 3305      		cpc r19,r3
+ 525 00bc 28F3      		brlo .L14
+ 526               	.L29:
+ 528               	.LM22:
+ 529 00be A114      		cp r10,__zero_reg__
+ 530 00c0 B104      		cpc r11,__zero_reg__
+ 531 00c2 09F1      		breq .L16
+ 532 00c4 8A81      		ldd r24,Y+2
+ 533 00c6 9B81      		ldd r25,Y+3
+ 534               	.L34:
+ 535 00c8 8F3F      		cpi r24,255
+ 536 00ca 9105      		cpc r25,__zero_reg__
+ 537 00cc 09F0      		breq .+2
+ 538 00ce D8F4      		brsh .L16
+ 539               	.LBB4:
+ 541               	.LM23:
+ 542 00d0 D201      		movw r26,r4
+ 543 00d2 2D91      		ld r18,X+
+ 545               	.LM24:
+ 546 00d4 FD01      		movw r30,r26
+ 547 00d6 8191      		ld r24,Z+
+ 548 00d8 2F01      		movw r4,r30
+ 549 00da 9927      		clr r25
+ 550 00dc 982F      		mov r25,r24
+ 551 00de 8827      		clr r24
+ 552 00e0 820F      		add r24,r18
+ 553 00e2 911D      		adc r25,__zero_reg__
+ 555               	.LM25:
+ 556 00e4 2EEF      		ldi r18,lo8(-2)
+ 557 00e6 3FEF      		ldi r19,hi8(-2)
+ 558 00e8 A20E      		add r10,r18
+ 559 00ea B31E      		adc r11,r19
+ 561               	.LM26:
+ 562 00ec BC01      		movw r22,r24
+ 563 00ee 8A81      		ldd r24,Y+2
+ 564 00f0 9B81      		ldd r25,Y+3
+ 565 00f2 0E94 0000 		call SpmBufferFill
+ 566               	.LBE4:
+ 568               	.LM27:
+ 569 00f6 8A81      		ldd r24,Y+2
+ 570 00f8 9B81      		ldd r25,Y+3
+ 571 00fa 0296      		adiw r24,2
+ 572 00fc 8A83      		std Y+2,r24
+ 573 00fe 9B83      		std Y+3,r25
+ 574 0100 A114      		cp r10,__zero_reg__
+ 575 0102 B104      		cpc r11,__zero_reg__
+ 576 0104 09F7      		brne .L34
+ 577               	.L16:
+ 579               	.LM28:
+ 580 0106 AA81      		ldd r26,Y+2
+ 581 0108 BB81      		ldd r27,Y+3
+ 582 010a AF3F      		cpi r26,255
+ 583 010c B105      		cpc r27,__zero_reg__
+ 584 010e 09F0      		breq .+2
+ 585 0110 E0F4      		brsh .L32
+ 586               	.L22:
+ 587               	.LBB5:
+ 588               	.LBB6:
+ 590               	.LM29:
+ 591 0112 EA81      		ldd r30,Y+2
+ 592 0114 FB81      		ldd r31,Y+3
+ 593 0116 CF01      		movw r24,r30
+ 594 0118 AA27      		clr r26
+ 595 011a BB27      		clr r27
+ 596 011c 860D      		add r24,r6
+ 597 011e 971D      		adc r25,r7
+ 598 0120 A81D      		adc r26,r8
+ 599 0122 B91D      		adc r27,r9
+ 600               	/* #APP */
+ 601 0124 ABBF      		out 59, r26
+ 602 0126 FC01      		movw r30, r24
+ 603 0128 8791      		elpm r24, Z+
+ 604 012a 9691      		elpm r25, Z
+ 605               		
+ 606               	/* #NOAPP */
+ 607               	.LBE6:
+ 609               	.LM30:
+ 610 012c BC01      		movw r22,r24
+ 611 012e 8A81      		ldd r24,Y+2
+ 612 0130 9B81      		ldd r25,Y+3
+ 613 0132 0E94 0000 		call SpmBufferFill
+ 614               	.LBE5:
+ 616               	.LM31:
+ 617 0136 2A81      		ldd r18,Y+2
+ 618 0138 3B81      		ldd r19,Y+3
+ 619 013a 2E5F      		subi r18,lo8(-(2))
+ 620 013c 3F4F      		sbci r19,hi8(-(2))
+ 621 013e 2A83      		std Y+2,r18
+ 622 0140 3B83      		std Y+3,r19
+ 623 0142 2F3F      		cpi r18,255
+ 624 0144 3105      		cpc r19,__zero_reg__
+ 625 0146 29F3      		breq .L22
+ 626 0148 20F3      		brlo .L22
+ 627               	.L32:
+ 629               	.LM32:
+ 630 014a 3FEF      		ldi r19,lo8(255)
+ 631 014c C316      		cp r12,r19
+ 632 014e D104      		cpc r13,__zero_reg__
+ 633 0150 21F0      		breq .L23
+ 634 0152 18F0      		brlo .L23
+ 636               	.LM33:
+ 637 0154 81E0      		ldi r24,lo8(1)
+ 638 0156 8BBF      		out 91-0x20,r24
+ 639 0158 01C0      		rjmp .L24
+ 640               	.L23:
+ 642               	.LM34:
+ 643 015a 1BBE      		out 91-0x20,__zero_reg__
+ 644               	.L24:
+ 646               	.LM35:
+ 647 015c DC2C      		mov r13,r12
+ 648 015e CC24      		clr r12
+ 650               	.LM36:
+ 651 0160 63E0      		ldi r22,lo8(3)
+ 652 0162 C601      		movw r24,r12
+ 653 0164 0E94 0000 		call SpmCommand
+ 655               	.LM37:
+ 656 0168 65E0      		ldi r22,lo8(5)
+ 657 016a C601      		movw r24,r12
+ 658 016c 0E94 0000 		call SpmCommand
+ 660               	.LM38:
+ 661 0170 61E1      		ldi r22,lo8(17)
+ 662 0172 80E0      		ldi r24,lo8(0)
+ 663 0174 90E0      		ldi r25,hi8(0)
+ 664 0176 0E94 0000 		call SpmCommand
+ 666               	.LM39:
+ 667 017a C101      		movw r24,r2
+ 668 017c AA27      		clr r26
+ 669 017e BB27      		clr r27
+ 670 0180 E81A      		sub r14,r24
+ 671 0182 F90A      		sbc r15,r25
+ 672 0184 0A0B      		sbc r16,r26
+ 673 0186 1B0B      		sbc r17,r27
+ 674 0188 80E0      		ldi r24,lo8(256)
+ 675 018a 91E0      		ldi r25,hi8(256)
+ 676 018c A0E0      		ldi r26,hlo8(256)
+ 677 018e B0E0      		ldi r27,hhi8(256)
+ 678 0190 E80E      		add r14,r24
+ 679 0192 F91E      		adc r15,r25
+ 680 0194 0A1F      		adc r16,r26
+ 681 0196 1B1F      		adc r17,r27
+ 682 0198 57CF      		rjmp .L33
+ 683               	.L27:
+ 138:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	}
+ 139:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	RAMPZ = 0;
+ 685               	.LM40:
+ 686 019a 1BBE      		out 91-0x20,__zero_reg__
+ 140:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	LEAVE_CRITICAL_SECTION();
+ 688               	.LM41:
+ 689 019c 9981      		ldd r25,Y+1
+ 690               	/* #APP */
+ 691 019e 9FBF      		out __SREG__, r25
+ 692               		
+ 693               	/* #NOAPP */
+ 694               	/* epilogue: frame size=3 */
+ 695 01a0 2396      		adiw r28,3
+ 696 01a2 0FB6      		in __tmp_reg__,__SREG__
+ 697 01a4 F894      		cli
+ 698 01a6 DEBF      		out __SP_H__,r29
+ 699 01a8 0FBE      		out __SREG__,__tmp_reg__
+ 700 01aa CDBF      		out __SP_L__,r28
+ 701 01ac DF91      		pop r29
+ 702 01ae CF91      		pop r28
+ 703 01b0 1F91      		pop r17
+ 704 01b2 0F91      		pop r16
+ 705 01b4 FF90      		pop r15
+ 706 01b6 EF90      		pop r14
+ 707 01b8 DF90      		pop r13
+ 708 01ba CF90      		pop r12
+ 709 01bc BF90      		pop r11
+ 710 01be AF90      		pop r10
+ 711 01c0 9F90      		pop r9
+ 712 01c2 8F90      		pop r8
+ 713 01c4 7F90      		pop r7
+ 714 01c6 6F90      		pop r6
+ 715 01c8 5F90      		pop r5
+ 716 01ca 4F90      		pop r4
+ 717 01cc 3F90      		pop r3
+ 718 01ce 2F90      		pop r2
+ 719 01d0 0895      		ret
+ 720               	/* epilogue end (size=25) */
+ 721               	/* function flash_write size 251 (200) */
+ 736               	.Lscope2:
+ 738               		.text
+ 743               	.global	flash_read
+ 745               	flash_read:
+ 141:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** }
+ 142:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 
+ 143:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** void flash_read( uint32_t address, void *buf, uint16_t size )
+ 144:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** {
+ 747               	.LM42:
+ 748               	/* prologue: frame size=0 */
+ 749 005e CF92      		push r12
+ 750 0060 DF92      		push r13
+ 751 0062 EF92      		push r14
+ 752 0064 FF92      		push r15
+ 753 0066 0F93      		push r16
+ 754 0068 1F93      		push r17
+ 755 006a CF93      		push r28
+ 756 006c DF93      		push r29
+ 757               	/* prologue end (size=8) */
+ 758 006e 7B01      		movw r14,r22
+ 759 0070 8C01      		movw r16,r24
+ 760 0072 6A01      		movw r12,r20
+ 761 0074 E901      		movw r28,r18
+ 145:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	uint16_t i = 0;
+ 763               	.LM43:
+ 764 0076 60E0      		ldi r22,lo8(0)
+ 765 0078 70E0      		ldi r23,hi8(0)
+ 146:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	if( (address % 2) == 0 && (size % 2) == 0 ) {
+ 767               	.LM44:
+ 768 007a E0FC      		sbrc r14,0
+ 769 007c 1CC0      		rjmp .L36
+ 771               	.LM45:
+ 772 007e 20FD      		sbrc r18,0
+ 773 0080 1AC0      		rjmp .L36
+ 774               	.LBB7:
+ 147:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		uint16_t *wp = (uint16_t*)buf;
+ 148:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		for(i = 0; i < size; i+=2){
+ 776               	.LM46:
+ 777 0082 6217      		cp r22,r18
+ 778 0084 7307      		cpc r23,r19
+ 779 0086 50F5      		brsh .L35
+ 780               	.L40:
+ 149:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 			wp[i/2] = pgm_read_word_far(address + i);
+ 782               	.LM47:
+ 783 0088 DB01      		movw r26,r22
+ 784 008a AE7F      		andi r26,lo8(-2)
+ 785 008c AC0D      		add r26,r12
+ 786 008e BD1D      		adc r27,r13
+ 787               	.LBB8:
+ 788 0090 9B01      		movw r18,r22
+ 789 0092 4427      		clr r20
+ 790 0094 5527      		clr r21
+ 791 0096 2E0D      		add r18,r14
+ 792 0098 3F1D      		adc r19,r15
+ 793 009a 401F      		adc r20,r16
+ 794 009c 511F      		adc r21,r17
+ 795               	/* #APP */
+ 796 009e 4BBF      		out 59, r20
+ 797 00a0 F901      		movw r30, r18
+ 798 00a2 8791      		elpm r24, Z+
+ 799 00a4 9691      		elpm r25, Z
+ 800               		
+ 801               	/* #NOAPP */
+ 802               	.LBE8:
+ 803 00a6 8D93      		st X+,r24
+ 804 00a8 9C93      		st X,r25
+ 806               	.LM48:
+ 807 00aa 6E5F      		subi r22,lo8(-(2))
+ 808 00ac 7F4F      		sbci r23,hi8(-(2))
+ 809 00ae 6C17      		cp r22,r28
+ 810 00b0 7D07      		cpc r23,r29
+ 811 00b2 50F3      		brlo .L40
+ 812               	.LBE7:
+ 813 00b4 13C0      		rjmp .L35
+ 814               	.L36:
+ 815               	.LBB9:
+ 150:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		}
+ 151:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 	} else {
+ 152:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		uint8_t *data = (uint8_t*)buf;
+ 153:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 		for(i = 0; i < size; i+=1){
+ 817               	.LM49:
+ 818 00b6 2097      		sbiw r28,0
+ 819 00b8 89F0      		breq .L35
+ 820 00ba D601      		movw r26,r12
+ 821 00bc A801      		movw r20,r16
+ 822 00be 9701      		movw r18,r14
+ 823 00c0 BE01      		movw r22,r28
+ 824               	.L45:
+ 825               	.LBB10:
+ 154:/Users/Administrator/sos-2x/processor/avr/flash_api.c **** 			data[i] = pgm_read_byte_far(address + i);
+ 827               	.LM50:
+ 828               	/* #APP */
+ 829 00c2 4BBF      		out 59, r20
+ 830 00c4 F901      		movw r30, r18
+ 831 00c6 8791      		elpm r24, Z+
+ 832               		
+ 833               	/* #NOAPP */
+ 834               	.LBE10:
+ 835 00c8 8D93      		st X+,r24
+ 837               	.LM51:
+ 838 00ca 6150      		subi r22,lo8(-(-1))
+ 839 00cc 7040      		sbci r23,hi8(-(-1))
+ 840 00ce 2F5F      		subi r18,lo8(-(1))
+ 841 00d0 3F4F      		sbci r19,hi8(-(1))
+ 842 00d2 4F4F      		sbci r20,hlo8(-(1))
+ 843 00d4 5F4F      		sbci r21,hhi8(-(1))
+ 844 00d6 6115      		cp r22,__zero_reg__
+ 845 00d8 7105      		cpc r23,__zero_reg__
+ 846 00da 99F7      		brne .L45
+ 847               	.L35:
+ 848               	.LBE9:
+ 849               	/* epilogue: frame size=0 */
+ 850 00dc DF91      		pop r29
+ 851 00de CF91      		pop r28
+ 852 00e0 1F91      		pop r17
+ 853 00e2 0F91      		pop r16
+ 854 00e4 FF90      		pop r15
+ 855 00e6 EF90      		pop r14
+ 856 00e8 DF90      		pop r13
+ 857 00ea CF90      		pop r12
+ 858 00ec 0895      		ret
+ 859               	/* epilogue end (size=9) */
+ 860               	/* function flash_read size 84 (67) */
+ 871               	.Lscope3:
+ 873               		.text
+ 875               	Letext:
+ 876               	/* File "/Users/Administrator/sos-2x/processor/avr/flash_api.c": code  384 = 0x0180 ( 314), prologu
+DEFINED SYMBOLS
+                            *ABS*:00000000 flash_api.c
+                            *ABS*:0000003f __SREG__
+                            *ABS*:0000003e __SP_H__
+                            *ABS*:0000003d __SP_L__
+                            *ABS*:00000000 __tmp_reg__
+                            *ABS*:00000001 __zero_reg__
+/var/tmp//ccd6ZnlC.s:292    .text:00000000 flash_init
+/var/tmp//ccd6ZnlC.s:377    .sos_bls:00000000 flash_erase
+/var/tmp//ccd6ZnlC.s:395    .sos_bls:00000002 flash_write
+/var/tmp//ccd6ZnlC.s:745    .text:0000005e flash_read
+/var/tmp//ccd6ZnlC.s:875    .text:000000ee Letext
+
+UNDEFINED SYMBOLS
+__do_copy_data
+__do_clear_bss
+__text_end
+SpmBufferFill
+SpmCommand

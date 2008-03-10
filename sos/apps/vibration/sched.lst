@@ -1,0 +1,3461 @@
+   1               		.file	"sched.c"
+   2               		.arch atmega128
+   3               	__SREG__ = 0x3f
+   4               	__SP_H__ = 0x3e
+   5               	__SP_L__ = 0x3d
+   6               	__tmp_reg__ = 0
+   7               	__zero_reg__ = 1
+   8               		.global __do_copy_data
+   9               		.global __do_clear_bss
+  12               		.text
+  13               	.Ltext0:
+ 270               	.global	sched_stalled
+ 271               	.global	sched_stalled
+ 272               		.section .bss
+ 275               	sched_stalled:
+ 276 0000 00        		.skip 1,0
+ 277               		.lcomm int_ready,1
+ 278               		.section	.progmem.data,"a",@progbits
+ 281               	mod_header:
+ 282 0000 0000      		.word	0
+ 283 0002 02        		.byte	2
+ 284 0003 00        		.skip 1,0
+ 285 0004 00        		.byte	0
+ 286 0005 00        		.byte	0
+ 287 0006 0000 0000 		.skip 8,0
+ 287      0000 0000 
+ 288 000e 0000      		.word	pm(sched_handler)
+ 289               		.text
+ 294               	sched_handler:
+   1:/Users/Administrator/sos-2x/kernel/sched.c **** /* -*- Mode: C; tab-width:2 -*- */
+   2:/Users/Administrator/sos-2x/kernel/sched.c **** /* ex: set ts=2 shiftwidth=2 softtabstop=2 cindent: */
+   3:/Users/Administrator/sos-2x/kernel/sched.c **** /*
+   4:/Users/Administrator/sos-2x/kernel/sched.c ****  * Copyright (c) 2003 The Regents of the University of California.
+   5:/Users/Administrator/sos-2x/kernel/sched.c ****  * All rights reserved.
+   6:/Users/Administrator/sos-2x/kernel/sched.c ****  *
+   7:/Users/Administrator/sos-2x/kernel/sched.c ****  * Redistribution and use in source and binary forms, with or without
+   8:/Users/Administrator/sos-2x/kernel/sched.c ****  * modification, are permitted provided that the following conditions
+   9:/Users/Administrator/sos-2x/kernel/sched.c ****  * are met:
+  10:/Users/Administrator/sos-2x/kernel/sched.c ****  * 1. Redistributions of source code must retain the above copyright
+  11:/Users/Administrator/sos-2x/kernel/sched.c ****  *    notice, this list of conditions and the following disclaimer.
+  12:/Users/Administrator/sos-2x/kernel/sched.c ****  * 2. Redistributions in binary form must reproduce the above
+  13:/Users/Administrator/sos-2x/kernel/sched.c ****  *    copyright notice, this list of conditions and the following
+  14:/Users/Administrator/sos-2x/kernel/sched.c ****  *    disclaimer in the documentation and/or other materials provided
+  15:/Users/Administrator/sos-2x/kernel/sched.c ****  *    with the distribution.
+  16:/Users/Administrator/sos-2x/kernel/sched.c ****  * 3. All advertising materials mentioning features or use of this
+  17:/Users/Administrator/sos-2x/kernel/sched.c ****  *    software must display the following acknowledgement:
+  18:/Users/Administrator/sos-2x/kernel/sched.c ****  *       This product includes software developed by Networked &
+  19:/Users/Administrator/sos-2x/kernel/sched.c ****  *       Embedded Systems Lab at UCLA
+  20:/Users/Administrator/sos-2x/kernel/sched.c ****  * 4. Neither the name of the University nor that of the Laboratory
+  21:/Users/Administrator/sos-2x/kernel/sched.c ****  *    may be used to endorse or promote products derived from this
+  22:/Users/Administrator/sos-2x/kernel/sched.c ****  *    software without specific prior written permission.
+  23:/Users/Administrator/sos-2x/kernel/sched.c ****  *
+  24:/Users/Administrator/sos-2x/kernel/sched.c ****  * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS''
+  25:/Users/Administrator/sos-2x/kernel/sched.c ****  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+  26:/Users/Administrator/sos-2x/kernel/sched.c ****  * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+  27:/Users/Administrator/sos-2x/kernel/sched.c ****  * PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE REGENTS
+  28:/Users/Administrator/sos-2x/kernel/sched.c ****  * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+  29:/Users/Administrator/sos-2x/kernel/sched.c ****  * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+  30:/Users/Administrator/sos-2x/kernel/sched.c ****  * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+  31:/Users/Administrator/sos-2x/kernel/sched.c ****  * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+  32:/Users/Administrator/sos-2x/kernel/sched.c ****  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+  33:/Users/Administrator/sos-2x/kernel/sched.c ****  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+  34:/Users/Administrator/sos-2x/kernel/sched.c ****  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+  35:/Users/Administrator/sos-2x/kernel/sched.c ****  * SUCH DAMAGE.
+  36:/Users/Administrator/sos-2x/kernel/sched.c ****  *
+  37:/Users/Administrator/sos-2x/kernel/sched.c ****  */
+  38:/Users/Administrator/sos-2x/kernel/sched.c **** /**
+  39:/Users/Administrator/sos-2x/kernel/sched.c ****  * @brief    System scheduler
+  40:/Users/Administrator/sos-2x/kernel/sched.c ****  * @author   Simon Han (simonhan@ee.ucla.edu)
+  41:/Users/Administrator/sos-2x/kernel/sched.c ****  * @brief    Fault tolerant features
+  42:/Users/Administrator/sos-2x/kernel/sched.c ****  * @author   Ram Kumar (ram@ee.ucla.edu)
+  43:/Users/Administrator/sos-2x/kernel/sched.c ****  * @brief    Preemption Features
+  44:/Users/Administrator/sos-2x/kernel/sched.c ****  * @author   Akhilesh Singhania (akhi@ee.ucla.edu)
+  45:/Users/Administrator/sos-2x/kernel/sched.c ****  *
+  46:/Users/Administrator/sos-2x/kernel/sched.c ****  */
+  47:/Users/Administrator/sos-2x/kernel/sched.c **** #include <sos_types.h>
+  48:/Users/Administrator/sos-2x/kernel/sched.c **** #include <sos_sched.h>
+  49:/Users/Administrator/sos-2x/kernel/sched.c **** #include <message_queue.h>
+  50:/Users/Administrator/sos-2x/kernel/sched.c **** #include <monitor.h>
+  51:/Users/Administrator/sos-2x/kernel/sched.c **** #include <hardware_types.h>
+  52:/Users/Administrator/sos-2x/kernel/sched.c **** #include <sensor.h>
+  53:/Users/Administrator/sos-2x/kernel/sched.c **** #include <sos_info.h>
+  54:/Users/Administrator/sos-2x/kernel/sched.c **** #include <slab.h>
+  55:/Users/Administrator/sos-2x/kernel/sched.c **** #include <message.h>
+  56:/Users/Administrator/sos-2x/kernel/sched.c **** #include <sos_timer.h>
+  57:/Users/Administrator/sos-2x/kernel/sched.c **** #include <measurement.h>
+  58:/Users/Administrator/sos-2x/kernel/sched.c **** #include <timestamp.h>
+  59:/Users/Administrator/sos-2x/kernel/sched.c **** #include <fntable.h>
+  60:/Users/Administrator/sos-2x/kernel/sched.c **** #include <sos_module_fetcher.h>
+  61:/Users/Administrator/sos-2x/kernel/sched.c **** #include <sos_logging.h>
+  62:/Users/Administrator/sos-2x/kernel/sched.c **** #ifdef SOS_USE_EXCEPTION_HANDLING
+  63:/Users/Administrator/sos-2x/kernel/sched.c **** #include <setjmp.h>
+  64:/Users/Administrator/sos-2x/kernel/sched.c **** #endif
+  65:/Users/Administrator/sos-2x/kernel/sched.c **** #ifdef SOS_SFI
+  66:/Users/Administrator/sos-2x/kernel/sched.c **** #include <cross_domain_cf.h>
+  67:/Users/Administrator/sos-2x/kernel/sched.c **** #include <sfi_jumptable.h>
+  68:/Users/Administrator/sos-2x/kernel/sched.c **** #endif
+  69:/Users/Administrator/sos-2x/kernel/sched.c **** #ifdef SOS_USE_PREEMPTION
+  70:/Users/Administrator/sos-2x/kernel/sched.c **** #include <priority.h>
+  71:/Users/Administrator/sos-2x/kernel/sched.c **** #endif
+  72:/Users/Administrator/sos-2x/kernel/sched.c **** 
+  73:/Users/Administrator/sos-2x/kernel/sched.c **** #define LED_DEBUG
+  74:/Users/Administrator/sos-2x/kernel/sched.c **** #include <led_dbg.h>
+  75:/Users/Administrator/sos-2x/kernel/sched.c **** 
+  76:/Users/Administrator/sos-2x/kernel/sched.c **** #ifndef SOS_DEBUG_SCHED
+  77:/Users/Administrator/sos-2x/kernel/sched.c **** #undef  DEBUG
+  78:/Users/Administrator/sos-2x/kernel/sched.c **** #define DEBUG(...)
+  79:/Users/Administrator/sos-2x/kernel/sched.c **** //#define DEBUG(args...) DEBUG_PID(KER_SCHED_PID, ##args)
+  80:/Users/Administrator/sos-2x/kernel/sched.c **** #endif
+  81:/Users/Administrator/sos-2x/kernel/sched.c **** 
+  82:/Users/Administrator/sos-2x/kernel/sched.c **** 
+  83:/Users/Administrator/sos-2x/kernel/sched.c **** //----------------------------------------------------------------------------
+  84:/Users/Administrator/sos-2x/kernel/sched.c **** //  TYPEDEFS, ENUMS
+  85:/Users/Administrator/sos-2x/kernel/sched.c **** //----------------------------------------------------------------------------
+  86:/Users/Administrator/sos-2x/kernel/sched.c **** enum
+  87:/Users/Administrator/sos-2x/kernel/sched.c ****   {
+  88:/Users/Administrator/sos-2x/kernel/sched.c **** 	MSG_SCHED_CRASH_REPORT = (MOD_MSG_START + 0),
+  89:/Users/Administrator/sos-2x/kernel/sched.c **** 	SOS_PID_STACK_SIZE     = 16,
+  90:/Users/Administrator/sos-2x/kernel/sched.c ****   };
+  91:/Users/Administrator/sos-2x/kernel/sched.c **** 
+  92:/Users/Administrator/sos-2x/kernel/sched.c **** //----------------------------------------------------------------------------
+  93:/Users/Administrator/sos-2x/kernel/sched.c **** //  STATIC FUNCTION DECLARATIONS
+  94:/Users/Administrator/sos-2x/kernel/sched.c **** //----------------------------------------------------------------------------
+  95:/Users/Administrator/sos-2x/kernel/sched.c **** 
+  96:/Users/Administrator/sos-2x/kernel/sched.c **** static inline bool sched_message_filtered(sos_module_t *h, Message *m);
+  97:/Users/Administrator/sos-2x/kernel/sched.c **** static int8_t sched_handler(void *state, Message *msg);
+  98:/Users/Administrator/sos-2x/kernel/sched.c **** static int8_t sched_register_module(sos_module_t *h, mod_header_ptr p,
+  99:/Users/Administrator/sos-2x/kernel/sched.c **** 																		void *init, uint8_t init_size);
+ 100:/Users/Administrator/sos-2x/kernel/sched.c **** static int8_t do_register_module(mod_header_ptr h, sos_module_t *handle, 
+ 101:/Users/Administrator/sos-2x/kernel/sched.c **** 																 void *init, uint8_t init_size, uint8_t flag);
+ 102:/Users/Administrator/sos-2x/kernel/sched.c **** static sos_pid_t sched_get_pid_from_pool();
+ 103:/Users/Administrator/sos-2x/kernel/sched.c **** #ifdef SOS_USE_PREEMPTION
+ 104:/Users/Administrator/sos-2x/kernel/sched.c **** uint8_t preemption_point (sos_pid_t pid);
+ 105:/Users/Administrator/sos-2x/kernel/sched.c **** #endif
+ 106:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 107:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 108:/Users/Administrator/sos-2x/kernel/sched.c **** //----------------------------------------------------------------------------
+ 109:/Users/Administrator/sos-2x/kernel/sched.c **** //  GLOBAL DATA DECLARATIONS
+ 110:/Users/Administrator/sos-2x/kernel/sched.c **** //----------------------------------------------------------------------------
+ 111:/Users/Administrator/sos-2x/kernel/sched.c **** static mod_header_t mod_header SOS_MODULE_HEADER =
+ 112:/Users/Administrator/sos-2x/kernel/sched.c ****   {
+ 113:/Users/Administrator/sos-2x/kernel/sched.c **** 	.mod_id         = KER_SCHED_PID,
+ 114:/Users/Administrator/sos-2x/kernel/sched.c **** 	.state_size     = 0,
+ 115:/Users/Administrator/sos-2x/kernel/sched.c **** 	.num_sub_func   = 0,
+ 116:/Users/Administrator/sos-2x/kernel/sched.c **** 	.num_prov_func  = 0,
+ 117:/Users/Administrator/sos-2x/kernel/sched.c **** 	.module_handler = sched_handler, 	
+ 118:/Users/Administrator/sos-2x/kernel/sched.c ****   };
+ 119:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 120:/Users/Administrator/sos-2x/kernel/sched.c **** #ifdef SOS_USE_PREEMPTION
+ 121:/Users/Administrator/sos-2x/kernel/sched.c **** #define SOS_PRI_STACK_SIZE SOS_PID_STACK_SIZE
+ 122:/Users/Administrator/sos-2x/kernel/sched.c **** pri_t curr_pri;                            //!< current executing task's priority
+ 123:/Users/Administrator/sos-2x/kernel/sched.c **** static pri_t pri_stack[SOS_PRI_STACK_SIZE]; //! priority stack
+ 124:/Users/Administrator/sos-2x/kernel/sched.c **** pri_t* pri_sp;
+ 125:/Users/Administrator/sos-2x/kernel/sched.c **** #else
+ 126:/Users/Administrator/sos-2x/kernel/sched.c **** //! module data structure
+ 127:/Users/Administrator/sos-2x/kernel/sched.c **** static sos_module_t sched_module;
+ 128:/Users/Administrator/sos-2x/kernel/sched.c **** //! for handling soft interrupts
+ 129:/Users/Administrator/sos-2x/kernel/sched.c **** static uint8_t int_ready = 0;
+ 130:/Users/Administrator/sos-2x/kernel/sched.c **** static sched_int_t  int_array[SCHED_NUM_INTS];
+ 131:/Users/Administrator/sos-2x/kernel/sched.c **** uint8_t sched_stalled = false;
+ 132:/Users/Administrator/sos-2x/kernel/sched.c **** #endif
+ 133:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 134:/Users/Administrator/sos-2x/kernel/sched.c **** //! message queue
+ 135:/Users/Administrator/sos-2x/kernel/sched.c **** mq_t schedpq NOINIT_VAR;
+ 136:/Users/Administrator/sos-2x/kernel/sched.c **** //! slab 
+ 137:/Users/Administrator/sos-2x/kernel/sched.c **** static slab_t sched_slab;
+ 138:/Users/Administrator/sos-2x/kernel/sched.c **** /*
+ 139:/Users/Administrator/sos-2x/kernel/sched.c ****  * NOTE: all three variables below are used by the assembly routine 
+ 140:/Users/Administrator/sos-2x/kernel/sched.c ****  * to optimize the performance
+ 141:/Users/Administrator/sos-2x/kernel/sched.c ****  * The C version that uses these variables are in fntable.c
+ 142:/Users/Administrator/sos-2x/kernel/sched.c ****  */
+ 143:/Users/Administrator/sos-2x/kernel/sched.c **** sos_pid_t    curr_pid;                      //!< current executing pid
+ 144:/Users/Administrator/sos-2x/kernel/sched.c **** static sos_pid_t    pid_stack[SOS_PID_STACK_SIZE]; //!< pid stack
+ 145:/Users/Administrator/sos-2x/kernel/sched.c **** sos_pid_t*   pid_sp;                        //!< pid stack pointer
+ 146:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 147:/Users/Administrator/sos-2x/kernel/sched.c **** // this is for dispatch short message directly
+ 148:/Users/Administrator/sos-2x/kernel/sched.c **** static Message short_msg;
+ 149:/Users/Administrator/sos-2x/kernel/sched.c **** /**
+ 150:/Users/Administrator/sos-2x/kernel/sched.c ****  * @brief module bins
+ 151:/Users/Administrator/sos-2x/kernel/sched.c ****  * we hash pid into particular bin, and store the handle of next module
+ 152:/Users/Administrator/sos-2x/kernel/sched.c ****  * the handle is defined as the array index to module_list
+ 153:/Users/Administrator/sos-2x/kernel/sched.c ****  */
+ 154:/Users/Administrator/sos-2x/kernel/sched.c **** static sos_module_t* mod_bin[SCHED_NUMBER_BINS] NOINIT_VAR;
+ 155:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 156:/Users/Administrator/sos-2x/kernel/sched.c **** /**
+ 157:/Users/Administrator/sos-2x/kernel/sched.c ****  * @brief pid pool
+ 158:/Users/Administrator/sos-2x/kernel/sched.c ****  *
+ 159:/Users/Administrator/sos-2x/kernel/sched.c ****  * Use for spwaning private module
+ 160:/Users/Administrator/sos-2x/kernel/sched.c ****  */
+ 161:/Users/Administrator/sos-2x/kernel/sched.c **** #define SCHED_MIN_THREAD_PID   (APP_MOD_MAX_PID + 1)
+ 162:/Users/Administrator/sos-2x/kernel/sched.c **** #define SCHED_NUM_THREAD_PIDS  (SOS_MAX_PID - APP_MOD_MAX_PID)
+ 163:/Users/Administrator/sos-2x/kernel/sched.c **** #define SCHED_PID_SLOTS        ((SCHED_NUM_THREAD_PIDS + 7) / 8)
+ 164:/Users/Administrator/sos-2x/kernel/sched.c **** static uint8_t pid_pool[SCHED_PID_SLOTS];
+ 165:/Users/Administrator/sos-2x/kernel/sched.c **** #ifdef SOS_USE_EXCEPTION_HANDLING
+ 166:/Users/Administrator/sos-2x/kernel/sched.c **** static jmp_buf sched_jbuf;
+ 167:/Users/Administrator/sos-2x/kernel/sched.c **** static volatile sos_pid_t fault_pid;
+ 168:/Users/Administrator/sos-2x/kernel/sched.c **** #endif
+ 169:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 170:/Users/Administrator/sos-2x/kernel/sched.c **** //----------------------------------------------------------------------------
+ 171:/Users/Administrator/sos-2x/kernel/sched.c **** //  FUNCTION IMPLEMENTATIONS
+ 172:/Users/Administrator/sos-2x/kernel/sched.c **** //----------------------------------------------------------------------------
+ 173:/Users/Administrator/sos-2x/kernel/sched.c **** static int8_t sched_handler(void *state, Message *msg)
+ 174:/Users/Administrator/sos-2x/kernel/sched.c **** {
+ 296               	.LM1:
+ 297               	/* prologue: frame size=0 */
+ 298               	/* prologue end (size=0) */
+ 299 0000 FB01      		movw r30,r22
+ 175:/Users/Administrator/sos-2x/kernel/sched.c ****   if(msg->type == MSG_INIT) return SOS_OK;
+ 301               	.LM2:
+ 302 0002 8681      		ldd r24,Z+6
+ 303 0004 8823      		tst r24
+ 304 0006 19F4      		brne .L2
+ 306               	.LM3:
+ 307 0008 80E0      		ldi r24,lo8(0)
+ 308 000a 90E0      		ldi r25,hi8(0)
+ 309 000c 0895      		ret
+ 310               	.L2:
+ 176:/Users/Administrator/sos-2x/kernel/sched.c ****   return -EINVAL;
+ 312               	.LM4:
+ 313 000e 8AEE      		ldi r24,lo8(-22)
+ 314 0010 9FEF      		ldi r25,hi8(-22)
+ 177:/Users/Administrator/sos-2x/kernel/sched.c **** }
+ 316               	.LM5:
+ 317 0012 0895      		ret
+ 318               	/* epilogue: frame size=0 */
+ 319 0014 0895      		ret
+ 320               	/* epilogue end (size=1) */
+ 321               	/* function sched_handler size 11 (10) */
+ 323               	.Lscope0:
+ 328               	.global	sched_add_interrupt
+ 330               	sched_add_interrupt:
+ 178:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 179:/Users/Administrator/sos-2x/kernel/sched.c **** // Initialize the scheduler
+ 180:/Users/Administrator/sos-2x/kernel/sched.c **** void sched_init(uint8_t cond)
+ 181:/Users/Administrator/sos-2x/kernel/sched.c **** {
+ 182:/Users/Administrator/sos-2x/kernel/sched.c ****   register uint8_t i = 0;
+ 183:/Users/Administrator/sos-2x/kernel/sched.c ****   if(cond != SOS_BOOT_NORMAL) {
+ 184:/Users/Administrator/sos-2x/kernel/sched.c **** 		//! iterate through module_list and check for memory bug
+ 185:/Users/Administrator/sos-2x/kernel/sched.c ****   }
+ 186:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 187:/Users/Administrator/sos-2x/kernel/sched.c **** 	// initialize the message queue
+ 188:/Users/Administrator/sos-2x/kernel/sched.c ****   mq_init(&schedpq);
+ 189:/Users/Administrator/sos-2x/kernel/sched.c ****   //! initialize all bins to be empty
+ 190:/Users/Administrator/sos-2x/kernel/sched.c ****   for(i = 0; i < SCHED_NUMBER_BINS; i++) {
+ 191:/Users/Administrator/sos-2x/kernel/sched.c **** 		mod_bin[i] = NULL;
+ 192:/Users/Administrator/sos-2x/kernel/sched.c ****   }
+ 193:/Users/Administrator/sos-2x/kernel/sched.c ****   for(i = 0; i < SCHED_PID_SLOTS; i++) {
+ 194:/Users/Administrator/sos-2x/kernel/sched.c **** 		pid_pool[i] = 0;
+ 195:/Users/Administrator/sos-2x/kernel/sched.c ****   }
+ 196:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 197:/Users/Administrator/sos-2x/kernel/sched.c **** 	// Initialize PID stack
+ 198:/Users/Administrator/sos-2x/kernel/sched.c **** 	pid_sp = pid_stack;
+ 199:/Users/Administrator/sos-2x/kernel/sched.c **** 	// initialize short message
+ 200:/Users/Administrator/sos-2x/kernel/sched.c **** 	short_msg.data = short_msg.payload;
+ 201:/Users/Administrator/sos-2x/kernel/sched.c **** 	short_msg.daddr = node_address;
+ 202:/Users/Administrator/sos-2x/kernel/sched.c **** 	short_msg.saddr = node_address;
+ 203:/Users/Administrator/sos-2x/kernel/sched.c **** 	short_msg.len = 3;
+ 204:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 205:/Users/Administrator/sos-2x/kernel/sched.c **** #ifdef SOS_USE_PREEMPTION
+ 206:/Users/Administrator/sos-2x/kernel/sched.c **** 	// Initialize slab
+ 207:/Users/Administrator/sos-2x/kernel/sched.c **** 	ker_slab_init( KER_SCHED_PID, &sched_slab, sizeof(sos_module_t), 4, SLAB_LONGTERM);
+ 208:/Users/Administrator/sos-2x/kernel/sched.c **** 	// register the module
+ 209:/Users/Administrator/sos-2x/kernel/sched.c **** 	ker_register_module(sos_get_header_address(mod_header));
+ 210:/Users/Administrator/sos-2x/kernel/sched.c **** 	// initialize curr_pri
+ 211:/Users/Administrator/sos-2x/kernel/sched.c **** 	curr_pri = 0;
+ 212:/Users/Administrator/sos-2x/kernel/sched.c **** 	// initialize the priority stack
+ 213:/Users/Administrator/sos-2x/kernel/sched.c **** 	pri_sp = pri_stack;
+ 214:/Users/Administrator/sos-2x/kernel/sched.c **** #else
+ 215:/Users/Administrator/sos-2x/kernel/sched.c ****   sched_register_kernel_module(&sched_module, sos_get_header_address(mod_header), mod_bin);
+ 216:/Users/Administrator/sos-2x/kernel/sched.c **** 	sched_stalled = false;
+ 217:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 218:/Users/Administrator/sos-2x/kernel/sched.c **** 	for(i = 0; i < SCHED_NUM_INTS; i++) {
+ 219:/Users/Administrator/sos-2x/kernel/sched.c **** 		int_array[i] = NULL;
+ 220:/Users/Administrator/sos-2x/kernel/sched.c **** 	}
+ 221:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 222:/Users/Administrator/sos-2x/kernel/sched.c **** 	// Initialize slab
+ 223:/Users/Administrator/sos-2x/kernel/sched.c **** 	ker_slab_init( KER_SCHED_PID, &sched_slab, sizeof(sos_module_t), 4, SLAB_LONGTERM );
+ 224:/Users/Administrator/sos-2x/kernel/sched.c **** #endif	
+ 225:/Users/Administrator/sos-2x/kernel/sched.c **** }
+ 226:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 227:/Users/Administrator/sos-2x/kernel/sched.c **** #ifndef SOS_USE_PREEMPTION
+ 228:/Users/Administrator/sos-2x/kernel/sched.c **** void sched_add_interrupt(uint8_t id, sched_int_t f)
+ 229:/Users/Administrator/sos-2x/kernel/sched.c **** {
+ 332               	.LM6:
+ 333               	/* prologue: frame size=0 */
+ 334               	/* prologue end (size=0) */
+ 230:/Users/Administrator/sos-2x/kernel/sched.c **** 	if( id >= SCHED_NUM_INTS ) return;
+ 336               	.LM7:
+ 337 0016 8430      		cpi r24,lo8(4)
+ 338 0018 58F4      		brsh .L3
+ 231:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 232:/Users/Administrator/sos-2x/kernel/sched.c **** 	int_array[id] = f;
+ 340               	.LM8:
+ 341 001a E82F      		mov r30,r24
+ 342 001c FF27      		clr r31
+ 343 001e EE0F      		add r30,r30
+ 344 0020 FF1F      		adc r31,r31
+ 345 0022 E050      		subi r30,lo8(-(int_array))
+ 346 0024 F040      		sbci r31,hi8(-(int_array))
+ 347 0026 6083      		st Z,r22
+ 348 0028 7183      		std Z+1,r23
+ 233:/Users/Administrator/sos-2x/kernel/sched.c **** 	int_ready = 1;
+ 350               	.LM9:
+ 351 002a 81E0      		ldi r24,lo8(1)
+ 352 002c 8093 0000 		sts int_ready,r24
+ 353               	.L3:
+ 354 0030 0895      		ret
+ 355               	/* epilogue: frame size=0 */
+ 356 0032 0895      		ret
+ 357               	/* epilogue end (size=1) */
+ 358               	/* function sched_add_interrupt size 15 (14) */
+ 360               	.Lscope1:
+ 362               		.lcomm cache.0,2
+ 365               	.global	ker_get_module
+ 367               	ker_get_module:
+ 234:/Users/Administrator/sos-2x/kernel/sched.c **** }
+ 235:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 236:/Users/Administrator/sos-2x/kernel/sched.c **** static void handle_callback( void )
+ 237:/Users/Administrator/sos-2x/kernel/sched.c **** {
+ 238:/Users/Administrator/sos-2x/kernel/sched.c **** 	uint8_t i;
+ 239:/Users/Administrator/sos-2x/kernel/sched.c **** 	int_ready = 0;
+ 240:/Users/Administrator/sos-2x/kernel/sched.c **** 	for(i = 0; i < SCHED_NUM_INTS; i++) {
+ 241:/Users/Administrator/sos-2x/kernel/sched.c **** 		if( int_array[i] != NULL ) {
+ 242:/Users/Administrator/sos-2x/kernel/sched.c **** 			sched_int_t f = int_array[i];
+ 243:/Users/Administrator/sos-2x/kernel/sched.c **** 			int_array[i] = NULL;
+ 244:/Users/Administrator/sos-2x/kernel/sched.c **** 			f();
+ 245:/Users/Administrator/sos-2x/kernel/sched.c **** 		}
+ 246:/Users/Administrator/sos-2x/kernel/sched.c **** 	}
+ 247:/Users/Administrator/sos-2x/kernel/sched.c **** }
+ 248:/Users/Administrator/sos-2x/kernel/sched.c **** #endif
+ 249:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 250:/Users/Administrator/sos-2x/kernel/sched.c **** /**
+ 251:/Users/Administrator/sos-2x/kernel/sched.c ****  * @brief get handle from pid
+ 252:/Users/Administrator/sos-2x/kernel/sched.c ****  * @return handle if successful, -ESRCH otherwise
+ 253:/Users/Administrator/sos-2x/kernel/sched.c ****  */
+ 254:/Users/Administrator/sos-2x/kernel/sched.c **** #define hash_pid(id)           ((id) % SCHED_NUMBER_BINS)
+ 255:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 256:/Users/Administrator/sos-2x/kernel/sched.c **** // Get pointer to module control block
+ 257:/Users/Administrator/sos-2x/kernel/sched.c **** sos_module_t* ker_get_module(sos_pid_t pid)
+ 258:/Users/Administrator/sos-2x/kernel/sched.c **** {
+ 369               	.LM10:
+ 370               	/* prologue: frame size=0 */
+ 371               	/* prologue end (size=0) */
+ 372 0034 982F      		mov r25,r24
+ 259:/Users/Administrator/sos-2x/kernel/sched.c **** 	static sos_module_t *cache = NULL;
+ 260:/Users/Administrator/sos-2x/kernel/sched.c ****   uint8_t bins;
+ 261:/Users/Administrator/sos-2x/kernel/sched.c ****   sos_module_t *handle;
+ 262:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 263:/Users/Administrator/sos-2x/kernel/sched.c **** 	// Check the cache for module
+ 264:/Users/Administrator/sos-2x/kernel/sched.c **** 	if((cache != NULL) && (cache->pid == pid)) {
+ 374               	.LM11:
+ 375 0036 E091 0000 		lds r30,cache.0
+ 376 003a F091 0000 		lds r31,(cache.0)+1
+ 377 003e 3097      		sbiw r30,0
+ 378 0040 51F0      		breq .L6
+ 380               	.LM12:
+ 381 0042 8481      		ldd r24,Z+4
+ 382 0044 8917      		cp r24,r25
+ 383 0046 39F4      		brne .L6
+ 384 0048 04C0      		rjmp .L16
+ 385               	.L14:
+ 265:/Users/Administrator/sos-2x/kernel/sched.c **** 		return cache;
+ 266:/Users/Administrator/sos-2x/kernel/sched.c **** 	}
+ 267:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 268:/Users/Administrator/sos-2x/kernel/sched.c ****   //! first hash pid into bins
+ 269:/Users/Administrator/sos-2x/kernel/sched.c **** 	bins = hash_pid(pid);
+ 270:/Users/Administrator/sos-2x/kernel/sched.c ****   handle = mod_bin[bins];
+ 271:/Users/Administrator/sos-2x/kernel/sched.c ****   while(handle != NULL) {
+ 272:/Users/Administrator/sos-2x/kernel/sched.c **** 		if(handle->pid == pid) {
+ 273:/Users/Administrator/sos-2x/kernel/sched.c **** 			cache = handle;
+ 387               	.LM13:
+ 388 004a F093 0000 		sts (cache.0)+1,r31
+ 389 004e E093 0000 		sts cache.0,r30
+ 390               	.L16:
+ 274:/Users/Administrator/sos-2x/kernel/sched.c **** 			return handle;
+ 392               	.LM14:
+ 393 0052 CF01      		movw r24,r30
+ 394 0054 0895      		ret
+ 395               	.L6:
+ 397               	.LM15:
+ 398 0056 892F      		mov r24,r25
+ 399 0058 8370      		andi r24,lo8(3)
+ 401               	.LM16:
+ 402 005a E82F      		mov r30,r24
+ 403 005c FF27      		clr r31
+ 404 005e EE0F      		add r30,r30
+ 405 0060 FF1F      		adc r31,r31
+ 406 0062 E050      		subi r30,lo8(-(mod_bin))
+ 407 0064 F040      		sbci r31,hi8(-(mod_bin))
+ 408               	.L15:
+ 409 0066 0190      		ld __tmp_reg__,Z+
+ 410 0068 F081      		ld r31,Z
+ 411 006a E02D      		mov r30,__tmp_reg__
+ 275:/Users/Administrator/sos-2x/kernel/sched.c **** 		} else {
+ 276:/Users/Administrator/sos-2x/kernel/sched.c **** 			handle = handle->next;
+ 413               	.LM17:
+ 414 006c 3097      		sbiw r30,0
+ 415 006e 21F0      		breq .L13
+ 417               	.LM18:
+ 418 0070 8481      		ldd r24,Z+4
+ 419 0072 8917      		cp r24,r25
+ 420 0074 51F3      		breq .L14
+ 421 0076 F7CF      		rjmp .L15
+ 422               	.L13:
+ 277:/Users/Administrator/sos-2x/kernel/sched.c **** 		}
+ 278:/Users/Administrator/sos-2x/kernel/sched.c ****   }
+ 279:/Users/Administrator/sos-2x/kernel/sched.c ****   return NULL;
+ 424               	.LM19:
+ 425 0078 80E0      		ldi r24,lo8(0)
+ 426 007a 90E0      		ldi r25,hi8(0)
+ 280:/Users/Administrator/sos-2x/kernel/sched.c **** }
+ 428               	.LM20:
+ 429 007c 0895      		ret
+ 430               	/* epilogue: frame size=0 */
+ 431 007e 0895      		ret
+ 432               	/* epilogue end (size=1) */
+ 433               	/* function ker_get_module size 38 (37) */
+ 439               	.Lscope2:
+ 443               	.global	ker_get_module_state
+ 445               	ker_get_module_state:
+ 281:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 282:/Users/Administrator/sos-2x/kernel/sched.c **** void* ker_get_module_state(sos_pid_t pid)
+ 283:/Users/Administrator/sos-2x/kernel/sched.c **** {
+ 447               	.LM21:
+ 448               	/* prologue: frame size=0 */
+ 449               	/* prologue end (size=0) */
+ 284:/Users/Administrator/sos-2x/kernel/sched.c **** 	sos_module_t *m = ker_get_module(pid);
+ 451               	.LM22:
+ 452 0080 0E94 0000 		call ker_get_module
+ 453 0084 FC01      		movw r30,r24
+ 285:/Users/Administrator/sos-2x/kernel/sched.c **** 	if(m == NULL) return NULL;
+ 455               	.LM23:
+ 456 0086 0097      		sbiw r24,0
+ 457 0088 09F4      		brne .L18
+ 459               	.LM24:
+ 460 008a 0895      		ret
+ 461               	.L18:
+ 286:/Users/Administrator/sos-2x/kernel/sched.c **** 	
+ 287:/Users/Administrator/sos-2x/kernel/sched.c **** 	return m->handler_state;
+ 463               	.LM25:
+ 464 008c 8681      		ldd r24,Z+6
+ 465 008e 9781      		ldd r25,Z+7
+ 288:/Users/Administrator/sos-2x/kernel/sched.c **** }
+ 467               	.LM26:
+ 468 0090 0895      		ret
+ 469               	/* epilogue: frame size=0 */
+ 470 0092 0895      		ret
+ 471               	/* epilogue end (size=1) */
+ 472               	/* function ker_get_module_state size 10 (9) */
+ 477               	.Lscope3:
+ 480               	.global	ker_sys_get_module_state
+ 482               	ker_sys_get_module_state:
+ 289:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 290:/Users/Administrator/sos-2x/kernel/sched.c **** void* ker_sys_get_module_state( void )
+ 291:/Users/Administrator/sos-2x/kernel/sched.c **** {
+ 484               	.LM27:
+ 485               	/* prologue: frame size=0 */
+ 486               	/* prologue end (size=0) */
+ 292:/Users/Administrator/sos-2x/kernel/sched.c **** 	sos_module_t *m = ker_get_module(curr_pid);
+ 488               	.LM28:
+ 489 0094 8091 0000 		lds r24,curr_pid
+ 490 0098 0E94 0000 		call ker_get_module
+ 491 009c FC01      		movw r30,r24
+ 293:/Users/Administrator/sos-2x/kernel/sched.c **** 	
+ 294:/Users/Administrator/sos-2x/kernel/sched.c **** 	if(m == NULL) return NULL;
+ 493               	.LM29:
+ 494 009e 0097      		sbiw r24,0
+ 495 00a0 09F4      		brne .L20
+ 497               	.LM30:
+ 498 00a2 0895      		ret
+ 499               	.L20:
+ 295:/Users/Administrator/sos-2x/kernel/sched.c **** 	return m->handler_state;
+ 501               	.LM31:
+ 502 00a4 8681      		ldd r24,Z+6
+ 503 00a6 9781      		ldd r25,Z+7
+ 296:/Users/Administrator/sos-2x/kernel/sched.c **** }
+ 505               	.LM32:
+ 506 00a8 0895      		ret
+ 507               	/* epilogue: frame size=0 */
+ 508 00aa 0895      		ret
+ 509               	/* epilogue end (size=1) */
+ 510               	/* function ker_sys_get_module_state size 12 (11) */
+ 515               	.Lscope4:
+ 519               	.global	ker_set_current_pid
+ 521               	ker_set_current_pid:
+ 297:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 298:/Users/Administrator/sos-2x/kernel/sched.c **** sos_pid_t ker_set_current_pid( sos_pid_t pid )
+ 299:/Users/Administrator/sos-2x/kernel/sched.c **** {
+ 523               	.LM33:
+ 524               	/* prologue: frame size=0 */
+ 525               	/* prologue end (size=0) */
+ 300:/Users/Administrator/sos-2x/kernel/sched.c **** 	sos_pid_t ret = curr_pid;
+ 527               	.LM34:
+ 528 00ac 9091 0000 		lds r25,curr_pid
+ 301:/Users/Administrator/sos-2x/kernel/sched.c **** 	if( pid != RUNTIME_PID ) {
+ 530               	.LM35:
+ 531 00b0 8F3F      		cpi r24,lo8(-1)
+ 532 00b2 11F0      		breq .L22
+ 302:/Users/Administrator/sos-2x/kernel/sched.c **** 		curr_pid = pid;
+ 534               	.LM36:
+ 535 00b4 8093 0000 		sts curr_pid,r24
+ 536               	.L22:
+ 303:/Users/Administrator/sos-2x/kernel/sched.c **** 	}
+ 304:/Users/Administrator/sos-2x/kernel/sched.c **** 	return ret;
+ 305:/Users/Administrator/sos-2x/kernel/sched.c **** }
+ 538               	.LM37:
+ 539 00b8 892F      		mov r24,r25
+ 540 00ba 9927      		clr r25
+ 541               	/* epilogue: frame size=0 */
+ 542 00bc 0895      		ret
+ 543               	/* epilogue end (size=1) */
+ 544               	/* function ker_set_current_pid size 9 (8) */
+ 549               	.Lscope5:
+ 552               	.global	ker_get_current_pid
+ 554               	ker_get_current_pid:
+ 306:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 307:/Users/Administrator/sos-2x/kernel/sched.c **** sos_pid_t ker_get_current_pid( void )
+ 308:/Users/Administrator/sos-2x/kernel/sched.c **** {
+ 556               	.LM38:
+ 557               	/* prologue: frame size=0 */
+ 558               	/* prologue end (size=0) */
+ 309:/Users/Administrator/sos-2x/kernel/sched.c **** 	return curr_pid;
+ 560               	.LM39:
+ 561 00be 8091 0000 		lds r24,curr_pid
+ 310:/Users/Administrator/sos-2x/kernel/sched.c **** }
+ 563               	.LM40:
+ 564 00c2 9927      		clr r25
+ 565               	/* epilogue: frame size=0 */
+ 566 00c4 0895      		ret
+ 567               	/* epilogue end (size=1) */
+ 568               	/* function ker_get_current_pid size 4 (3) */
+ 570               	.Lscope6:
+ 573               	.global	ker_get_caller_pid
+ 575               	ker_get_caller_pid:
+ 311:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 312:/Users/Administrator/sos-2x/kernel/sched.c **** sos_pid_t ker_get_caller_pid( void )
+ 313:/Users/Administrator/sos-2x/kernel/sched.c **** {
+ 577               	.LM41:
+ 578               	/* prologue: frame size=0 */
+ 579               	/* prologue end (size=0) */
+ 314:/Users/Administrator/sos-2x/kernel/sched.c **** 	return *(pid_sp - 1);
+ 581               	.LM42:
+ 582 00c6 E091 0000 		lds r30,pid_sp
+ 583 00ca F091 0000 		lds r31,(pid_sp)+1
+ 584 00ce 3197      		sbiw r30,1
+ 585 00d0 8081      		ld r24,Z
+ 315:/Users/Administrator/sos-2x/kernel/sched.c **** }
+ 587               	.LM43:
+ 588 00d2 9927      		clr r25
+ 589               	/* epilogue: frame size=0 */
+ 590 00d4 0895      		ret
+ 591               	/* epilogue end (size=1) */
+ 592               	/* function ker_get_caller_pid size 8 (7) */
+ 594               	.Lscope7:
+ 597               	.global	sched_get_all_module
+ 599               	sched_get_all_module:
+ 316:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 317:/Users/Administrator/sos-2x/kernel/sched.c **** void ker_killall(sos_code_id_t code_id)
+ 318:/Users/Administrator/sos-2x/kernel/sched.c **** {
+ 319:/Users/Administrator/sos-2x/kernel/sched.c **** 	bool found = false;
+ 320:/Users/Administrator/sos-2x/kernel/sched.c **** 	uint8_t i;
+ 321:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 322:/Users/Administrator/sos-2x/kernel/sched.c **** 	do {
+ 323:/Users/Administrator/sos-2x/kernel/sched.c **** 		found = false;
+ 324:/Users/Administrator/sos-2x/kernel/sched.c **** 		for(i=0;i<SCHED_NUMBER_BINS;i++){
+ 325:/Users/Administrator/sos-2x/kernel/sched.c **** 			sos_module_t *handle;
+ 326:/Users/Administrator/sos-2x/kernel/sched.c **** 			handle = mod_bin[i];
+ 327:/Users/Administrator/sos-2x/kernel/sched.c **** 			while( handle != NULL ) {
+ 328:/Users/Administrator/sos-2x/kernel/sched.c **** 				sos_code_id_t cid;
+ 329:/Users/Administrator/sos-2x/kernel/sched.c **** 				cid = sos_read_header_word(handle->header,
+ 330:/Users/Administrator/sos-2x/kernel/sched.c **** 						offsetof(mod_header_t, code_id));
+ 331:/Users/Administrator/sos-2x/kernel/sched.c **** 				cid = entohs(cid);
+ 332:/Users/Administrator/sos-2x/kernel/sched.c **** 				if( cid == code_id ) {
+ 333:/Users/Administrator/sos-2x/kernel/sched.c **** 					ker_deregister_module(handle->pid);
+ 334:/Users/Administrator/sos-2x/kernel/sched.c **** #ifdef SOS_SFI
+ 335:/Users/Administrator/sos-2x/kernel/sched.c **** 					sfi_modtable_deregister(handle->pid);
+ 336:/Users/Administrator/sos-2x/kernel/sched.c **** #endif
+ 337:/Users/Administrator/sos-2x/kernel/sched.c **** 					found = true;	
+ 338:/Users/Administrator/sos-2x/kernel/sched.c **** 					break;
+ 339:/Users/Administrator/sos-2x/kernel/sched.c **** 				}
+ 340:/Users/Administrator/sos-2x/kernel/sched.c **** 				handle = handle->next;
+ 341:/Users/Administrator/sos-2x/kernel/sched.c **** 			}
+ 342:/Users/Administrator/sos-2x/kernel/sched.c **** 			if( found == true ) {
+ 343:/Users/Administrator/sos-2x/kernel/sched.c **** 				break;
+ 344:/Users/Administrator/sos-2x/kernel/sched.c **** 			}
+ 345:/Users/Administrator/sos-2x/kernel/sched.c **** 		}
+ 346:/Users/Administrator/sos-2x/kernel/sched.c **** 	} while( found == true );
+ 347:/Users/Administrator/sos-2x/kernel/sched.c **** }
+ 348:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 349:/Users/Administrator/sos-2x/kernel/sched.c **** // Get handle to the hash table
+ 350:/Users/Administrator/sos-2x/kernel/sched.c **** sos_module_t **sched_get_all_module()
+ 351:/Users/Administrator/sos-2x/kernel/sched.c **** {
+ 601               	.LM44:
+ 602               	/* prologue: frame size=0 */
+ 603               	/* prologue end (size=0) */
+ 352:/Users/Administrator/sos-2x/kernel/sched.c **** 	return mod_bin;
+ 353:/Users/Administrator/sos-2x/kernel/sched.c **** }
+ 605               	.LM45:
+ 606 00d6 80E0      		ldi r24,lo8(mod_bin)
+ 607 00d8 90E0      		ldi r25,hi8(mod_bin)
+ 608               	/* epilogue: frame size=0 */
+ 609 00da 0895      		ret
+ 610               	/* epilogue end (size=1) */
+ 611               	/* function sched_get_all_module size 3 (2) */
+ 613               	.Lscope8:
+ 621               	sched_register_module:
+ 354:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 355:/Users/Administrator/sos-2x/kernel/sched.c **** static sos_pid_t sched_get_pid_from_pool()
+ 356:/Users/Administrator/sos-2x/kernel/sched.c **** {
+ 357:/Users/Administrator/sos-2x/kernel/sched.c **** 	sos_pid_t p = 0;
+ 358:/Users/Administrator/sos-2x/kernel/sched.c **** 	uint8_t i, j;
+ 359:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 360:/Users/Administrator/sos-2x/kernel/sched.c **** 	for(i = 0; i < SCHED_PID_SLOTS; i++) {
+ 361:/Users/Administrator/sos-2x/kernel/sched.c **** 		uint8_t mask = 1;
+ 362:/Users/Administrator/sos-2x/kernel/sched.c **** 		for(j = 0; j < 8; j++, p++, mask <<= 1) {
+ 363:/Users/Administrator/sos-2x/kernel/sched.c **** 			if(p == SCHED_NUM_THREAD_PIDS) {
+ 364:/Users/Administrator/sos-2x/kernel/sched.c **** 				return NULL_PID;
+ 365:/Users/Administrator/sos-2x/kernel/sched.c **** 			}
+ 366:/Users/Administrator/sos-2x/kernel/sched.c **** 			if((mask & (pid_pool[i])) == 0) {
+ 367:/Users/Administrator/sos-2x/kernel/sched.c **** 				pid_pool[i] |= mask;
+ 368:/Users/Administrator/sos-2x/kernel/sched.c **** 				return p+SCHED_MIN_THREAD_PID;
+ 369:/Users/Administrator/sos-2x/kernel/sched.c **** 			}
+ 370:/Users/Administrator/sos-2x/kernel/sched.c **** 		}
+ 371:/Users/Administrator/sos-2x/kernel/sched.c **** 	}
+ 372:/Users/Administrator/sos-2x/kernel/sched.c **** 	return NULL_PID;
+ 373:/Users/Administrator/sos-2x/kernel/sched.c **** }
+ 374:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 375:/Users/Administrator/sos-2x/kernel/sched.c **** /**
+ 376:/Users/Administrator/sos-2x/kernel/sched.c ****  * @brief register task with handle
+ 377:/Users/Administrator/sos-2x/kernel/sched.c ****  * Here we assume the state has been initialized.
+ 378:/Users/Administrator/sos-2x/kernel/sched.c ****  * We just need to link to the bin
+ 379:/Users/Administrator/sos-2x/kernel/sched.c ****  */
+ 380:/Users/Administrator/sos-2x/kernel/sched.c **** static int8_t sched_register_module(sos_module_t *h, mod_header_ptr p,
+ 381:/Users/Administrator/sos-2x/kernel/sched.c **** 		void *init, uint8_t init_size)
+ 382:/Users/Administrator/sos-2x/kernel/sched.c **** {
+ 623               	.LM46:
+ 624               	/* prologue: frame size=0 */
+ 625 00dc CF92      		push r12
+ 626 00de DF92      		push r13
+ 627 00e0 EF92      		push r14
+ 628 00e2 FF92      		push r15
+ 629 00e4 0F93      		push r16
+ 630 00e6 1F93      		push r17
+ 631 00e8 CF93      		push r28
+ 632 00ea DF93      		push r29
+ 633               	/* prologue end (size=8) */
+ 634 00ec EC01      		movw r28,r24
+ 635 00ee 7B01      		movw r14,r22
+ 636 00f0 8A01      		movw r16,r20
+ 637 00f2 C22E      		mov r12,r18
+ 383:/Users/Administrator/sos-2x/kernel/sched.c ****   HAS_CRITICAL_SECTION;
+ 384:/Users/Administrator/sos-2x/kernel/sched.c ****   uint8_t num_timers;
+ 385:/Users/Administrator/sos-2x/kernel/sched.c ****   uint8_t bins = hash_pid(h->pid);
+ 639               	.LM47:
+ 640 00f4 8C81      		ldd r24,Y+4
+ 641 00f6 33E0      		ldi r19,lo8(3)
+ 642 00f8 D32E      		mov r13,r19
+ 643 00fa D822      		and r13,r24
+ 386:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 387:/Users/Administrator/sos-2x/kernel/sched.c ****   if(ker_get_module(h->pid) != NULL) {
+ 645               	.LM48:
+ 646 00fc 0E94 0000 		call ker_get_module
+ 647 0100 892B      		or r24,r25
+ 648 0102 19F0      		breq .L27
+ 388:/Users/Administrator/sos-2x/kernel/sched.c **** 		return -EEXIST;
+ 650               	.LM49:
+ 651 0104 8FEE      		ldi r24,lo8(-17)
+ 652 0106 9FEF      		ldi r25,hi8(-17)
+ 653 0108 39C0      		rjmp .L26
+ 654               	.L27:
+ 655               	.LBB2:
+ 389:/Users/Administrator/sos-2x/kernel/sched.c **** 	//ker_deregister_module(h->pid);
+ 390:/Users/Administrator/sos-2x/kernel/sched.c **** 	DEBUG("Module %d is already registered\n", h->pid);
+ 391:/Users/Administrator/sos-2x/kernel/sched.c ****   }
+ 392:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 393:/Users/Administrator/sos-2x/kernel/sched.c ****   //! Read the number of timers to be pre-allocated
+ 394:/Users/Administrator/sos-2x/kernel/sched.c ****   num_timers = sos_read_header_byte(p, offsetof(mod_header_t, num_timers));
+ 657               	.LM50:
+ 658 010a C701      		movw r24,r14
+ 659 010c AA27      		clr r26
+ 660 010e BB27      		clr r27
+ 661 0110 880F      		lsl r24
+ 662 0112 991F      		rol r25
+ 663 0114 AA1F      		rol r26
+ 664 0116 BB1F      		rol r27
+ 665 0118 0396      		adiw r24,3
+ 666 011a A11D      		adc r26,__zero_reg__
+ 667 011c B11D      		adc r27,__zero_reg__
+ 668               	/* #APP */
+ 669 011e ABBF      		out 59, r26
+ 670 0120 FC01      		movw r30, r24
+ 671 0122 6791      		elpm r22, Z+
+ 672               		
+ 673               	/* #NOAPP */
+ 674               	.LBE2:
+ 395:/Users/Administrator/sos-2x/kernel/sched.c ****   if (num_timers > 0){
+ 676               	.LM51:
+ 677 0124 6623      		tst r22
+ 678 0126 29F0      		breq .L28
+ 396:/Users/Administrator/sos-2x/kernel/sched.c **** 		//! If there is no memory to pre-allocate the requested timers
+ 397:/Users/Administrator/sos-2x/kernel/sched.c **** 		if (timer_preallocate(h->pid, num_timers) < 0){
+ 680               	.LM52:
+ 681 0128 8C81      		ldd r24,Y+4
+ 682 012a 0E94 0000 		call timer_preallocate
+ 683 012e 8823      		tst r24
+ 684 0130 04F1      		brlt .L31
+ 685               	.L28:
+ 398:/Users/Administrator/sos-2x/kernel/sched.c **** 			return -ENOMEM;
+ 399:/Users/Administrator/sos-2x/kernel/sched.c **** 		}
+ 400:/Users/Administrator/sos-2x/kernel/sched.c ****   }
+ 401:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 402:/Users/Administrator/sos-2x/kernel/sched.c ****   // link the functions
+ 403:/Users/Administrator/sos-2x/kernel/sched.c ****   fntable_link(h);
+ 687               	.LM53:
+ 688 0132 CE01      		movw r24,r28
+ 689 0134 0E94 0000 		call fntable_link
+ 404:/Users/Administrator/sos-2x/kernel/sched.c ****   ENTER_CRITICAL_SECTION();
+ 691               	.LM54:
+ 692               	/* #APP */
+ 693 0138 8FB7      		in r24, __SREG__
+ 694 013a F894      		cli
+ 695               		
+ 405:/Users/Administrator/sos-2x/kernel/sched.c ****   /**
+ 406:/Users/Administrator/sos-2x/kernel/sched.c ****    * here is critical section.
+ 407:/Users/Administrator/sos-2x/kernel/sched.c ****    * We need to prevent others to search this module
+ 408:/Users/Administrator/sos-2x/kernel/sched.c ****    */
+ 409:/Users/Administrator/sos-2x/kernel/sched.c ****   // add to the bin
+ 410:/Users/Administrator/sos-2x/kernel/sched.c ****   h->next = mod_bin[bins];
+ 697               	.LM55:
+ 698               	/* #NOAPP */
+ 699 013c ED2D      		mov r30,r13
+ 700 013e FF27      		clr r31
+ 701 0140 EE0F      		add r30,r30
+ 702 0142 FF1F      		adc r31,r31
+ 703 0144 E050      		subi r30,lo8(-(mod_bin))
+ 704 0146 F040      		sbci r31,hi8(-(mod_bin))
+ 705 0148 2081      		ld r18,Z
+ 706 014a 3181      		ldd r19,Z+1
+ 707 014c 2883      		st Y,r18
+ 708 014e 3983      		std Y+1,r19
+ 411:/Users/Administrator/sos-2x/kernel/sched.c ****   mod_bin[bins] = h;
+ 710               	.LM56:
+ 711 0150 C083      		st Z,r28
+ 712 0152 D183      		std Z+1,r29
+ 412:/Users/Administrator/sos-2x/kernel/sched.c ****   LEAVE_CRITICAL_SECTION();
+ 714               	.LM57:
+ 715               	/* #APP */
+ 716 0154 8FBF      		out __SREG__, r24
+ 717               		
+ 413:/Users/Administrator/sos-2x/kernel/sched.c ****   DEBUG("Register %d, Code ID %d,  Handle = %x\n", h->pid,
+ 414:/Users/Administrator/sos-2x/kernel/sched.c **** 		  sos_read_header_byte(h, offsetof(mod_header_t, mod_id)),
+ 415:/Users/Administrator/sos-2x/kernel/sched.c **** 		  (unsigned int)h);
+ 416:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 417:/Users/Administrator/sos-2x/kernel/sched.c ****   // send an init message to application
+ 418:/Users/Administrator/sos-2x/kernel/sched.c ****   // XXX : need to check the failure
+ 419:/Users/Administrator/sos-2x/kernel/sched.c ****   if(post_long(h->pid, KER_SCHED_PID, MSG_INIT, init_size, init, SOS_MSG_RELEASE | SOS_MSG_SYSTEM_P
+ 719               	.LM58:
+ 720               	/* #NOAPP */
+ 721 0156 84E8      		ldi r24,lo8(132)
+ 722 0158 E82E      		mov r14,r24
+ 723 015a F12C      		mov r15,__zero_reg__
+ 724 015c 2C2D      		mov r18,r12
+ 725 015e 40E0      		ldi r20,lo8(0)
+ 726 0160 62E0      		ldi r22,lo8(2)
+ 727 0162 8C81      		ldd r24,Y+4
+ 728 0164 0E94 0000 		call post_long
+ 729 0168 8823      		tst r24
+ 730 016a 31F0      		breq .L30
+ 420:/Users/Administrator/sos-2x/kernel/sched.c **** 	  timer_remove_all(h->pid);
+ 732               	.LM59:
+ 733 016c 8C81      		ldd r24,Y+4
+ 734 016e 0E94 0000 		call timer_remove_all
+ 735               	.L31:
+ 421:/Users/Administrator/sos-2x/kernel/sched.c **** 	  return -ENOMEM;
+ 737               	.LM60:
+ 738 0172 84EF      		ldi r24,lo8(-12)
+ 739 0174 9FEF      		ldi r25,hi8(-12)
+ 740 0176 02C0      		rjmp .L26
+ 741               	.L30:
+ 422:/Users/Administrator/sos-2x/kernel/sched.c ****   }
+ 423:/Users/Administrator/sos-2x/kernel/sched.c ****   return SOS_OK;
+ 743               	.LM61:
+ 744 0178 80E0      		ldi r24,lo8(0)
+ 745 017a 90E0      		ldi r25,hi8(0)
+ 746               	.L26:
+ 747               	/* epilogue: frame size=0 */
+ 748 017c DF91      		pop r29
+ 749 017e CF91      		pop r28
+ 750 0180 1F91      		pop r17
+ 751 0182 0F91      		pop r16
+ 752 0184 FF90      		pop r15
+ 753 0186 EF90      		pop r14
+ 754 0188 DF90      		pop r13
+ 755 018a CF90      		pop r12
+ 756 018c 0895      		ret
+ 757               	/* epilogue end (size=9) */
+ 758               	/* function sched_register_module size 102 (85) */
+ 767               	.Lscope9:
+ 773               	.global	sched_register_kernel_module
+ 775               	sched_register_kernel_module:
+ 424:/Users/Administrator/sos-2x/kernel/sched.c **** }
+ 425:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 426:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 427:/Users/Administrator/sos-2x/kernel/sched.c **** sos_pid_t ker_spawn_module(mod_header_ptr h, void *init, uint8_t init_size, uint8_t flag)
+ 428:/Users/Administrator/sos-2x/kernel/sched.c **** {
+ 429:/Users/Administrator/sos-2x/kernel/sched.c **** 	sos_module_t *handle;
+ 430:/Users/Administrator/sos-2x/kernel/sched.c **** 	if(h == 0) return NULL_PID;
+ 431:/Users/Administrator/sos-2x/kernel/sched.c **** 	// Allocate a memory block to hold the module list entry
+ 432:/Users/Administrator/sos-2x/kernel/sched.c **** 	handle = (sos_module_t*)ker_slab_alloc( &sched_slab, KER_SCHED_PID);
+ 433:/Users/Administrator/sos-2x/kernel/sched.c **** 	if (handle == NULL) {
+ 434:/Users/Administrator/sos-2x/kernel/sched.c **** 		return NULL_PID;
+ 435:/Users/Administrator/sos-2x/kernel/sched.c **** 	}
+ 436:/Users/Administrator/sos-2x/kernel/sched.c **** 	if( do_register_module(h, handle, init, init_size, flag) != SOS_OK) {
+ 437:/Users/Administrator/sos-2x/kernel/sched.c **** 		ker_slab_free( &sched_slab, handle);
+ 438:/Users/Administrator/sos-2x/kernel/sched.c **** 		return NULL_PID;	
+ 439:/Users/Administrator/sos-2x/kernel/sched.c **** 	}
+ 440:/Users/Administrator/sos-2x/kernel/sched.c **** 	return handle->pid;
+ 441:/Users/Administrator/sos-2x/kernel/sched.c **** }
+ 442:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 443:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 444:/Users/Administrator/sos-2x/kernel/sched.c **** /**
+ 445:/Users/Administrator/sos-2x/kernel/sched.c ****  * @brief register new module
+ 446:/Users/Administrator/sos-2x/kernel/sched.c ****  * NOTE: this function cannot be called in the interrupt handler
+ 447:/Users/Administrator/sos-2x/kernel/sched.c ****  * That is, the function is not thread safe
+ 448:/Users/Administrator/sos-2x/kernel/sched.c ****  * NOTE: h is stored in program memory, which can be different from RAM
+ 449:/Users/Administrator/sos-2x/kernel/sched.c ****  * special access function is needed.
+ 450:/Users/Administrator/sos-2x/kernel/sched.c ****  */
+ 451:/Users/Administrator/sos-2x/kernel/sched.c **** int8_t ker_register_module(mod_header_ptr h)
+ 452:/Users/Administrator/sos-2x/kernel/sched.c **** {
+ 453:/Users/Administrator/sos-2x/kernel/sched.c **** 	sos_module_t *handle;
+ 454:/Users/Administrator/sos-2x/kernel/sched.c **** 	int8_t ret;
+ 455:/Users/Administrator/sos-2x/kernel/sched.c **** #ifdef SOS_USE_PREEMPTION
+ 456:/Users/Administrator/sos-2x/kernel/sched.c **** 	uint8_t num_sub_func;
+ 457:/Users/Administrator/sos-2x/kernel/sched.c **** #endif
+ 458:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 459:/Users/Administrator/sos-2x/kernel/sched.c **** 	if(h == 0) return -EINVAL;
+ 460:/Users/Administrator/sos-2x/kernel/sched.c **** 	handle = (sos_module_t*)ker_slab_alloc( &sched_slab, KER_SCHED_PID);
+ 461:/Users/Administrator/sos-2x/kernel/sched.c **** 	if (handle == NULL) {
+ 462:/Users/Administrator/sos-2x/kernel/sched.c **** 		return -ENOMEM;
+ 463:/Users/Administrator/sos-2x/kernel/sched.c **** 	}
+ 464:/Users/Administrator/sos-2x/kernel/sched.c **** 	ret = do_register_module(h, handle, NULL, 0, 0);
+ 465:/Users/Administrator/sos-2x/kernel/sched.c **** #ifdef SOS_USE_PREEMPTION
+ 466:/Users/Administrator/sos-2x/kernel/sched.c **** 	if(ret != SOS_OK) {
+ 467:/Users/Administrator/sos-2x/kernel/sched.c **** 		ker_slab_free( &sched_slab, handle);
+ 468:/Users/Administrator/sos-2x/kernel/sched.c **** 		return ret;
+ 469:/Users/Administrator/sos-2x/kernel/sched.c **** 	}
+ 470:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 471:/Users/Administrator/sos-2x/kernel/sched.c **** 	/**
+ 472:/Users/Administrator/sos-2x/kernel/sched.c **** 	 *  The following block of code is used to get the dependencies due to
+ 473:/Users/Administrator/sos-2x/kernel/sched.c **** 	 *  function calls
+ 474:/Users/Administrator/sos-2x/kernel/sched.c **** 	 */
+ 475:/Users/Administrator/sos-2x/kernel/sched.c **** 	handle->max_sub = 0;
+ 476:/Users/Administrator/sos-2x/kernel/sched.c **** 	handle->num_sub = 0;
+ 477:/Users/Administrator/sos-2x/kernel/sched.c **** 	// num of subscribed funcs
+ 478:/Users/Administrator/sos-2x/kernel/sched.c **** 	num_sub_func = sos_read_header_byte(h, offsetof(mod_header_t, num_sub_func));
+ 479:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 480:/Users/Administrator/sos-2x/kernel/sched.c **** 	if (num_sub_func > 0) {
+ 481:/Users/Administrator/sos-2x/kernel/sched.c **** 		uint8_t i;
+ 482:/Users/Administrator/sos-2x/kernel/sched.c **** 		uint8_t sub_list_index = 0;
+ 483:/Users/Administrator/sos-2x/kernel/sched.c **** 		for(i = 0; i < num_sub_func; i++) {
+ 484:/Users/Administrator/sos-2x/kernel/sched.c **** 			uint8_t j;
+ 485:/Users/Administrator/sos-2x/kernel/sched.c **** 			uint8_t to_add = 0;
+ 486:/Users/Administrator/sos-2x/kernel/sched.c **** 			uint8_t pub_pid = 
+ 487:/Users/Administrator/sos-2x/kernel/sched.c **** 				sos_read_header_byte(h, offsetof(mod_header_t, funct[i].pid));
+ 488:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 489:/Users/Administrator/sos-2x/kernel/sched.c **** 			// if its RUNTIME_PID just add it
+ 490:/Users/Administrator/sos-2x/kernel/sched.c **** 			// only to max because num_sub is taken care of when the registration
+ 491:/Users/Administrator/sos-2x/kernel/sched.c **** 			// with the actual function occurs
+ 492:/Users/Administrator/sos-2x/kernel/sched.c **** 			if(pub_pid == RUNTIME_PID) {
+ 493:/Users/Administrator/sos-2x/kernel/sched.c **** 				handle->max_sub++;
+ 494:/Users/Administrator/sos-2x/kernel/sched.c **** 				continue;
+ 495:/Users/Administrator/sos-2x/kernel/sched.c **** 			}
+ 496:/Users/Administrator/sos-2x/kernel/sched.c **** 			// Find all unique pids
+ 497:/Users/Administrator/sos-2x/kernel/sched.c **** 			for(j = 0; j < i; j++) {
+ 498:/Users/Administrator/sos-2x/kernel/sched.c **** 				if (pub_pid == 
+ 499:/Users/Administrator/sos-2x/kernel/sched.c **** 						sos_read_header_byte(h, offsetof(mod_header_t, funct[j].pid))) {
+ 500:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 501:/Users/Administrator/sos-2x/kernel/sched.c **** 					to_add = 1;
+ 502:/Users/Administrator/sos-2x/kernel/sched.c **** 					break;
+ 503:/Users/Administrator/sos-2x/kernel/sched.c **** 				}
+ 504:/Users/Administrator/sos-2x/kernel/sched.c **** 			}
+ 505:/Users/Administrator/sos-2x/kernel/sched.c **** 			// Add it to max and num subscribed functions
+ 506:/Users/Administrator/sos-2x/kernel/sched.c **** 			if (to_add == 0) { 
+ 507:/Users/Administrator/sos-2x/kernel/sched.c **** 				handle->max_sub++;
+ 508:/Users/Administrator/sos-2x/kernel/sched.c **** 				handle->num_sub++;
+ 509:/Users/Administrator/sos-2x/kernel/sched.c **** 			}
+ 510:/Users/Administrator/sos-2x/kernel/sched.c **** 		}
+ 511:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 512:/Users/Administrator/sos-2x/kernel/sched.c **** 		// malloc enough space for all pids
+ 513:/Users/Administrator/sos-2x/kernel/sched.c **** 		handle->sub_list = malloc(handle->max_sub * sizeof(sos_pid_t));
+ 514:/Users/Administrator/sos-2x/kernel/sched.c **** 		// now iterate again, adding the unique pids to the list
+ 515:/Users/Administrator/sos-2x/kernel/sched.c **** 		for(i = 0; i < num_sub_func; i++) {
+ 516:/Users/Administrator/sos-2x/kernel/sched.c **** 			uint8_t j;
+ 517:/Users/Administrator/sos-2x/kernel/sched.c **** 			uint8_t to_add = 0;
+ 518:/Users/Administrator/sos-2x/kernel/sched.c **** 			uint8_t pub_pid = 
+ 519:/Users/Administrator/sos-2x/kernel/sched.c **** 				sos_read_header_byte(h, offsetof(mod_header_t, funct[i].pid));
+ 520:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 521:/Users/Administrator/sos-2x/kernel/sched.c **** 			// do not add RUNTIME_PID to the list
+ 522:/Users/Administrator/sos-2x/kernel/sched.c **** 			if(pub_pid == RUNTIME_PID) continue;
+ 523:/Users/Administrator/sos-2x/kernel/sched.c **** 			// add the other unique pids to the list
+ 524:/Users/Administrator/sos-2x/kernel/sched.c **** 			for(j = 0; j < i; j++) {
+ 525:/Users/Administrator/sos-2x/kernel/sched.c **** 				if (pub_pid == 
+ 526:/Users/Administrator/sos-2x/kernel/sched.c **** 						sos_read_header_byte(h, offsetof(mod_header_t, funct[j].pid))) {
+ 527:/Users/Administrator/sos-2x/kernel/sched.c **** 					to_add = 1;
+ 528:/Users/Administrator/sos-2x/kernel/sched.c **** 					break;
+ 529:/Users/Administrator/sos-2x/kernel/sched.c **** 				}
+ 530:/Users/Administrator/sos-2x/kernel/sched.c **** 			}
+ 531:/Users/Administrator/sos-2x/kernel/sched.c **** 			if (to_add == 0) handle->sub_list[sub_list_index++] = pub_pid;
+ 532:/Users/Administrator/sos-2x/kernel/sched.c **** 		}
+ 533:/Users/Administrator/sos-2x/kernel/sched.c **** 	}
+ 534:/Users/Administrator/sos-2x/kernel/sched.c **** #else
+ 535:/Users/Administrator/sos-2x/kernel/sched.c **** 	if(ret != SOS_OK) {
+ 536:/Users/Administrator/sos-2x/kernel/sched.c **** 		ker_slab_free( &sched_slab, handle);
+ 537:/Users/Administrator/sos-2x/kernel/sched.c **** 	}
+ 538:/Users/Administrator/sos-2x/kernel/sched.c **** #endif
+ 539:/Users/Administrator/sos-2x/kernel/sched.c **** 	return ret;
+ 540:/Users/Administrator/sos-2x/kernel/sched.c **** }
+ 541:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 542:/Users/Administrator/sos-2x/kernel/sched.c **** #ifndef SOS_USE_PREEMPTION
+ 543:/Users/Administrator/sos-2x/kernel/sched.c **** int8_t sched_register_kernel_module(sos_module_t *handle, mod_header_ptr h, void *state_ptr)
+ 544:/Users/Administrator/sos-2x/kernel/sched.c **** {
+ 777               	.LM62:
+ 778               	/* prologue: frame size=0 */
+ 779 018e CF93      		push r28
+ 780 0190 DF93      		push r29
+ 781               	/* prologue end (size=2) */
+ 782 0192 EC01      		movw r28,r24
+ 545:/Users/Administrator/sos-2x/kernel/sched.c ****   sos_pid_t pid;
+ 546:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 547:/Users/Administrator/sos-2x/kernel/sched.c ****   if(h == 0) return -EINVAL;
+ 784               	.LM63:
+ 785 0194 6115      		cp r22,__zero_reg__
+ 786 0196 7105      		cpc r23,__zero_reg__
+ 787 0198 79F0      		breq .L35
+ 788               	.LBB3:
+ 548:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 549:/Users/Administrator/sos-2x/kernel/sched.c ****   pid = sos_read_header_byte(h, offsetof(mod_header_t, mod_id));
+ 790               	.LM64:
+ 791 019a CB01      		movw r24,r22
+ 792 019c AA27      		clr r26
+ 793 019e BB27      		clr r27
+ 794 01a0 880F      		lsl r24
+ 795 01a2 991F      		rol r25
+ 796 01a4 AA1F      		rol r26
+ 797 01a6 BB1F      		rol r27
+ 798 01a8 0296      		adiw r24,2
+ 799 01aa A11D      		adc r26,__zero_reg__
+ 800 01ac B11D      		adc r27,__zero_reg__
+ 801               	/* #APP */
+ 802 01ae ABBF      		out 59, r26
+ 803 01b0 FC01      		movw r30, r24
+ 804 01b2 8791      		elpm r24, Z+
+ 805               		
+ 806               	/* #NOAPP */
+ 807               	.LBE3:
+ 550:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 551:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 552:/Users/Administrator/sos-2x/kernel/sched.c ****   /*
+ 553:/Users/Administrator/sos-2x/kernel/sched.c ****    * Disallow the usage of thread ID
+ 554:/Users/Administrator/sos-2x/kernel/sched.c ****    */
+ 555:/Users/Administrator/sos-2x/kernel/sched.c ****   if(pid > APP_MOD_MAX_PID) return -EINVAL;
+ 809               	.LM65:
+ 810 01b4 803E      		cpi r24,lo8(-32)
+ 811 01b6 18F0      		brlo .L34
+ 812               	.L35:
+ 813 01b8 8AEE      		ldi r24,lo8(-22)
+ 814 01ba 9FEF      		ldi r25,hi8(-22)
+ 815 01bc 12C0      		rjmp .L32
+ 816               	.L34:
+ 556:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 557:/Users/Administrator/sos-2x/kernel/sched.c ****   handle->handler_state = state_ptr;
+ 818               	.LM66:
+ 819 01be 4E83      		std Y+6,r20
+ 820 01c0 5F83      		std Y+7,r21
+ 558:/Users/Administrator/sos-2x/kernel/sched.c ****   handle->pid = pid;
+ 822               	.LM67:
+ 823 01c2 8C83      		std Y+4,r24
+ 559:/Users/Administrator/sos-2x/kernel/sched.c ****   handle->header = h;
+ 825               	.LM68:
+ 826 01c4 6A83      		std Y+2,r22
+ 827 01c6 7B83      		std Y+3,r23
+ 560:/Users/Administrator/sos-2x/kernel/sched.c ****   handle->flag = SOS_KER_STATIC_MODULE;
+ 829               	.LM69:
+ 830 01c8 82E0      		ldi r24,lo8(2)
+ 831 01ca 8D83      		std Y+5,r24
+ 561:/Users/Administrator/sos-2x/kernel/sched.c **** 	handle->next = NULL;
+ 833               	.LM70:
+ 834 01cc 1882      		st Y,__zero_reg__
+ 835 01ce 1982      		std Y+1,__zero_reg__
+ 562:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 563:/Users/Administrator/sos-2x/kernel/sched.c ****   return sched_register_module(handle, h, NULL, 0);
+ 837               	.LM71:
+ 838 01d0 20E0      		ldi r18,lo8(0)
+ 839 01d2 40E0      		ldi r20,lo8(0)
+ 840 01d4 50E0      		ldi r21,hi8(0)
+ 841 01d6 CE01      		movw r24,r28
+ 842 01d8 0E94 0000 		call sched_register_module
+ 843 01dc 9927      		clr r25
+ 844 01de 87FD      		sbrc r24,7
+ 845 01e0 9095      		com r25
+ 846               	.L32:
+ 847               	/* epilogue: frame size=0 */
+ 848 01e2 DF91      		pop r29
+ 849 01e4 CF91      		pop r28
+ 850 01e6 0895      		ret
+ 851               	/* epilogue end (size=3) */
+ 852               	/* function sched_register_kernel_module size 50 (45) */
+ 857               	.Lscope10:
+ 861               	.global	sched_init
+ 863               	sched_init:
+ 865               	.LM72:
+ 866               	/* prologue: frame size=0 */
+ 867 01e8 0F93      		push r16
+ 868 01ea 1F93      		push r17
+ 869               	/* prologue end (size=2) */
+ 871               	.LM73:
+ 872 01ec 80E0      		ldi r24,lo8(schedpq)
+ 873 01ee 90E0      		ldi r25,hi8(schedpq)
+ 874 01f0 0E94 0000 		call mq_init
+ 875 01f4 13E0      		ldi r17,lo8(3)
+ 876 01f6 E0E0      		ldi r30,lo8(mod_bin)
+ 877 01f8 F0E0      		ldi r31,hi8(mod_bin)
+ 878               	.L41:
+ 880               	.LM74:
+ 881 01fa 1192      		st Z+,__zero_reg__
+ 882 01fc 1192      		st Z+,__zero_reg__
+ 884               	.LM75:
+ 885 01fe 1150      		subi r17,lo8(-(-1))
+ 886 0200 17FF      		sbrs r17,7
+ 887 0202 FBCF      		rjmp .L41
+ 888 0204 E0E0      		ldi r30,lo8(pid_pool)
+ 889 0206 F0E0      		ldi r31,hi8(pid_pool)
+ 890 0208 13E0      		ldi r17,lo8(3)
+ 891               	.L45:
+ 893               	.LM76:
+ 894 020a 1192      		st Z+,__zero_reg__
+ 896               	.LM77:
+ 897 020c 1150      		subi r17,lo8(-(-1))
+ 898 020e 17FF      		sbrs r17,7
+ 899 0210 FCCF      		rjmp .L45
+ 901               	.LM78:
+ 902 0212 80E0      		ldi r24,lo8(pid_stack)
+ 903 0214 90E0      		ldi r25,hi8(pid_stack)
+ 904 0216 9093 0000 		sts (pid_sp)+1,r25
+ 905 021a 8093 0000 		sts pid_sp,r24
+ 907               	.LM79:
+ 908 021e 80E0      		ldi r24,lo8(short_msg+12)
+ 909 0220 90E0      		ldi r25,hi8(short_msg+12)
+ 910 0222 9093 0000 		sts (short_msg+8)+1,r25
+ 911 0226 8093 0000 		sts short_msg+8,r24
+ 913               	.LM80:
+ 914 022a 8091 0000 		lds r24,node_address
+ 915 022e 9091 0000 		lds r25,(node_address)+1
+ 916 0232 9093 0000 		sts (short_msg+2)+1,r25
+ 917 0236 8093 0000 		sts short_msg+2,r24
+ 919               	.LM81:
+ 920 023a 9093 0000 		sts (short_msg+4)+1,r25
+ 921 023e 8093 0000 		sts short_msg+4,r24
+ 923               	.LM82:
+ 924 0242 13E0      		ldi r17,lo8(3)
+ 925 0244 1093 0000 		sts short_msg+7,r17
+ 927               	.LM83:
+ 928 0248 80E0      		ldi r24,lo8(mod_header)
+ 929 024a 90E0      		ldi r25,hi8(mod_header)
+ 930 024c AA27      		clr r26
+ 931 024e 97FD      		sbrc r25,7
+ 932 0250 A095      		com r26
+ 933 0252 BA2F      		mov r27,r26
+ 934 0254 B695      		lsr r27
+ 935 0256 A795      		ror r26
+ 936 0258 9795      		ror r25
+ 937 025a 8795      		ror r24
+ 938 025c 40E0      		ldi r20,lo8(mod_bin)
+ 939 025e 50E0      		ldi r21,hi8(mod_bin)
+ 940 0260 BC01      		movw r22,r24
+ 941 0262 80E0      		ldi r24,lo8(sched_module)
+ 942 0264 90E0      		ldi r25,hi8(sched_module)
+ 943 0266 0E94 0000 		call sched_register_kernel_module
+ 945               	.LM84:
+ 946 026a 1092 0000 		sts sched_stalled,__zero_reg__
+ 947 026e E0E0      		ldi r30,lo8(int_array)
+ 948 0270 F0E0      		ldi r31,hi8(int_array)
+ 949               	.L49:
+ 951               	.LM85:
+ 952 0272 1192      		st Z+,__zero_reg__
+ 953 0274 1192      		st Z+,__zero_reg__
+ 955               	.LM86:
+ 956 0276 1150      		subi r17,lo8(-(-1))
+ 957 0278 17FF      		sbrs r17,7
+ 958 027a FBCF      		rjmp .L49
+ 959 027c 14E0      		ldi r17,lo8(4)
+ 961               	.LM87:
+ 962 027e 00E8      		ldi r16,lo8(-128)
+ 963 0280 212F      		mov r18,r17
+ 964 0282 48E0      		ldi r20,lo8(8)
+ 965 0284 60E0      		ldi r22,lo8(sched_slab)
+ 966 0286 70E0      		ldi r23,hi8(sched_slab)
+ 967 0288 82E0      		ldi r24,lo8(2)
+ 968 028a 0E94 0000 		call ker_slab_init
+ 969               	/* epilogue: frame size=0 */
+ 970 028e 1F91      		pop r17
+ 971 0290 0F91      		pop r16
+ 972 0292 0895      		ret
+ 973               	/* epilogue end (size=3) */
+ 974               	/* function sched_init size 86 (81) */
+ 979               	.Lscope11:
+ 988               	do_register_module:
+ 564:/Users/Administrator/sos-2x/kernel/sched.c **** }
+ 565:/Users/Administrator/sos-2x/kernel/sched.c **** #endif
+ 566:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 567:/Users/Administrator/sos-2x/kernel/sched.c **** static int8_t do_register_module(mod_header_ptr h, sos_module_t *handle, 
+ 568:/Users/Administrator/sos-2x/kernel/sched.c **** 																 void *init, uint8_t init_size, uint8_t flag)
+ 569:/Users/Administrator/sos-2x/kernel/sched.c **** {
+ 990               	.LM88:
+ 991               	/* prologue: frame size=0 */
+ 992 0294 CF92      		push r12
+ 993 0296 DF92      		push r13
+ 994 0298 EF92      		push r14
+ 995 029a FF92      		push r15
+ 996 029c 0F93      		push r16
+ 997 029e 1F93      		push r17
+ 998 02a0 CF93      		push r28
+ 999 02a2 DF93      		push r29
+ 1000               	/* prologue end (size=8) */
+ 1001 02a4 7C01      		movw r14,r24
+ 1002 02a6 EB01      		movw r28,r22
+ 1003 02a8 6A01      		movw r12,r20
+ 1004 02aa 122F      		mov r17,r18
+ 570:/Users/Administrator/sos-2x/kernel/sched.c ****   sos_pid_t pid;
+ 571:/Users/Administrator/sos-2x/kernel/sched.c ****   uint16_t st_size;
+ 572:/Users/Administrator/sos-2x/kernel/sched.c ****   int8_t ret;
+ 573:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 574:/Users/Administrator/sos-2x/kernel/sched.c ****   // Disallow usage of NULL_PID
+ 575:/Users/Administrator/sos-2x/kernel/sched.c ****   if(flag == SOS_CREATE_THREAD) {
+ 1006               	.LM89:
+ 1007 02ac 0130      		cpi r16,lo8(1)
+ 1008 02ae 11F5      		brne .L57
+ 1009               	.LBB4:
+ 1010               	.LBB5:
+ 1012               	.LM90:
+ 1013 02b0 60E0      		ldi r22,lo8(0)
+ 1015               	.LM91:
+ 1016 02b2 762F      		mov r23,r22
+ 1017               	.L68:
+ 1018               	.LBB6:
+ 1020               	.LM92:
+ 1021 02b4 41E0      		ldi r20,lo8(1)
+ 1023               	.LM93:
+ 1024 02b6 50E0      		ldi r21,lo8(0)
+ 1025 02b8 272F      		mov r18,r23
+ 1026 02ba 3327      		clr r19
+ 1027               	.L67:
+ 1029               	.LM94:
+ 1030 02bc 6F31      		cpi r22,lo8(31)
+ 1031 02be 79F0      		breq .L84
+ 1033               	.LM95:
+ 1034 02c0 F901      		movw r30,r18
+ 1035 02c2 E050      		subi r30,lo8(-(pid_pool))
+ 1036 02c4 F040      		sbci r31,hi8(-(pid_pool))
+ 1037 02c6 9081      		ld r25,Z
+ 1038 02c8 842F      		mov r24,r20
+ 1039 02ca 8923      		and r24,r25
+ 1040 02cc 71F0      		breq .L83
+ 1042               	.LM96:
+ 1043 02ce 5F5F      		subi r21,lo8(-(1))
+ 1044 02d0 6F5F      		subi r22,lo8(-(1))
+ 1045 02d2 440F      		lsl r20
+ 1046 02d4 5830      		cpi r21,lo8(8)
+ 1047 02d6 90F3      		brlo .L67
+ 1048               	.LBE6:
+ 1050               	.LM97:
+ 1051 02d8 7F5F      		subi r23,lo8(-(1))
+ 1052 02da 7430      		cpi r23,lo8(4)
+ 1053 02dc 58F3      		brlo .L68
+ 1054               	.L84:
+ 1056               	.LM98:
+ 1057 02de 6FEF      		ldi r22,lo8(255)
+ 1058 02e0 70E0      		ldi r23,hi8(255)
+ 1059               	.L65:
+ 1060               	.LBE5:
+ 1061               	.LBE4:
+ 1063               	.LM99:
+ 1064 02e2 062F      		mov r16,r22
+ 576:/Users/Administrator/sos-2x/kernel/sched.c **** 	  pid = sched_get_pid_from_pool();
+ 577:/Users/Administrator/sos-2x/kernel/sched.c **** 	  if(pid == NULL_PID) return -ENOMEM;
+ 1066               	.LM100:
+ 1067 02e4 6F3F      		cpi r22,lo8(-1)
+ 1068 02e6 C1F4      		brne .L70
+ 1069 02e8 2CC0      		rjmp .L85
+ 1070               	.L83:
+ 1071               	.LBB7:
+ 1072               	.LBB8:
+ 1073               	.LBB9:
+ 1075               	.LM101:
+ 1076 02ea 942B      		or r25,r20
+ 1077 02ec 9083      		st Z,r25
+ 1078 02ee 6052      		subi r22,lo8(-(-32))
+ 1079 02f0 7727      		clr r23
+ 1080 02f2 F7CF      		rjmp .L65
+ 1081               	.L57:
+ 1082               	.LBE9:
+ 1083               	.LBE8:
+ 1084               	.LBE7:
+ 1085               	.LBB10:
+ 578:/Users/Administrator/sos-2x/kernel/sched.c ****   } else {
+ 579:/Users/Administrator/sos-2x/kernel/sched.c **** 	  pid = sos_read_header_byte(h, offsetof(mod_header_t, mod_id));
+ 1087               	.LM102:
+ 1088 02f4 C701      		movw r24,r14
+ 1089 02f6 AA27      		clr r26
+ 1090 02f8 BB27      		clr r27
+ 1091 02fa 880F      		lsl r24
+ 1092 02fc 991F      		rol r25
+ 1093 02fe AA1F      		rol r26
+ 1094 0300 BB1F      		rol r27
+ 1095 0302 0296      		adiw r24,2
+ 1096 0304 A11D      		adc r26,__zero_reg__
+ 1097 0306 B11D      		adc r27,__zero_reg__
+ 1098               	.LBE10:
+ 1099               	/* #APP */
+ 1100 0308 ABBF      		out 59, r26
+ 1101 030a FC01      		movw r30, r24
+ 1102 030c 0791      		elpm r16, Z+
+ 1103               		
+ 580:/Users/Administrator/sos-2x/kernel/sched.c **** 	  // Disallow the usage of thread ID
+ 581:/Users/Administrator/sos-2x/kernel/sched.c **** 	  if(pid > APP_MOD_MAX_PID) return -EINVAL;
+ 1105               	.LM103:
+ 1106               	/* #NOAPP */
+ 1107 030e 003E      		cpi r16,lo8(-32)
+ 1108 0310 18F0      		brlo .L70
+ 1109 0312 8AEE      		ldi r24,lo8(-22)
+ 1110 0314 9FEF      		ldi r25,hi8(-22)
+ 1111 0316 35C0      		rjmp .L56
+ 1112               	.L70:
+ 1113               	.LBB11:
+ 582:/Users/Administrator/sos-2x/kernel/sched.c ****   }
+ 583:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 584:/Users/Administrator/sos-2x/kernel/sched.c ****   // Read the state size and allocate a separate memory block for it
+ 585:/Users/Administrator/sos-2x/kernel/sched.c ****   st_size = sos_read_header_word(h, offsetof(mod_header_t, state_size));
+ 1115               	.LM104:
+ 1116 0318 C701      		movw r24,r14
+ 1117 031a AA27      		clr r26
+ 1118 031c BB27      		clr r27
+ 1119 031e 880F      		lsl r24
+ 1120 0320 991F      		rol r25
+ 1121 0322 AA1F      		rol r26
+ 1122 0324 BB1F      		rol r27
+ 1123               	/* #APP */
+ 1124 0326 ABBF      		out 59, r26
+ 1125 0328 FC01      		movw r30, r24
+ 1126 032a 8791      		elpm r24, Z+
+ 1127 032c 9691      		elpm r25, Z
+ 1128               		
+ 1129               	/* #NOAPP */
+ 1130               	.LBE11:
+ 586:/Users/Administrator/sos-2x/kernel/sched.c **** 	//DEBUG("registering module pid %d with size %d\n", pid, st_size);
+ 587:/Users/Administrator/sos-2x/kernel/sched.c ****   if (st_size){
+ 1132               	.LM105:
+ 1133 032e 0097      		sbiw r24,0
+ 1134 0330 59F0      		breq .L72
+ 1135               	.LBB12:
+ 1136               	.LBB13:
+ 1138               	.Ltext1:
+   1:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /* -*- Mode: C; tab-width:4 -*- */
+   2:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /* ex: set ts=4: */
+   3:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /*
+   4:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * Copyright (c) 2003 The Regents of the University of California.
+   5:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * All rights reserved.
+   6:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *
+   7:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * Redistribution and use in source and binary forms, with or without
+   8:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * modification, are permitted provided that the following conditions
+   9:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * are met:
+  10:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * 1. Redistributions of source code must retain the above copyright
+  11:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *    notice, this list of conditions and the following disclaimer.
+  12:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * 2. Redistributions in binary form must reproduce the above
+  13:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *    copyright notice, this list of conditions and the following
+  14:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *    disclaimer in the documentation and/or other materials provided
+  15:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *    with the distribution.
+  16:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * 3. All advertising materials mentioning features or use of this
+  17:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *    software must display the following acknowledgement:
+  18:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *       This product includes software developed by Networked &
+  19:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *       Embedded Systems Lab at UCLA
+  20:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * 4. Neither the name of the University nor that of the Laboratory
+  21:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *    may be used to endorse or promote products derived from this
+  22:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *    software without specific prior written permission.
+  23:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *
+  24:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS''
+  25:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+  26:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+  27:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE REGENTS
+  28:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+  29:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+  30:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+  31:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+  32:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+  33:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+  34:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+  35:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * SUCH DAMAGE.
+  36:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *
+  37:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief    Allocte and free dynamic memory 
+  38:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @author   Roy Shea (roy@cs.ucla.edu) 
+  39:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+  40:/Users/Administrator/sos-2x/kernel/include/malloc.h **** #ifndef _MALLOC_H_
+  41:/Users/Administrator/sos-2x/kernel/include/malloc.h **** #define _MALLOC_H_
+  42:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  43:/Users/Administrator/sos-2x/kernel/include/malloc.h **** #include <sos_types.h>
+  44:/Users/Administrator/sos-2x/kernel/include/malloc.h **** #include <pid.h>
+  45:/Users/Administrator/sos-2x/kernel/include/malloc.h **** #include <malloc_conf.h>
+  46:/Users/Administrator/sos-2x/kernel/include/malloc.h **** #include <sos_module_types.h>
+  47:/Users/Administrator/sos-2x/kernel/include/malloc.h **** #ifdef FAULT_TOLERANT_SOS
+  48:/Users/Administrator/sos-2x/kernel/include/malloc.h **** #include <malloc_domains.h>
+  49:/Users/Administrator/sos-2x/kernel/include/malloc.h **** #endif
+  50:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  51:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+  52:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Init function for memory manager
+  53:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+  54:/Users/Administrator/sos-2x/kernel/include/malloc.h **** extern void mem_init(void);
+  55:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  56:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+  57:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Starting memory module interface
+  58:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+  59:/Users/Administrator/sos-2x/kernel/include/malloc.h **** extern void mem_start(void);
+  60:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  61:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+  62:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Allocate a chunk of blocks from the heap
+  63:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+  64:/Users/Administrator/sos-2x/kernel/include/malloc.h **** extern void *sos_blk_mem_alloc(uint16_t size, sos_pid_t id, bool bCallFromModule);
+  65:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  66:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+  67:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Free a block back into the heap
+  68:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+  69:/Users/Administrator/sos-2x/kernel/include/malloc.h **** extern void sos_blk_mem_free(void* ptr, bool bCallFromModule);
+  70:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  71:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+  72:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Re-allocate a block of memory from the heap
+  73:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+  74:/Users/Administrator/sos-2x/kernel/include/malloc.h **** extern void *sos_blk_mem_realloc(void* pntr, uint16_t newSize, bool bCallFromModule);
+  75:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  76:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+  77:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Change memory ownership of a segment of memory
+  78:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+  79:/Users/Administrator/sos-2x/kernel/include/malloc.h **** extern int8_t sos_blk_mem_change_own(void* ptr, sos_pid_t id, bool bCallFromModule);
+  80:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  81:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+  82:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Allocate a block of memory for long term usage
+  83:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+  84:/Users/Administrator/sos-2x/kernel/include/malloc.h **** extern void *sos_blk_mem_longterm_alloc(uint16_t size, sos_pid_t id, bool bCallFromModule);
+  85:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  86:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  87:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+  88:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Allocate dynamic memory
+  89:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @param size Number of bytes to allocate
+  90:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @param id Node responsible for the memory
+  91:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @return Returns a pointer to the allocated memory.
+  92:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * Will return a NULL pointer if the call to sys_malloc fails.
+  93:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+  94:/Users/Administrator/sos-2x/kernel/include/malloc.h **** static inline void *ker_malloc(uint16_t size, sos_pid_t id)
+  95:/Users/Administrator/sos-2x/kernel/include/malloc.h **** {
+  96:/Users/Administrator/sos-2x/kernel/include/malloc.h ****   return sos_blk_mem_alloc(size, id, false);
+  97:/Users/Administrator/sos-2x/kernel/include/malloc.h **** }
+  98:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  99:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+ 100:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Reallocate dynamic memory
+ 101:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @param pntr Pointer to the currently held block of memory
+ 102:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @param newSize Number of bytes to be allocated
+ 103:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @return Returns the pointer to the reallocated memory.
+ 104:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * Returns a NULL if unable to reallocate but the original pointer is still valid.
+ 105:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+ 106:/Users/Administrator/sos-2x/kernel/include/malloc.h **** static inline void* ker_realloc(void* pntr, uint16_t newSize)
+ 107:/Users/Administrator/sos-2x/kernel/include/malloc.h **** {
+ 108:/Users/Administrator/sos-2x/kernel/include/malloc.h ****   return sos_blk_mem_realloc(pntr, newSize, false);
+ 109:/Users/Administrator/sos-2x/kernel/include/malloc.h **** }
+ 110:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+ 111:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+ 112:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Free memory pointed to by ptr
+ 113:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @param ptr Pointer to the memory that should be released
+ 114:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @return void
+ 115:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+ 116:/Users/Administrator/sos-2x/kernel/include/malloc.h **** static inline void ker_free(void* ptr)
+ 117:/Users/Administrator/sos-2x/kernel/include/malloc.h **** {
+ 118:/Users/Administrator/sos-2x/kernel/include/malloc.h ****   sos_blk_mem_free(ptr, false);
+ 119:/Users/Administrator/sos-2x/kernel/include/malloc.h ****   return;
+ 120:/Users/Administrator/sos-2x/kernel/include/malloc.h **** }
+ 121:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+ 122:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+ 123:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Change the ownership of memory
+ 124:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @param ptr Pointer to the memory whose ownership is being transferred
+ 125:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @param id New owner of the memeory
+ 126:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @return SOS_OK or error code upon fail
+ 127:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * Add check to prevent a change of ownership to the 'null' user.
+ 128:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+ 129:/Users/Administrator/sos-2x/kernel/include/malloc.h **** static inline int8_t ker_change_own(void* ptr, sos_pid_t id)
+ 130:/Users/Administrator/sos-2x/kernel/include/malloc.h **** {
+ 131:/Users/Administrator/sos-2x/kernel/include/malloc.h ****   return sos_blk_mem_change_own(ptr, id, false);
+ 132:/Users/Administrator/sos-2x/kernel/include/malloc.h **** }
+ 133:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+ 134:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+ 135:/Users/Administrator/sos-2x/kernel/include/malloc.h **** extern sos_pid_t mem_check_memory();
+ 136:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+ 137:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+ 138:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Free up all memory held by id 
+ 139:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @param id Process that is having its memory returned
+ 140:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+ 141:/Users/Administrator/sos-2x/kernel/include/malloc.h **** extern int8_t mem_remove_all(sos_pid_t id);
+ 142:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+ 143:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+ 144:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief malloc for long term usage
+ 145:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @warning this is used to allocate the memory for long time usage
+ 146:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+ 147:/Users/Administrator/sos-2x/kernel/include/malloc.h **** static inline void* malloc_longterm(uint16_t size, sos_pid_t id)
+ 148:/Users/Administrator/sos-2x/kernel/include/malloc.h **** {
+ 149:/Users/Administrator/sos-2x/kernel/include/malloc.h ****   return sos_blk_mem_longterm_alloc(size, id, true);
+ 1140               	.LM106:
+ 1141 0332 41E0      		ldi r20,lo8(1)
+ 1142 0334 602F      		mov r22,r16
+ 1143 0336 0E94 0000 		call sos_blk_mem_longterm_alloc
+ 1144               	.LBE13:
+ 1145               	.LBE12:
+ 1147               	.LM107:
+ 1148 033a 8E83      		std Y+6,r24
+ 1149 033c 9F83      		std Y+7,r25
+ 1151               	.Ltext2:
+ 588:/Users/Administrator/sos-2x/kernel/sched.c **** 		handle->handler_state = (uint8_t*)malloc_longterm(st_size, pid);
+ 589:/Users/Administrator/sos-2x/kernel/sched.c **** 	// If there is no memory to store the state of the module
+ 590:/Users/Administrator/sos-2x/kernel/sched.c **** 		if (handle->handler_state == NULL){
+ 1153               	.LM108:
+ 1154 033e 892B      		or r24,r25
+ 1155 0340 29F4      		brne .L75
+ 1156               	.L85:
+ 591:/Users/Administrator/sos-2x/kernel/sched.c **** 			return -ENOMEM;
+ 1158               	.LM109:
+ 1159 0342 84EF      		ldi r24,lo8(-12)
+ 1160 0344 9FEF      		ldi r25,hi8(-12)
+ 1161 0346 1DC0      		rjmp .L56
+ 1162               	.L72:
+ 592:/Users/Administrator/sos-2x/kernel/sched.c **** 		}
+ 593:/Users/Administrator/sos-2x/kernel/sched.c **** 	} else {
+ 594:/Users/Administrator/sos-2x/kernel/sched.c **** 		handle->handler_state = NULL;
+ 1164               	.LM110:
+ 1165 0348 8E83      		std Y+6,r24
+ 1166 034a 9F83      		std Y+7,r25
+ 1167               	.L75:
+ 595:/Users/Administrator/sos-2x/kernel/sched.c **** 	}
+ 596:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 597:/Users/Administrator/sos-2x/kernel/sched.c **** 	// Initialize the data structure
+ 598:/Users/Administrator/sos-2x/kernel/sched.c **** 	handle->header = h;
+ 1169               	.LM111:
+ 1170 034c EA82      		std Y+2,r14
+ 1171 034e FB82      		std Y+3,r15
+ 599:/Users/Administrator/sos-2x/kernel/sched.c **** 	handle->pid = pid;
+ 1173               	.LM112:
+ 1174 0350 0C83      		std Y+4,r16
+ 600:/Users/Administrator/sos-2x/kernel/sched.c ****   handle->flag = 0;
+ 1176               	.LM113:
+ 1177 0352 1D82      		std Y+5,__zero_reg__
+ 601:/Users/Administrator/sos-2x/kernel/sched.c **** 	handle->next = NULL;
+ 1179               	.LM114:
+ 1180 0354 1882      		st Y,__zero_reg__
+ 1181 0356 1982      		std Y+1,__zero_reg__
+ 602:/Users/Administrator/sos-2x/kernel/sched.c **** #ifdef SOS_USE_PREEMPTION
+ 603:/Users/Administrator/sos-2x/kernel/sched.c **** 	// set the priority
+ 604:/Users/Administrator/sos-2x/kernel/sched.c **** 	handle->priority = sos_read_header_byte(h, offsetof(mod_header_t, init_priority));
+ 605:/Users/Administrator/sos-2x/kernel/sched.c **** #endif
+ 606:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 607:/Users/Administrator/sos-2x/kernel/sched.c ****   // add to the bin
+ 608:/Users/Administrator/sos-2x/kernel/sched.c ****   ret = sched_register_module(handle, h, init, init_size);
+ 1183               	.LM115:
+ 1184 0358 212F      		mov r18,r17
+ 1185 035a A601      		movw r20,r12
+ 1186 035c B701      		movw r22,r14
+ 1187 035e CE01      		movw r24,r28
+ 1188 0360 0E94 0000 		call sched_register_module
+ 1189 0364 082F      		mov r16,r24
+ 609:/Users/Administrator/sos-2x/kernel/sched.c ****   if(ret != SOS_OK) {
+ 1191               	.LM116:
+ 1192 0366 8823      		tst r24
+ 1193 0368 51F0      		breq .L76
+ 1194               	.LBB14:
+ 1195               	.LBB15:
+ 1197               	.Ltext3:
+ 1199               	.LM117:
+ 1200 036a 60E0      		ldi r22,lo8(0)
+ 1201 036c 8E81      		ldd r24,Y+6
+ 1202 036e 9F81      		ldd r25,Y+7
+ 1203 0370 0E94 0000 		call sos_blk_mem_free
+ 1204               	.LBE15:
+ 1205               	.LBE14:
+ 1207               	.Ltext4:
+ 610:/Users/Administrator/sos-2x/kernel/sched.c **** 	 ker_free(handle->handler_state); //! Free the memory block to hold module state
+ 611:/Users/Administrator/sos-2x/kernel/sched.c **** 	return ret;
+ 1209               	.LM118:
+ 1210 0374 802F      		mov r24,r16
+ 1211 0376 9927      		clr r25
+ 1212 0378 87FD      		sbrc r24,7
+ 1213 037a 9095      		com r25
+ 1214 037c 02C0      		rjmp .L56
+ 1215               	.L76:
+ 612:/Users/Administrator/sos-2x/kernel/sched.c ****   }
+ 613:/Users/Administrator/sos-2x/kernel/sched.c ****   return SOS_OK;
+ 1217               	.LM119:
+ 1218 037e 80E0      		ldi r24,lo8(0)
+ 1219 0380 90E0      		ldi r25,hi8(0)
+ 1220               	.L56:
+ 1221               	/* epilogue: frame size=0 */
+ 1222 0382 DF91      		pop r29
+ 1223 0384 CF91      		pop r28
+ 1224 0386 1F91      		pop r17
+ 1225 0388 0F91      		pop r16
+ 1226 038a FF90      		pop r15
+ 1227 038c EF90      		pop r14
+ 1228 038e DF90      		pop r13
+ 1229 0390 CF90      		pop r12
+ 1230 0392 0895      		ret
+ 1231               	/* epilogue end (size=9) */
+ 1232               	/* function do_register_module size 140 (123) */
+ 1267               	.Lscope12:
+ 1274               	.global	ker_spawn_module
+ 1276               	ker_spawn_module:
+ 1278               	.LM120:
+ 1279               	/* prologue: frame size=0 */
+ 1280 0394 CF92      		push r12
+ 1281 0396 DF92      		push r13
+ 1282 0398 EF92      		push r14
+ 1283 039a FF92      		push r15
+ 1284 039c 0F93      		push r16
+ 1285 039e 1F93      		push r17
+ 1286 03a0 CF93      		push r28
+ 1287 03a2 DF93      		push r29
+ 1288               	/* prologue end (size=8) */
+ 1289 03a4 7C01      		movw r14,r24
+ 1290 03a6 6B01      		movw r12,r22
+ 1291 03a8 142F      		mov r17,r20
+ 1292 03aa 022F      		mov r16,r18
+ 1294               	.LM121:
+ 1295 03ac 892B      		or r24,r25
+ 1296 03ae A9F0      		breq .L90
+ 1298               	.LM122:
+ 1299 03b0 62E0      		ldi r22,lo8(2)
+ 1300 03b2 80E0      		ldi r24,lo8(sched_slab)
+ 1301 03b4 90E0      		ldi r25,hi8(sched_slab)
+ 1302 03b6 0E94 0000 		call ker_slab_alloc
+ 1303 03ba EC01      		movw r28,r24
+ 1305               	.LM123:
+ 1306 03bc 0097      		sbiw r24,0
+ 1307 03be 69F0      		breq .L90
+ 1309               	.LM124:
+ 1310 03c0 212F      		mov r18,r17
+ 1311 03c2 A601      		movw r20,r12
+ 1312 03c4 BC01      		movw r22,r24
+ 1313 03c6 C701      		movw r24,r14
+ 1314 03c8 0E94 0000 		call do_register_module
+ 1315 03cc 8823      		tst r24
+ 1316 03ce 41F0      		breq .L89
+ 1318               	.LM125:
+ 1319 03d0 BE01      		movw r22,r28
+ 1320 03d2 80E0      		ldi r24,lo8(sched_slab)
+ 1321 03d4 90E0      		ldi r25,hi8(sched_slab)
+ 1322 03d6 0E94 0000 		call ker_slab_free
+ 1323               	.L90:
+ 1325               	.LM126:
+ 1326 03da 8FEF      		ldi r24,lo8(255)
+ 1327 03dc 90E0      		ldi r25,hi8(255)
+ 1328 03de 02C0      		rjmp .L86
+ 1329               	.L89:
+ 1331               	.LM127:
+ 1332 03e0 8C81      		ldd r24,Y+4
+ 1333 03e2 9927      		clr r25
+ 1334               	.L86:
+ 1335               	/* epilogue: frame size=0 */
+ 1336 03e4 DF91      		pop r29
+ 1337 03e6 CF91      		pop r28
+ 1338 03e8 1F91      		pop r17
+ 1339 03ea 0F91      		pop r16
+ 1340 03ec FF90      		pop r15
+ 1341 03ee EF90      		pop r14
+ 1342 03f0 DF90      		pop r13
+ 1343 03f2 CF90      		pop r12
+ 1344 03f4 0895      		ret
+ 1345               	/* epilogue end (size=9) */
+ 1346               	/* function ker_spawn_module size 49 (32) */
+ 1351               	.Lscope13:
+ 1355               	.global	ker_register_module
+ 1357               	ker_register_module:
+ 1359               	.LM128:
+ 1360               	/* prologue: frame size=0 */
+ 1361 03f6 EF92      		push r14
+ 1362 03f8 FF92      		push r15
+ 1363 03fa 0F93      		push r16
+ 1364 03fc CF93      		push r28
+ 1365 03fe DF93      		push r29
+ 1366               	/* prologue end (size=5) */
+ 1367 0400 7C01      		movw r14,r24
+ 1369               	.LM129:
+ 1370 0402 892B      		or r24,r25
+ 1371 0404 19F4      		brne .L92
+ 1373               	.LM130:
+ 1374 0406 8AEE      		ldi r24,lo8(-22)
+ 1375 0408 9FEF      		ldi r25,hi8(-22)
+ 1376 040a 1FC0      		rjmp .L91
+ 1377               	.L92:
+ 1379               	.LM131:
+ 1380 040c 62E0      		ldi r22,lo8(2)
+ 1381 040e 80E0      		ldi r24,lo8(sched_slab)
+ 1382 0410 90E0      		ldi r25,hi8(sched_slab)
+ 1383 0412 0E94 0000 		call ker_slab_alloc
+ 1384 0416 EC01      		movw r28,r24
+ 1386               	.LM132:
+ 1387 0418 0097      		sbiw r24,0
+ 1388 041a 19F4      		brne .L93
+ 1390               	.LM133:
+ 1391 041c 84EF      		ldi r24,lo8(-12)
+ 1392 041e 9FEF      		ldi r25,hi8(-12)
+ 1393 0420 14C0      		rjmp .L91
+ 1394               	.L93:
+ 1396               	.LM134:
+ 1397 0422 00E0      		ldi r16,lo8(0)
+ 1398 0424 202F      		mov r18,r16
+ 1399 0426 40E0      		ldi r20,lo8(0)
+ 1400 0428 50E0      		ldi r21,hi8(0)
+ 1401 042a BC01      		movw r22,r24
+ 1402 042c C701      		movw r24,r14
+ 1403 042e 0E94 0000 		call do_register_module
+ 1404 0432 082F      		mov r16,r24
+ 1406               	.LM135:
+ 1407 0434 8823      		tst r24
+ 1408 0436 29F0      		breq .L94
+ 1410               	.LM136:
+ 1411 0438 BE01      		movw r22,r28
+ 1412 043a 80E0      		ldi r24,lo8(sched_slab)
+ 1413 043c 90E0      		ldi r25,hi8(sched_slab)
+ 1414 043e 0E94 0000 		call ker_slab_free
+ 1415               	.L94:
+ 1417               	.LM137:
+ 1418 0442 802F      		mov r24,r16
+ 1419 0444 9927      		clr r25
+ 1420 0446 87FD      		sbrc r24,7
+ 1421 0448 9095      		com r25
+ 1422               	.L91:
+ 1423               	/* epilogue: frame size=0 */
+ 1424 044a DF91      		pop r29
+ 1425 044c CF91      		pop r28
+ 1426 044e 0F91      		pop r16
+ 1427 0450 FF90      		pop r15
+ 1428 0452 EF90      		pop r14
+ 1429 0454 0895      		ret
+ 1430               	/* epilogue end (size=6) */
+ 1431               	/* function ker_register_module size 48 (37) */
+ 1437               	.Lscope14:
+ 1441               	.global	ker_deregister_module
+ 1443               	ker_deregister_module:
+ 614:/Users/Administrator/sos-2x/kernel/sched.c **** }
+ 615:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 616:/Users/Administrator/sos-2x/kernel/sched.c **** /**
+ 617:/Users/Administrator/sos-2x/kernel/sched.c ****  * @brief de-register a task (module)
+ 618:/Users/Administrator/sos-2x/kernel/sched.c ****  * @param pid task id to be removed
+ 619:/Users/Administrator/sos-2x/kernel/sched.c ****  * Note that this function cannot be used inside interrupt handler
+ 620:/Users/Administrator/sos-2x/kernel/sched.c ****  */
+ 621:/Users/Administrator/sos-2x/kernel/sched.c **** int8_t ker_deregister_module(sos_pid_t pid)
+ 622:/Users/Administrator/sos-2x/kernel/sched.c **** {
+ 1445               	.LM138:
+ 1446               	/* prologue: frame size=20 */
+ 1447 0456 AF92      		push r10
+ 1448 0458 BF92      		push r11
+ 1449 045a CF92      		push r12
+ 1450 045c DF92      		push r13
+ 1451 045e EF92      		push r14
+ 1452 0460 FF92      		push r15
+ 1453 0462 0F93      		push r16
+ 1454 0464 1F93      		push r17
+ 1455 0466 CF93      		push r28
+ 1456 0468 DF93      		push r29
+ 1457 046a CDB7      		in r28,__SP_L__
+ 1458 046c DEB7      		in r29,__SP_H__
+ 1459 046e 6497      		sbiw r28,20
+ 1460 0470 0FB6      		in __tmp_reg__,__SREG__
+ 1461 0472 F894      		cli
+ 1462 0474 DEBF      		out __SP_H__,r29
+ 1463 0476 0FBE      		out __SREG__,__tmp_reg__
+ 1464 0478 CDBF      		out __SP_L__,r28
+ 1465               	/* prologue end (size=18) */
+ 1466 047a 082F      		mov r16,r24
+ 623:/Users/Administrator/sos-2x/kernel/sched.c **** #ifdef SOS_USE_PREEMPTION
+ 624:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 625:/Users/Administrator/sos-2x/kernel/sched.c **** /**
+ 626:/Users/Administrator/sos-2x/kernel/sched.c ****  * Making ker_deregister_module split phase for preemption. 
+ 627:/Users/Administrator/sos-2x/kernel/sched.c ****  * The msg_final is sent in the first phase and the other 
+ 628:/Users/Administrator/sos-2x/kernel/sched.c ****  * items are cleaned up in the second.
+ 629:/Users/Administrator/sos-2x/kernel/sched.c ****  * This is made split phase because it is possible the module 
+ 630:/Users/Administrator/sos-2x/kernel/sched.c ****  * is on the stack when the loader tries to remove it. 
+ 631:/Users/Administrator/sos-2x/kernel/sched.c ****  * This will cause the msg_final to get queued up and not delivered.
+ 632:/Users/Administrator/sos-2x/kernel/sched.c ****  */
+ 633:/Users/Administrator/sos-2x/kernel/sched.c **** 	Message *msg;
+ 634:/Users/Administrator/sos-2x/kernel/sched.c **** 	msg = msg_create();
+ 635:/Users/Administrator/sos-2x/kernel/sched.c **** 	if(msg == NULL) {
+ 636:/Users/Administrator/sos-2x/kernel/sched.c **** 		return ker_mod_panic(pid);
+ 637:/Users/Administrator/sos-2x/kernel/sched.c **** 	}
+ 638:/Users/Administrator/sos-2x/kernel/sched.c **** 	msg->did = pid;
+ 639:/Users/Administrator/sos-2x/kernel/sched.c **** 	msg->sid = KER_SCHED_PID;
+ 640:/Users/Administrator/sos-2x/kernel/sched.c **** 	msg->type = MSG_FINAL;
+ 641:/Users/Administrator/sos-2x/kernel/sched.c **** 	msg->len = 0;
+ 642:/Users/Administrator/sos-2x/kernel/sched.c **** 	msg->data = NULL;
+ 643:/Users/Administrator/sos-2x/kernel/sched.c **** 	msg->flag = 0;
+ 644:/Users/Administrator/sos-2x/kernel/sched.c **** 	// assign priority based on priority of id
+ 645:/Users/Administrator/sos-2x/kernel/sched.c **** 	msg->priority = get_module_priority(pid);
+ 646:/Users/Administrator/sos-2x/kernel/sched.c **** 	sched_msg_alloc(msg);
+ 647:/Users/Administrator/sos-2x/kernel/sched.c **** 	return 0;
+ 648:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 649:/Users/Administrator/sos-2x/kernel/sched.c **** #else
+ 650:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 651:/Users/Administrator/sos-2x/kernel/sched.c ****   HAS_CRITICAL_SECTION;
+ 652:/Users/Administrator/sos-2x/kernel/sched.c ****   uint8_t bins = hash_pid(pid);
+ 1468               	.LM139:
+ 1469 047c 8370      		andi r24,lo8(3)
+ 653:/Users/Administrator/sos-2x/kernel/sched.c ****   sos_module_t *handle;
+ 654:/Users/Administrator/sos-2x/kernel/sched.c ****   sos_module_t *prev_handle = NULL;
+ 1471               	.LM140:
+ 1472 047e AA24      		clr r10
+ 1473 0480 BB24      		clr r11
+ 655:/Users/Administrator/sos-2x/kernel/sched.c ****   msg_handler_t handler;
+ 656:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 657:/Users/Administrator/sos-2x/kernel/sched.c ****   /**
+ 658:/Users/Administrator/sos-2x/kernel/sched.c ****    * Search the bins while save previous node
+ 659:/Users/Administrator/sos-2x/kernel/sched.c ****    * Once found the module, connect next module to previous one
+ 660:/Users/Administrator/sos-2x/kernel/sched.c ****    * put module back to freelist
+ 661:/Users/Administrator/sos-2x/kernel/sched.c ****    */
+ 662:/Users/Administrator/sos-2x/kernel/sched.c ****   handle = mod_bin[bins];
+ 1475               	.LM141:
+ 1476 0482 C82E      		mov r12,r24
+ 1477 0484 DD24      		clr r13
+ 1478 0486 F601      		movw r30,r12
+ 1479 0488 EC0D      		add r30,r12
+ 1480 048a FD1D      		adc r31,r13
+ 1481 048c E050      		subi r30,lo8(-(mod_bin))
+ 1482 048e F040      		sbci r31,hi8(-(mod_bin))
+ 1483               	.L108:
+ 1485               	.LM142:
+ 1486 0490 E080      		ld r14,Z
+ 1487 0492 F180      		ldd r15,Z+1
+ 663:/Users/Administrator/sos-2x/kernel/sched.c ****   while(handle != NULL) {
+ 664:/Users/Administrator/sos-2x/kernel/sched.c **** 		if(handle->pid == pid) {
+ 665:/Users/Administrator/sos-2x/kernel/sched.c **** 			break;
+ 666:/Users/Administrator/sos-2x/kernel/sched.c **** 		} else {
+ 667:/Users/Administrator/sos-2x/kernel/sched.c **** 			prev_handle = handle;
+ 668:/Users/Administrator/sos-2x/kernel/sched.c **** 			handle = handle->next;
+ 1489               	.LM143:
+ 1490 0494 E114      		cp r14,__zero_reg__
+ 1491 0496 F104      		cpc r15,__zero_reg__
+ 1492 0498 31F0      		breq .L97
+ 1494               	.LM144:
+ 1495 049a F701      		movw r30,r14
+ 1496 049c 8481      		ldd r24,Z+4
+ 1497 049e 8017      		cp r24,r16
+ 1498 04a0 11F0      		breq .L97
+ 1500               	.LM145:
+ 1501 04a2 5701      		movw r10,r14
+ 1502 04a4 F5CF      		rjmp .L108
+ 1503               	.L97:
+ 669:/Users/Administrator/sos-2x/kernel/sched.c **** 		}
+ 670:/Users/Administrator/sos-2x/kernel/sched.c **** 	}
+ 671:/Users/Administrator/sos-2x/kernel/sched.c **** 	if(handle == NULL) {
+ 1505               	.LM146:
+ 1506 04a6 E114      		cp r14,__zero_reg__
+ 1507 04a8 F104      		cpc r15,__zero_reg__
+ 1508 04aa 19F4      		brne .L101
+ 672:/Users/Administrator/sos-2x/kernel/sched.c **** 		// unable to find the module
+ 673:/Users/Administrator/sos-2x/kernel/sched.c **** 		return -EINVAL;
+ 1510               	.LM147:
+ 1511 04ac 8AEE      		ldi r24,lo8(-22)
+ 1512 04ae 9FEF      		ldi r25,hi8(-22)
+ 1513 04b0 79C0      		rjmp .L95
+ 1514               	.L101:
+ 1515               	.LBB16:
+ 674:/Users/Administrator/sos-2x/kernel/sched.c **** 	}
+ 675:/Users/Administrator/sos-2x/kernel/sched.c **** 	handler = (msg_handler_t)sos_read_header_ptr(handle->header,
+ 1517               	.LM148:
+ 1518 04b2 F701      		movw r30,r14
+ 1519 04b4 8281      		ldd r24,Z+2
+ 1520 04b6 9381      		ldd r25,Z+3
+ 1521 04b8 AA27      		clr r26
+ 1522 04ba BB27      		clr r27
+ 1523 04bc 880F      		lsl r24
+ 1524 04be 991F      		rol r25
+ 1525 04c0 AA1F      		rol r26
+ 1526 04c2 BB1F      		rol r27
+ 1527 04c4 0E96      		adiw r24,14
+ 1528 04c6 A11D      		adc r26,__zero_reg__
+ 1529 04c8 B11D      		adc r27,__zero_reg__
+ 1530               	/* #APP */
+ 1531 04ca ABBF      		out 59, r26
+ 1532 04cc FC01      		movw r30, r24
+ 1533 04ce 4791      		elpm r20, Z+
+ 1534 04d0 5691      		elpm r21, Z
+ 1535               		
+ 1536               	/* #NOAPP */
+ 1537               	.LBE16:
+ 676:/Users/Administrator/sos-2x/kernel/sched.c **** 			offsetof(mod_header_t,
+ 677:/Users/Administrator/sos-2x/kernel/sched.c **** 				module_handler));
+ 678:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 679:/Users/Administrator/sos-2x/kernel/sched.c **** 	if(handler != NULL) {
+ 1539               	.LM149:
+ 1540 04d2 4115      		cp r20,__zero_reg__
+ 1541 04d4 5105      		cpc r21,__zero_reg__
+ 1542 04d6 D9F0      		breq .L102
+ 1543               	.LBB17:
+ 680:/Users/Administrator/sos-2x/kernel/sched.c **** 		void *handler_state = handle->handler_state;
+ 1545               	.LM150:
+ 1546 04d8 F701      		movw r30,r14
+ 1547 04da 2681      		ldd r18,Z+6
+ 1548 04dc 3781      		ldd r19,Z+7
+ 681:/Users/Administrator/sos-2x/kernel/sched.c **** 		Message msg;
+ 682:/Users/Administrator/sos-2x/kernel/sched.c **** 		sos_pid_t prev_pid = curr_pid;
+ 1550               	.LM151:
+ 1551 04de 1091 0000 		lds r17,curr_pid
+ 683:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 684:/Users/Administrator/sos-2x/kernel/sched.c **** 		curr_pid = handle->pid;
+ 1553               	.LM152:
+ 1554 04e2 8481      		ldd r24,Z+4
+ 1555 04e4 8093 0000 		sts curr_pid,r24
+ 685:/Users/Administrator/sos-2x/kernel/sched.c **** 		msg.did = handle->pid;
+ 1557               	.LM153:
+ 1558 04e8 8481      		ldd r24,Z+4
+ 1559 04ea 8983      		std Y+1,r24
+ 686:/Users/Administrator/sos-2x/kernel/sched.c **** 		msg.sid = KER_SCHED_PID;
+ 1561               	.LM154:
+ 1562 04ec 82E0      		ldi r24,lo8(2)
+ 1563 04ee 8A83      		std Y+2,r24
+ 687:/Users/Administrator/sos-2x/kernel/sched.c **** 		msg.type = MSG_FINAL;
+ 1565               	.LM155:
+ 1566 04f0 86E0      		ldi r24,lo8(6)
+ 1567 04f2 8F83      		std Y+7,r24
+ 688:/Users/Administrator/sos-2x/kernel/sched.c **** 		msg.len = 0;
+ 1569               	.LM156:
+ 1570 04f4 1886      		std Y+8,__zero_reg__
+ 689:/Users/Administrator/sos-2x/kernel/sched.c **** 		msg.data = NULL;
+ 1572               	.LM157:
+ 1573 04f6 1986      		std Y+9,__zero_reg__
+ 1574 04f8 1A86      		std Y+10,__zero_reg__
+ 690:/Users/Administrator/sos-2x/kernel/sched.c **** 		msg.flag = 0;
+ 1576               	.LM158:
+ 1577 04fa 1B86      		std Y+11,__zero_reg__
+ 1578 04fc 1C86      		std Y+12,__zero_reg__
+ 691:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 692:/Users/Administrator/sos-2x/kernel/sched.c **** 		// Ram - If the handler does not write to the message, all is fine
+ 693:/Users/Administrator/sos-2x/kernel/sched.c **** #ifdef SOS_SFI
+ 694:/Users/Administrator/sos-2x/kernel/sched.c **** 		ker_cross_domain_call_mod_handler(handler_state, &msg, handler);
+ 695:/Users/Administrator/sos-2x/kernel/sched.c **** #else
+ 696:/Users/Administrator/sos-2x/kernel/sched.c **** 		handler(handler_state, &msg);
+ 1580               	.LM159:
+ 1581 04fe BE01      		movw r22,r28
+ 1582 0500 6F5F      		subi r22,lo8(-(1))
+ 1583 0502 7F4F      		sbci r23,hi8(-(1))
+ 1584 0504 C901      		movw r24,r18
+ 1585 0506 FA01      		movw r30,r20
+ 1586 0508 0995      		icall
+ 697:/Users/Administrator/sos-2x/kernel/sched.c **** #endif
+ 698:/Users/Administrator/sos-2x/kernel/sched.c **** 		curr_pid = prev_pid;
+ 1588               	.LM160:
+ 1589 050a 1093 0000 		sts curr_pid,r17
+ 1590               	.L102:
+ 1591               	.LBE17:
+ 699:/Users/Administrator/sos-2x/kernel/sched.c **** 	}
+ 700:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 701:/Users/Administrator/sos-2x/kernel/sched.c **** 	// First remove handler from the list.
+ 702:/Users/Administrator/sos-2x/kernel/sched.c **** 	// link the bin back
+ 703:/Users/Administrator/sos-2x/kernel/sched.c **** 	ENTER_CRITICAL_SECTION();
+ 1593               	.LM161:
+ 1594               	/* #APP */
+ 1595 050e 2FB7      		in r18, __SREG__
+ 1596 0510 F894      		cli
+ 1597               		
+ 1598               	/* #NOAPP */
+ 1599 0512 F701      		movw r30,r14
+ 1600 0514 8081      		ld r24,Z
+ 1601 0516 9181      		ldd r25,Z+1
+ 704:/Users/Administrator/sos-2x/kernel/sched.c **** 	if(prev_handle == NULL) {
+ 1603               	.LM162:
+ 1604 0518 A114      		cp r10,__zero_reg__
+ 1605 051a B104      		cpc r11,__zero_reg__
+ 1606 051c 41F4      		brne .L103
+ 705:/Users/Administrator/sos-2x/kernel/sched.c **** 		mod_bin[bins] = handle->next;
+ 1608               	.LM163:
+ 1609 051e CC0C      		add r12,r12
+ 1610 0520 DD1C      		adc r13,r13
+ 1611 0522 40E0      		ldi r20,lo8(mod_bin)
+ 1612 0524 50E0      		ldi r21,hi8(mod_bin)
+ 1613 0526 C40E      		add r12,r20
+ 1614 0528 D51E      		adc r13,r21
+ 1615 052a F601      		movw r30,r12
+ 1616 052c 01C0      		rjmp .L109
+ 1617               	.L103:
+ 706:/Users/Administrator/sos-2x/kernel/sched.c **** 	} else {
+ 707:/Users/Administrator/sos-2x/kernel/sched.c **** 		prev_handle->next = handle->next;
+ 1619               	.LM164:
+ 1620 052e F501      		movw r30,r10
+ 1621               	.L109:
+ 1622 0530 8083      		st Z,r24
+ 1623 0532 9183      		std Z+1,r25
+ 708:/Users/Administrator/sos-2x/kernel/sched.c **** 	}
+ 709:/Users/Administrator/sos-2x/kernel/sched.c **** 	LEAVE_CRITICAL_SECTION();
+ 1625               	.LM165:
+ 1626               	/* #APP */
+ 1627 0534 2FBF      		out __SREG__, r18
+ 1628               		
+ 710:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 711:/Users/Administrator/sos-2x/kernel/sched.c **** 	// remove the thread pid allocation
+ 712:/Users/Administrator/sos-2x/kernel/sched.c **** 	if(handle->pid >= SCHED_MIN_THREAD_PID) {
+ 1630               	.LM166:
+ 1631               	/* #NOAPP */
+ 1632 0536 F701      		movw r30,r14
+ 1633 0538 2481      		ldd r18,Z+4
+ 1634 053a 203E      		cpi r18,lo8(-32)
+ 1635 053c B0F0      		brlo .L105
+ 1636               	.LBB18:
+ 713:/Users/Administrator/sos-2x/kernel/sched.c **** 		uint8_t i = handle->pid - SCHED_MIN_THREAD_PID;
+ 1638               	.LM167:
+ 1639 053e 205E      		subi r18,lo8(-(32))
+ 714:/Users/Administrator/sos-2x/kernel/sched.c **** 		pid_pool[i/8] &= ~(1 << (i % 8));
+ 1641               	.LM168:
+ 1642 0540 822F      		mov r24,r18
+ 1643 0542 8695      		lsr r24
+ 1644 0544 8695      		lsr r24
+ 1645 0546 8695      		lsr r24
+ 1646 0548 E82F      		mov r30,r24
+ 1647 054a FF27      		clr r31
+ 1648 054c E050      		subi r30,lo8(-(pid_pool))
+ 1649 054e F040      		sbci r31,hi8(-(pid_pool))
+ 1650 0550 2770      		andi r18,lo8(7)
+ 1651 0552 81E0      		ldi r24,lo8(1)
+ 1652 0554 90E0      		ldi r25,hi8(1)
+ 1653 0556 02C0      		rjmp 2f
+ 1654 0558 880F      	1:	lsl r24
+ 1655 055a 991F      		rol r25
+ 1656 055c 2A95      	2:	dec r18
+ 1657 055e E2F7      		brpl 1b
+ 1658 0560 982F      		mov r25,r24
+ 1659 0562 9095      		com r25
+ 1660 0564 8081      		ld r24,Z
+ 1661 0566 8923      		and r24,r25
+ 1662 0568 8083      		st Z,r24
+ 1663               	.L105:
+ 1664               	.LBE18:
+ 715:/Users/Administrator/sos-2x/kernel/sched.c ****   }
+ 716:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 717:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 718:/Users/Administrator/sos-2x/kernel/sched.c ****   // remove system services
+ 719:/Users/Administrator/sos-2x/kernel/sched.c ****   timer_remove_all(pid);
+ 1666               	.LM169:
+ 1667 056a 802F      		mov r24,r16
+ 1668 056c 0E94 0000 		call timer_remove_all
+ 720:/Users/Administrator/sos-2x/kernel/sched.c ****   sensor_remove_all(pid);
+ 1670               	.LM170:
+ 1671 0570 802F      		mov r24,r16
+ 1672 0572 0E94 0000 		call sensor_remove_all
+ 721:/Users/Administrator/sos-2x/kernel/sched.c ****   ker_timestamp_deregister(pid);
+ 1674               	.LM171:
+ 1675 0576 802F      		mov r24,r16
+ 1676 0578 0E94 0000 		call ker_timestamp_deregister
+ 722:/Users/Administrator/sos-2x/kernel/sched.c **** 	monitor_remove_all(pid);
+ 1678               	.LM172:
+ 1679 057c 802F      		mov r24,r16
+ 1680 057e 0E94 0000 		call monitor_remove_all
+ 723:/Users/Administrator/sos-2x/kernel/sched.c ****   fntable_remove_all(handle);
+ 1682               	.LM173:
+ 1683 0582 C701      		movw r24,r14
+ 1684 0584 0E94 0000 		call fntable_remove_all
+ 724:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 725:/Users/Administrator/sos-2x/kernel/sched.c ****   // free up memory
+ 726:/Users/Administrator/sos-2x/kernel/sched.c ****   // NOTE: we can only free up memory at the last step
+ 727:/Users/Administrator/sos-2x/kernel/sched.c ****   // because fntable is using the state
+ 728:/Users/Administrator/sos-2x/kernel/sched.c ****   if((SOS_KER_STATIC_MODULE & (handle->flag)) == 0) {
+ 1686               	.LM174:
+ 1687 0588 F701      		movw r30,r14
+ 1688 058a 8581      		ldd r24,Z+5
+ 1689 058c 81FD      		sbrc r24,1
+ 1690 058e 05C0      		rjmp .L106
+ 729:/Users/Administrator/sos-2x/kernel/sched.c **** 		ker_slab_free( &sched_slab, handle );
+ 1692               	.LM175:
+ 1693 0590 B701      		movw r22,r14
+ 1694 0592 80E0      		ldi r24,lo8(sched_slab)
+ 1695 0594 90E0      		ldi r25,hi8(sched_slab)
+ 1696 0596 0E94 0000 		call ker_slab_free
+ 1697               	.L106:
+ 730:/Users/Administrator/sos-2x/kernel/sched.c ****   }
+ 731:/Users/Administrator/sos-2x/kernel/sched.c ****   mem_remove_all(pid);
+ 1699               	.LM176:
+ 1700 059a 802F      		mov r24,r16
+ 1701 059c 0E94 0000 		call mem_remove_all
+ 732:/Users/Administrator/sos-2x/kernel/sched.c **** 	
+ 733:/Users/Administrator/sos-2x/kernel/sched.c ****   return 0;
+ 1703               	.LM177:
+ 1704 05a0 80E0      		ldi r24,lo8(0)
+ 1705 05a2 90E0      		ldi r25,hi8(0)
+ 1706               	.L95:
+ 1707               	/* epilogue: frame size=20 */
+ 1708 05a4 6496      		adiw r28,20
+ 1709 05a6 0FB6      		in __tmp_reg__,__SREG__
+ 1710 05a8 F894      		cli
+ 1711 05aa DEBF      		out __SP_H__,r29
+ 1712 05ac 0FBE      		out __SREG__,__tmp_reg__
+ 1713 05ae CDBF      		out __SP_L__,r28
+ 1714 05b0 DF91      		pop r29
+ 1715 05b2 CF91      		pop r28
+ 1716 05b4 1F91      		pop r17
+ 1717 05b6 0F91      		pop r16
+ 1718 05b8 FF90      		pop r15
+ 1719 05ba EF90      		pop r14
+ 1720 05bc DF90      		pop r13
+ 1721 05be CF90      		pop r12
+ 1722 05c0 BF90      		pop r11
+ 1723 05c2 AF90      		pop r10
+ 1724 05c4 0895      		ret
+ 1725               	/* epilogue end (size=17) */
+ 1726               	/* function ker_deregister_module size 198 (163) */
+ 1745               	.Lscope15:
+ 1749               	.global	ker_killall
+ 1751               	ker_killall:
+ 1753               	.LM178:
+ 1754               	/* prologue: frame size=0 */
+ 1755 05c6 0F93      		push r16
+ 1756 05c8 1F93      		push r17
+ 1757 05ca CF93      		push r28
+ 1758 05cc DF93      		push r29
+ 1759               	/* prologue end (size=4) */
+ 1760 05ce 8C01      		movw r16,r24
+ 1761               	.L129:
+ 1763               	.LM179:
+ 1764 05d0 30E0      		ldi r19,lo8(0)
+ 1766               	.LM180:
+ 1767 05d2 232F      		mov r18,r19
+ 1768 05d4 40E0      		ldi r20,lo8(mod_bin)
+ 1769 05d6 50E0      		ldi r21,hi8(mod_bin)
+ 1770               	.L122:
+ 1771               	.LBB19:
+ 1773               	.LM181:
+ 1774 05d8 FA01      		movw r30,r20
+ 1775 05da C191      		ld r28,Z+
+ 1776 05dc D191      		ld r29,Z+
+ 1777 05de AF01      		movw r20,r30
+ 1778               	.L128:
+ 1780               	.LM182:
+ 1781 05e0 2097      		sbiw r28,0
+ 1782 05e2 D1F0      		breq .L118
+ 1783               	.LBB20:
+ 1784               	.LBB21:
+ 1786               	.LM183:
+ 1787 05e4 8A81      		ldd r24,Y+2
+ 1788 05e6 9B81      		ldd r25,Y+3
+ 1789 05e8 AA27      		clr r26
+ 1790 05ea BB27      		clr r27
+ 1791 05ec 880F      		lsl r24
+ 1792 05ee 991F      		rol r25
+ 1793 05f0 AA1F      		rol r26
+ 1794 05f2 BB1F      		rol r27
+ 1795 05f4 0896      		adiw r24,8
+ 1796 05f6 A11D      		adc r26,__zero_reg__
+ 1797 05f8 B11D      		adc r27,__zero_reg__
+ 1798               	/* #APP */
+ 1799 05fa ABBF      		out 59, r26
+ 1800 05fc FC01      		movw r30, r24
+ 1801 05fe 8791      		elpm r24, Z+
+ 1802 0600 9691      		elpm r25, Z
+ 1803               		
+ 1804               	/* #NOAPP */
+ 1805               	.LBE21:
+ 1807               	.LM184:
+ 1808 0602 8017      		cp r24,r16
+ 1809 0604 9107      		cpc r25,r17
+ 1810 0606 21F4      		brne .L119
+ 1812               	.LM185:
+ 1813 0608 8C81      		ldd r24,Y+4
+ 1814 060a 0E94 0000 		call ker_deregister_module
+ 1816               	.LM186:
+ 1817 060e E0CF      		rjmp .L129
+ 1818               	.L119:
+ 1820               	.LM187:
+ 1821 0610 0990      		ld __tmp_reg__,Y+
+ 1822 0612 D881      		ld r29,Y
+ 1823 0614 C02D      		mov r28,__tmp_reg__
+ 1824 0616 E4CF      		rjmp .L128
+ 1825               	.L118:
+ 1826               	.LBE20:
+ 1828               	.LM188:
+ 1829 0618 3130      		cpi r19,lo8(1)
+ 1830 061a 19F0      		breq .L115
+ 1831               	.LBE19:
+ 1833               	.LM189:
+ 1834 061c 2F5F      		subi r18,lo8(-(1))
+ 1835 061e 2430      		cpi r18,lo8(4)
+ 1836 0620 D8F2      		brlo .L122
+ 1837               	.L115:
+ 1839               	.LM190:
+ 1840 0622 3130      		cpi r19,lo8(1)
+ 1841 0624 A9F2      		breq .L129
+ 1842               	/* epilogue: frame size=0 */
+ 1843 0626 DF91      		pop r29
+ 1844 0628 CF91      		pop r28
+ 1845 062a 1F91      		pop r17
+ 1846 062c 0F91      		pop r16
+ 1847 062e 0895      		ret
+ 1848               	/* epilogue end (size=5) */
+ 1849               	/* function ker_killall size 59 (50) */
+ 1861               	.Lscope16:
+ 1870               	.global	sched_dispatch_short_message
+ 1872               	sched_dispatch_short_message:
+ 734:/Users/Administrator/sos-2x/kernel/sched.c **** #endif
+ 735:/Users/Administrator/sos-2x/kernel/sched.c **** }
+ 736:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 737:/Users/Administrator/sos-2x/kernel/sched.c **** #ifdef SOS_USE_PREEMPTION
+ 738:/Users/Administrator/sos-2x/kernel/sched.c **** void ker_deregister_module_split(sos_pid_t pid)
+ 739:/Users/Administrator/sos-2x/kernel/sched.c **** {
+ 740:/Users/Administrator/sos-2x/kernel/sched.c **** 	HAS_CRITICAL_SECTION;
+ 741:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 742:/Users/Administrator/sos-2x/kernel/sched.c ****   uint8_t bins = hash_pid(pid);
+ 743:/Users/Administrator/sos-2x/kernel/sched.c **** 	sos_module_t *handle;
+ 744:/Users/Administrator/sos-2x/kernel/sched.c **** 	sos_module_t *prev_handle = NULL;
+ 745:/Users/Administrator/sos-2x/kernel/sched.c **** 	prev_handle = NULL;
+ 746:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 747:/Users/Administrator/sos-2x/kernel/sched.c ****   /**
+ 748:/Users/Administrator/sos-2x/kernel/sched.c ****    * Search the bins while save previous node
+ 749:/Users/Administrator/sos-2x/kernel/sched.c ****    * Once found the module, connect next module to previous one
+ 750:/Users/Administrator/sos-2x/kernel/sched.c ****    * put module back to freelist
+ 751:/Users/Administrator/sos-2x/kernel/sched.c ****    */
+ 752:/Users/Administrator/sos-2x/kernel/sched.c ****   handle = mod_bin[bins];
+ 753:/Users/Administrator/sos-2x/kernel/sched.c ****   while(handle != NULL) {
+ 754:/Users/Administrator/sos-2x/kernel/sched.c **** 		if(handle->pid == pid) {
+ 755:/Users/Administrator/sos-2x/kernel/sched.c **** 			break;
+ 756:/Users/Administrator/sos-2x/kernel/sched.c **** 		} else {
+ 757:/Users/Administrator/sos-2x/kernel/sched.c **** 			prev_handle = handle;
+ 758:/Users/Administrator/sos-2x/kernel/sched.c **** 			handle = handle->next;
+ 759:/Users/Administrator/sos-2x/kernel/sched.c **** 		}
+ 760:/Users/Administrator/sos-2x/kernel/sched.c **** 	}
+ 761:/Users/Administrator/sos-2x/kernel/sched.c **** 	if(handle == NULL) {
+ 762:/Users/Administrator/sos-2x/kernel/sched.c **** 		// unable to find the module
+ 763:/Users/Administrator/sos-2x/kernel/sched.c **** 		return;
+ 764:/Users/Administrator/sos-2x/kernel/sched.c **** 	}
+ 765:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 766:/Users/Administrator/sos-2x/kernel/sched.c **** 	// First remove handler from the list.
+ 767:/Users/Administrator/sos-2x/kernel/sched.c **** 	// link the bin back
+ 768:/Users/Administrator/sos-2x/kernel/sched.c **** 	ENTER_CRITICAL_SECTION();
+ 769:/Users/Administrator/sos-2x/kernel/sched.c **** 	if(prev_handle == NULL) {
+ 770:/Users/Administrator/sos-2x/kernel/sched.c **** 		mod_bin[bins] = handle->next;
+ 771:/Users/Administrator/sos-2x/kernel/sched.c **** 	} else {
+ 772:/Users/Administrator/sos-2x/kernel/sched.c **** 		prev_handle->next = handle->next;
+ 773:/Users/Administrator/sos-2x/kernel/sched.c **** 	}
+ 774:/Users/Administrator/sos-2x/kernel/sched.c **** 	LEAVE_CRITICAL_SECTION();
+ 775:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 776:/Users/Administrator/sos-2x/kernel/sched.c **** 	// remove the thread pid allocation
+ 777:/Users/Administrator/sos-2x/kernel/sched.c **** 	if(handle->pid >= SCHED_MIN_THREAD_PID) {
+ 778:/Users/Administrator/sos-2x/kernel/sched.c **** 		uint8_t i = handle->pid - SCHED_MIN_THREAD_PID;
+ 779:/Users/Administrator/sos-2x/kernel/sched.c **** 		pid_pool[i/8] &= ~(1 << (i % 8));
+ 780:/Users/Administrator/sos-2x/kernel/sched.c ****   }
+ 781:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 782:/Users/Administrator/sos-2x/kernel/sched.c ****   // remove system services
+ 783:/Users/Administrator/sos-2x/kernel/sched.c ****   timer_remove_all(pid);
+ 784:/Users/Administrator/sos-2x/kernel/sched.c ****   sensor_remove_all(pid);
+ 785:/Users/Administrator/sos-2x/kernel/sched.c ****   ker_timestamp_deregister(pid);
+ 786:/Users/Administrator/sos-2x/kernel/sched.c **** 	monitor_remove_all(pid);
+ 787:/Users/Administrator/sos-2x/kernel/sched.c ****   fntable_remove_all(handle);
+ 788:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 789:/Users/Administrator/sos-2x/kernel/sched.c ****   // free up memory
+ 790:/Users/Administrator/sos-2x/kernel/sched.c ****   // NOTE: we can only free up memory at the last step
+ 791:/Users/Administrator/sos-2x/kernel/sched.c ****   // because fntable is using the state
+ 792:/Users/Administrator/sos-2x/kernel/sched.c ****   if((SOS_KER_STATIC_MODULE & (handle->flag)) == 0) {
+ 793:/Users/Administrator/sos-2x/kernel/sched.c **** 		ker_slab_free( &sched_slab, handle );
+ 794:/Users/Administrator/sos-2x/kernel/sched.c ****   }
+ 795:/Users/Administrator/sos-2x/kernel/sched.c ****   mem_remove_all(pid);
+ 796:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 797:/Users/Administrator/sos-2x/kernel/sched.c **** }
+ 798:/Users/Administrator/sos-2x/kernel/sched.c **** #endif
+ 799:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 800:/Users/Administrator/sos-2x/kernel/sched.c **** #ifdef SOS_USE_EXCEPTION_HANDLING
+ 801:/Users/Administrator/sos-2x/kernel/sched.c **** static uint8_t do_setjmp( void )
+ 802:/Users/Administrator/sos-2x/kernel/sched.c **** {
+ 803:/Users/Administrator/sos-2x/kernel/sched.c **** 	uint8_t r = setjmp(sched_jbuf);
+ 804:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 805:/Users/Administrator/sos-2x/kernel/sched.c **** 	if( r != 0 ) {
+ 806:/Users/Administrator/sos-2x/kernel/sched.c **** 		ker_deregister_module( (sos_pid_t) fault_pid );
+ 807:/Users/Administrator/sos-2x/kernel/sched.c **** 	}
+ 808:/Users/Administrator/sos-2x/kernel/sched.c **** 	return r;
+ 809:/Users/Administrator/sos-2x/kernel/sched.c **** }
+ 810:/Users/Administrator/sos-2x/kernel/sched.c **** #endif
+ 811:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 812:/Users/Administrator/sos-2x/kernel/sched.c **** /**
+ 813:/Users/Administrator/sos-2x/kernel/sched.c ****  * @brief dispatch short message
+ 814:/Users/Administrator/sos-2x/kernel/sched.c ****  * This is used by the callback that was register by interrupt handler
+ 815:/Users/Administrator/sos-2x/kernel/sched.c ****  */
+ 816:/Users/Administrator/sos-2x/kernel/sched.c **** void sched_dispatch_short_message(sos_pid_t dst, sos_pid_t src, uint8_t type, uint8_t byte,
+ 817:/Users/Administrator/sos-2x/kernel/sched.c **** 																	uint16_t word, uint16_t flag)
+ 818:/Users/Administrator/sos-2x/kernel/sched.c **** {
+ 1874               	.LM191:
+ 1875               	/* prologue: frame size=0 */
+ 1876 0630 AF92      		push r10
+ 1877 0632 BF92      		push r11
+ 1878 0634 CF92      		push r12
+ 1879 0636 DF92      		push r13
+ 1880 0638 EF92      		push r14
+ 1881 063a FF92      		push r15
+ 1882 063c 0F93      		push r16
+ 1883 063e 1F93      		push r17
+ 1884 0640 CF93      		push r28
+ 1885 0642 DF93      		push r29
+ 1886               	/* prologue end (size=10) */
+ 1887 0644 D82E      		mov r13,r24
+ 1888 0646 C62E      		mov r12,r22
+ 1889 0648 B42E      		mov r11,r20
+ 1890 064a A22E      		mov r10,r18
+ 819:/Users/Administrator/sos-2x/kernel/sched.c **** 	sos_module_t *handle;
+ 820:/Users/Administrator/sos-2x/kernel/sched.c **** 	msg_handler_t handler;
+ 821:/Users/Administrator/sos-2x/kernel/sched.c **** 	void *handler_state;
+ 822:/Users/Administrator/sos-2x/kernel/sched.c **** 	MsgParam *p;
+ 823:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 824:/Users/Administrator/sos-2x/kernel/sched.c **** 	handle = ker_get_module(dst);
+ 1892               	.LM192:
+ 1893 064c 0E94 0000 		call ker_get_module
+ 1894 0650 EC01      		movw r28,r24
+ 825:/Users/Administrator/sos-2x/kernel/sched.c **** 	if( handle == NULL ) { return; }
+ 1896               	.LM193:
+ 1897 0652 892B      		or r24,r25
+ 1898 0654 41F1      		breq .L130
+ 1899               	.LBB22:
+ 826:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 827:/Users/Administrator/sos-2x/kernel/sched.c **** 	handler = (msg_handler_t)sos_read_header_ptr(handle->header,
+ 1901               	.LM194:
+ 1902 0656 8A81      		ldd r24,Y+2
+ 1903 0658 9B81      		ldd r25,Y+3
+ 1904 065a AA27      		clr r26
+ 1905 065c BB27      		clr r27
+ 1906 065e 880F      		lsl r24
+ 1907 0660 991F      		rol r25
+ 1908 0662 AA1F      		rol r26
+ 1909 0664 BB1F      		rol r27
+ 1910 0666 0E96      		adiw r24,14
+ 1911 0668 A11D      		adc r26,__zero_reg__
+ 1912 066a B11D      		adc r27,__zero_reg__
+ 1913               	/* #APP */
+ 1914 066c ABBF      		out 59, r26
+ 1915 066e FC01      		movw r30, r24
+ 1916 0670 2791      		elpm r18, Z+
+ 1917 0672 3691      		elpm r19, Z
+ 1918               		
+ 1919               	/* #NOAPP */
+ 1920               	.LBE22:
+ 828:/Users/Administrator/sos-2x/kernel/sched.c **** 				offsetof(mod_header_t,
+ 829:/Users/Administrator/sos-2x/kernel/sched.c **** 				module_handler));
+ 830:/Users/Administrator/sos-2x/kernel/sched.c **** 	handler_state = handle->handler_state;
+ 1922               	.LM195:
+ 1923 0674 8E81      		ldd r24,Y+6
+ 1924 0676 9F81      		ldd r25,Y+7
+ 831:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 832:/Users/Administrator/sos-2x/kernel/sched.c **** 	p = (MsgParam*)(short_msg.data);	
+ 1926               	.LM196:
+ 1927 0678 E091 0000 		lds r30,short_msg+8
+ 1928 067c F091 0000 		lds r31,(short_msg+8)+1
+ 833:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 834:/Users/Administrator/sos-2x/kernel/sched.c **** 	short_msg.did = dst;
+ 1930               	.LM197:
+ 1931 0680 D092 0000 		sts short_msg,r13
+ 835:/Users/Administrator/sos-2x/kernel/sched.c **** 	short_msg.sid = src;
+ 1933               	.LM198:
+ 1934 0684 C092 0000 		sts short_msg+1,r12
+ 836:/Users/Administrator/sos-2x/kernel/sched.c **** 	short_msg.type = type;
+ 1936               	.LM199:
+ 1937 0688 B092 0000 		sts short_msg+6,r11
+ 837:/Users/Administrator/sos-2x/kernel/sched.c **** 	p->byte = byte;
+ 1939               	.LM200:
+ 1940 068c A082      		st Z,r10
+ 838:/Users/Administrator/sos-2x/kernel/sched.c **** 	p->word = word;
+ 1942               	.LM201:
+ 1943 068e 0183      		std Z+1,r16
+ 1944 0690 1283      		std Z+2,r17
+ 839:/Users/Administrator/sos-2x/kernel/sched.c **** 	short_msg.flag = flag;
+ 1946               	.LM202:
+ 1947 0692 F092 0000 		sts (short_msg+10)+1,r15
+ 1948 0696 E092 0000 		sts short_msg+10,r14
+ 840:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 841:/Users/Administrator/sos-2x/kernel/sched.c **** #ifdef SOS_USE_PREEMPTION
+ 842:/Users/Administrator/sos-2x/kernel/sched.c **** 	// push the old pid and priority
+ 843:/Users/Administrator/sos-2x/kernel/sched.c **** 	*pid_sp++ = curr_pid;
+ 844:/Users/Administrator/sos-2x/kernel/sched.c **** 	*pri_sp++ = curr_pri;
+ 845:/Users/Administrator/sos-2x/kernel/sched.c **** 	// set the current priority
+ 846:/Users/Administrator/sos-2x/kernel/sched.c **** 	curr_pri = get_module_priority(curr_pid);
+ 847:/Users/Administrator/sos-2x/kernel/sched.c **** #endif
+ 848:/Users/Administrator/sos-2x/kernel/sched.c **** 	// Update current pid
+ 849:/Users/Administrator/sos-2x/kernel/sched.c **** 	curr_pid = dst;
+ 1950               	.LM203:
+ 1951 069a D092 0000 		sts curr_pid,r13
+ 850:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 851:/Users/Administrator/sos-2x/kernel/sched.c **** #ifdef SOS_USE_EXCEPTION_HANDLING
+ 852:/Users/Administrator/sos-2x/kernel/sched.c **** 	if( do_setjmp() != 0 )
+ 853:/Users/Administrator/sos-2x/kernel/sched.c **** 	{
+ 854:/Users/Administrator/sos-2x/kernel/sched.c **** 		return;
+ 855:/Users/Administrator/sos-2x/kernel/sched.c **** 	}
+ 856:/Users/Administrator/sos-2x/kernel/sched.c **** #endif
+ 857:/Users/Administrator/sos-2x/kernel/sched.c **** 	ker_log( SOS_LOG_HANDLE_MSG, curr_pid, type );
+ 858:/Users/Administrator/sos-2x/kernel/sched.c **** #ifdef SOS_SFI
+ 859:/Users/Administrator/sos-2x/kernel/sched.c **** 	ker_cross_domain_call_mod_handler(handler_state, &short_msg, handler);
+ 860:/Users/Administrator/sos-2x/kernel/sched.c **** #else
+ 861:/Users/Administrator/sos-2x/kernel/sched.c **** 	handler(handler_state, &short_msg);
+ 1953               	.LM204:
+ 1954 069e 60E0      		ldi r22,lo8(short_msg)
+ 1955 06a0 70E0      		ldi r23,hi8(short_msg)
+ 1956 06a2 F901      		movw r30,r18
+ 1957 06a4 0995      		icall
+ 1958               	.L130:
+ 1959               	/* epilogue: frame size=0 */
+ 1960 06a6 DF91      		pop r29
+ 1961 06a8 CF91      		pop r28
+ 1962 06aa 1F91      		pop r17
+ 1963 06ac 0F91      		pop r16
+ 1964 06ae FF90      		pop r15
+ 1965 06b0 EF90      		pop r14
+ 1966 06b2 DF90      		pop r13
+ 1967 06b4 CF90      		pop r12
+ 1968 06b6 BF90      		pop r11
+ 1969 06b8 AF90      		pop r10
+ 1970 06ba 0895      		ret
+ 1971               	/* epilogue end (size=11) */
+ 1972               	/* function sched_dispatch_short_message size 76 (55) */
+ 1982               	.Lscope17:
+ 1986               	.global	ker_query_task
+ 1988               	ker_query_task:
+ 862:/Users/Administrator/sos-2x/kernel/sched.c **** #endif
+ 863:/Users/Administrator/sos-2x/kernel/sched.c **** 	ker_log( SOS_LOG_HANDLE_MSG_END, curr_pid, type );
+ 864:/Users/Administrator/sos-2x/kernel/sched.c **** #ifdef SOS_USE_PREEMPTION
+ 865:/Users/Administrator/sos-2x/kernel/sched.c **** 	// pop the old pid and priority
+ 866:/Users/Administrator/sos-2x/kernel/sched.c **** 	curr_pid = *(--pid_sp);
+ 867:/Users/Administrator/sos-2x/kernel/sched.c **** 	curr_pri = *(--pri_sp);
+ 868:/Users/Administrator/sos-2x/kernel/sched.c **** #endif
+ 869:/Users/Administrator/sos-2x/kernel/sched.c **** }
+ 870:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 871:/Users/Administrator/sos-2x/kernel/sched.c **** /**
+ 872:/Users/Administrator/sos-2x/kernel/sched.c ****  * @brief    real dispatch function
+ 873:/Users/Administrator/sos-2x/kernel/sched.c ****  * We have to handle MSG_PKT_SENDDONE specially
+ 874:/Users/Administrator/sos-2x/kernel/sched.c ****  * In SENDDONE message, msg->data is pointing to the message just sent.
+ 875:/Users/Administrator/sos-2x/kernel/sched.c ****  */
+ 876:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 877:/Users/Administrator/sos-2x/kernel/sched.c **** #ifdef SOS_USE_PREEMPTION
+ 878:/Users/Administrator/sos-2x/kernel/sched.c **** static void do_dispatch(Message *e)
+ 879:/Users/Administrator/sos-2x/kernel/sched.c **** {
+ 880:/Users/Administrator/sos-2x/kernel/sched.c **** #else 
+ 881:/Users/Administrator/sos-2x/kernel/sched.c **** static void do_dispatch()
+ 882:/Users/Administrator/sos-2x/kernel/sched.c **** {
+ 883:/Users/Administrator/sos-2x/kernel/sched.c **** 	Message *e;                                // Current message being dispatched
+ 884:/Users/Administrator/sos-2x/kernel/sched.c **** #endif
+ 885:/Users/Administrator/sos-2x/kernel/sched.c **** 	sos_module_t *handle;                      // Pointer to the control block of the destination modu
+ 886:/Users/Administrator/sos-2x/kernel/sched.c **** 	Message *inner_msg = NULL;                 // Message sent as a payload in MSG_PKT_SENDDONE
+ 887:/Users/Administrator/sos-2x/kernel/sched.c **** 	sos_pid_t senddone_dst_pid = NULL_PID;     // Destination module ID for the MSG_PKT_SENDDONE
+ 888:/Users/Administrator/sos-2x/kernel/sched.c **** 	uint8_t senddone_flag = SOS_MSG_SEND_FAIL; // Status information for the MSG_PKT_SENDDONE
+ 889:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 890:/Users/Administrator/sos-2x/kernel/sched.c **** #ifndef SOS_USE_PREEMPTION
+ 891:/Users/Administrator/sos-2x/kernel/sched.c **** 	SOS_MEASUREMENT_DEQUEUE_START();
+ 892:/Users/Administrator/sos-2x/kernel/sched.c **** 	e = mq_dequeue(&schedpq);
+ 893:/Users/Administrator/sos-2x/kernel/sched.c **** 	SOS_MEASUREMENT_DEQUEUE_END();
+ 894:/Users/Administrator/sos-2x/kernel/sched.c **** #endif
+ 895:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 896:/Users/Administrator/sos-2x/kernel/sched.c **** 	if (e == NULL) return;
+ 897:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 898:/Users/Administrator/sos-2x/kernel/sched.c **** 	handle = ker_get_module(e->did);
+ 899:/Users/Administrator/sos-2x/kernel/sched.c **** 	// Destination module might muck around with the
+ 900:/Users/Administrator/sos-2x/kernel/sched.c **** 	// type field. So we check type before dispatch
+ 901:/Users/Administrator/sos-2x/kernel/sched.c **** 	if(e->type == MSG_PKT_SENDDONE) {
+ 902:/Users/Administrator/sos-2x/kernel/sched.c **** 		inner_msg = (Message*)(e->data);
+ 903:/Users/Administrator/sos-2x/kernel/sched.c **** 	}
+ 904:/Users/Administrator/sos-2x/kernel/sched.c **** 	// Check for reliable message delivery
+ 905:/Users/Administrator/sos-2x/kernel/sched.c **** 	if(flag_msg_reliable(e->flag)) {
+ 906:/Users/Administrator/sos-2x/kernel/sched.c **** 		senddone_dst_pid = e->sid;	
+ 907:/Users/Administrator/sos-2x/kernel/sched.c **** 	}
+ 908:/Users/Administrator/sos-2x/kernel/sched.c **** 	// Deliver message to the monitor
+ 909:/Users/Administrator/sos-2x/kernel/sched.c **** 	// Ram - Modules might access kernel domain here
+ 910:/Users/Administrator/sos-2x/kernel/sched.c **** 	monitor_deliver_incoming_msg_to_monitor(e);
+ 911:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 912:/Users/Administrator/sos-2x/kernel/sched.c **** #ifdef SOS_USE_EXCEPTION_HANDLING
+ 913:/Users/Administrator/sos-2x/kernel/sched.c **** 	fault_pid = 0;
+ 914:/Users/Administrator/sos-2x/kernel/sched.c **** #endif
+ 915:/Users/Administrator/sos-2x/kernel/sched.c **** 	if(handle != NULL) {
+ 916:/Users/Administrator/sos-2x/kernel/sched.c **** 		if(sched_message_filtered(handle, e) == false) {
+ 917:/Users/Administrator/sos-2x/kernel/sched.c **** 			int8_t ret;
+ 918:/Users/Administrator/sos-2x/kernel/sched.c **** 			msg_handler_t handler;
+ 919:/Users/Administrator/sos-2x/kernel/sched.c **** 			void *handler_state;
+ 920:/Users/Administrator/sos-2x/kernel/sched.c **** 			
+ 921:/Users/Administrator/sos-2x/kernel/sched.c **** 			DEBUG("###################################################################\n");
+ 922:/Users/Administrator/sos-2x/kernel/sched.c **** 			DEBUG("MESSAGE FROM %d TO %d OF TYPE %d\n", e->sid, e->did, e->type);
+ 923:/Users/Administrator/sos-2x/kernel/sched.c **** 			DEBUG("###################################################################\n");
+ 924:/Users/Administrator/sos-2x/kernel/sched.c **** 			
+ 925:/Users/Administrator/sos-2x/kernel/sched.c **** 			
+ 926:/Users/Administrator/sos-2x/kernel/sched.c **** 			// Get the function pointer to the message handler
+ 927:/Users/Administrator/sos-2x/kernel/sched.c **** 			handler = (msg_handler_t)sos_read_header_ptr(handle->header,
+ 928:/Users/Administrator/sos-2x/kernel/sched.c **** 																									 offsetof(mod_header_t,
+ 929:/Users/Administrator/sos-2x/kernel/sched.c **** 																														module_handler));
+ 930:/Users/Administrator/sos-2x/kernel/sched.c **** 			// Get the pointer to the module state
+ 931:/Users/Administrator/sos-2x/kernel/sched.c **** 			handler_state = handle->handler_state;
+ 932:/Users/Administrator/sos-2x/kernel/sched.c **** 			// Change ownership if the release flag is set
+ 933:/Users/Administrator/sos-2x/kernel/sched.c **** 			// Ram - How to deal with memory blocks that are not released ?
+ 934:/Users/Administrator/sos-2x/kernel/sched.c **** 			if(flag_msg_release(e->flag)){
+ 935:/Users/Administrator/sos-2x/kernel/sched.c **** 				ker_change_own(e->data, e->did);
+ 936:/Users/Administrator/sos-2x/kernel/sched.c **** 			}
+ 937:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 938:/Users/Administrator/sos-2x/kernel/sched.c **** 
+ 939:/Users/Administrator/sos-2x/kernel/sched.c **** 			DEBUG("RUNNING HANDLER OF MODULE %d \n", handle->pid);
+ 940:/Users/Administrator/sos-2x/kernel/sched.c **** 			
+ 941:/Users/Administrator/sos-2x/kernel/sched.c **** #ifdef SOS_USE_PREEMPTION
+ 942:/Users/Administrator/sos-2x/kernel/sched.c **** 			// push the old pid and priority
+ 943:/Users/Administrator/sos-2x/kernel/sched.c **** 			*pid_sp++ = curr_pid;
+ 944:/Users/Administrator/sos-2x/kernel/sched.c **** 			*pri_sp++ = curr_pri;
+ 945:/Users/Administrator/sos-2x/kernel/sched.c **** 			// set the current priority
+ 946:/Users/Administrator/sos-2x/kernel/sched.c **** 			curr_pri = get_module_priority(handle->pid);
+ 947:/Users/Administrator/sos-2x/kernel/sched.c **** #endif
+ 948:/Users/Administrator/sos-2x/kernel/sched.c **** 			// set the current pid
+ 949:/Users/Administrator/sos-2x/kernel/sched.c **** 			curr_pid = handle->pid;
+ 950:/Users/Administrator/sos-2x/kernel/sched.c **** #ifdef SOS_USE_EXCEPTION_HANDLING
+ 951:/Users/Administrator/sos-2x/kernel/sched.c **** 			if( do_setjmp() == 0 ) 
+ 952:/Users/Administrator/sos-2x/kernel/sched.c **** #endif
+ 953:/Users/Administrator/sos-2x/kernel/sched.c **** 			{
+ 954:/Users/Administrator/sos-2x/kernel/sched.c **** 				ker_log( SOS_LOG_HANDLE_MSG, curr_pid, e->type );
+ 955:/Users/Administrator/sos-2x/kernel/sched.c **** #ifdef SOS_SFI
+ 956:/Users/Administrator/sos-2x/kernel/sched.c **** 				ret = ker_cross_domain_call_mod_handler(handler_state, e, handler);
+ 957:/Users/Administrator/sos-2x/kernel/sched.c **** #else
+ 958:/Users/Administrator/sos-2x/kernel/sched.c **** 				ret = handler(handler_state, e);
+ 959:/Users/Administrator/sos-2x/kernel/sched.c **** #endif
+ 960:/Users/Administrator/sos-2x/kernel/sched.c **** #ifdef SOS_USE_PREEMPTION
+ 961:/Users/Administrator/sos-2x/kernel/sched.c **** 				// pop the old pid and priority
+ 962:/Users/Administrator/sos-2x/kernel/sched.c **** 				curr_pid = *(--pid_sp);
+ 963:/Users/Administrator/sos-2x/kernel/sched.c **** 				curr_pri = *(--pri_sp);
+ 964:/Users/Administrator/sos-2x/kernel/sched.c **** 				
+ 965:/Users/Administrator/sos-2x/kernel/sched.c **** 				// if final msg, call the split phase
+ 966:/Users/Administrator/sos-2x/kernel/sched.c **** 				if(e->type == MSG_FINAL) {
+ 967:/Users/Administrator/sos-2x/kernel/sched.c **** 					ker_deregister_module_split(e->did);
+ 968:/Users/Administrator/sos-2x/kernel/sched.c **** 				}
+ 969:/Users/Administrator/sos-2x/kernel/sched.c **** #endif
+ 970:/Users/Administrator/sos-2x/kernel/sched.c **** 				ker_log( SOS_LOG_HANDLE_MSG_END, curr_pid, e->type );
+ 971:/Users/Administrator/sos-2x/kernel/sched.c **** 				DEBUG("FINISHED HANDLER OF MODULE %d \n", handle->pid);
+ 972:/Users/Administrator/sos-2x/kernel/sched.c **** 			
+ 973:/Users/Administrator/sos-2x/kernel/sched.c **** 				if (ret == SOS_OK) senddone_flag = 0;
+ 974:/Users/Administrator/sos-2x/kernel/sched.c **** 			}
+ 975:/Users/Administrator/sos-2x/kernel/sched.c **** 		}
+ 976:/Users/Administrator/sos-2x/kernel/sched.c **** 	} 
+ 977:/Users/Administrator/sos-2x/kernel/sched.c **** 	else {
+ 978:/Users/Administrator/sos-2x/kernel/sched.c **** #if 0
+ 979:/Users/Administrator/sos-2x/kernel/sched.c **** 		// TODO...
+ 980:/Users/Administrator/sos-2x/kernel/sched.c **** 		//! take care MSG_FETCHER_DONE
+ 981:/Users/Administrator/sos-2x/kernel/sched.c **** 		//! need to make sure that fetcher has completed its request
+ 982:/Users/Administrator/sos-2x/kernel/sched.c **** 		if(e->type == MSG_FETCHER_DONE) {
+ 983:/Users/Administrator/sos-2x/kernel/sched.c **** 			fetcher_state_t *fstat = (fetcher_state_t*)e->data;
+ 984:/Users/Administrator/sos-2x/kernel/sched.c **** 			fetcher_commit(fstat, false);
+ 985:/Users/Administrator/sos-2x/kernel/sched.c **** 		}
+ 986:/Users/Administrator/sos-2x/kernel/sched.c **** #endif
+ 987:/Users/Administrator/sos-2x/kernel/sched.c **** 		//XXX no error notification for now.
+ 988:/Users/Administrator/sos-2x/kernel/sched.c **** 		DEBUG("Scheduler: Unable to find module\n");
+ 989:/Users/Administrator/sos-2x/kernel/sched.c **** 	}
+ 990:/Users/Administrator/sos-2x/kernel/sched.c **** 	if(inner_msg != NULL) {
+ 991:/Users/Administrator/sos-2x/kernel/sched.c **** 		//! this is SENDDONE message
+ 992:/Users/Administrator/sos-2x/kernel/sched.c **** 		msg_dispose(inner_msg);
+ 993:/Users/Administrator/sos-2x/kernel/sched.c **** 		msg_dispose(e);
+ 994:/Users/Administrator/sos-2x/kernel/sched.c **** 	} else {
+ 995:/Users/Administrator/sos-2x/kernel/sched.c **** 		if(senddone_dst_pid != NULL_PID) {
+ 996:/Users/Administrator/sos-2x/kernel/sched.c **** 			if(post_long(senddone_dst_pid,
+ 997:/Users/Administrator/sos-2x/kernel/sched.c **** 						KER_SCHED_PID,
+ 998:/Users/Administrator/sos-2x/kernel/sched.c **** 						MSG_PKT_SENDDONE,
+ 999:/Users/Administrator/sos-2x/kernel/sched.c **** 						sizeof(Message), e,
+1000:/Users/Administrator/sos-2x/kernel/sched.c **** 						senddone_flag) < 0) {
+1001:/Users/Administrator/sos-2x/kernel/sched.c **** 				msg_dispose(e);
+1002:/Users/Administrator/sos-2x/kernel/sched.c **** 			}
+1003:/Users/Administrator/sos-2x/kernel/sched.c **** 		} else {
+1004:/Users/Administrator/sos-2x/kernel/sched.c **** 			//! return message back to the pool
+1005:/Users/Administrator/sos-2x/kernel/sched.c **** 			msg_dispose(e);
+1006:/Users/Administrator/sos-2x/kernel/sched.c **** 		}
+1007:/Users/Administrator/sos-2x/kernel/sched.c **** 	}
+1008:/Users/Administrator/sos-2x/kernel/sched.c **** }
+1009:/Users/Administrator/sos-2x/kernel/sched.c **** 
+1010:/Users/Administrator/sos-2x/kernel/sched.c **** /**
+1011:/Users/Administrator/sos-2x/kernel/sched.c ****  * @brief query the existence of task
+1012:/Users/Administrator/sos-2x/kernel/sched.c ****  * @param pid module id
+1013:/Users/Administrator/sos-2x/kernel/sched.c ****  * @return 0 for exist, -EINVAL otherwise
+1014:/Users/Administrator/sos-2x/kernel/sched.c ****  *
+1015:/Users/Administrator/sos-2x/kernel/sched.c ****  */
+1016:/Users/Administrator/sos-2x/kernel/sched.c **** int8_t ker_query_task(uint8_t pid)
+1017:/Users/Administrator/sos-2x/kernel/sched.c **** {
+ 1990               	.LM205:
+ 1991               	/* prologue: frame size=0 */
+ 1992               	/* prologue end (size=0) */
+1018:/Users/Administrator/sos-2x/kernel/sched.c ****   sos_module_t *handle = ker_get_module(pid);
+ 1994               	.LM206:
+ 1995 06bc 0E94 0000 		call ker_get_module
+1019:/Users/Administrator/sos-2x/kernel/sched.c ****   if(handle == NULL){
+ 1997               	.LM207:
+ 1998 06c0 892B      		or r24,r25
+ 1999 06c2 19F4      		brne .L133
+1020:/Users/Administrator/sos-2x/kernel/sched.c **** 	return -EINVAL;
+ 2001               	.LM208:
+ 2002 06c4 8AEE      		ldi r24,lo8(-22)
+ 2003 06c6 9FEF      		ldi r25,hi8(-22)
+ 2004 06c8 0895      		ret
+ 2005               	.L133:
+1021:/Users/Administrator/sos-2x/kernel/sched.c ****   }
+1022:/Users/Administrator/sos-2x/kernel/sched.c ****   return 0;
+ 2007               	.LM209:
+ 2008 06ca 80E0      		ldi r24,lo8(0)
+ 2009 06cc 90E0      		ldi r25,hi8(0)
+1023:/Users/Administrator/sos-2x/kernel/sched.c **** }
+ 2011               	.LM210:
+ 2012 06ce 0895      		ret
+ 2013               	/* epilogue: frame size=0 */
+ 2014 06d0 0895      		ret
+ 2015               	/* epilogue end (size=1) */
+ 2016               	/* function ker_query_task size 11 (10) */
+ 2018               	.Lscope18:
+ 2022               	.global	sched_msg_alloc
+ 2024               	sched_msg_alloc:
+1024:/Users/Administrator/sos-2x/kernel/sched.c **** 
+1025:/Users/Administrator/sos-2x/kernel/sched.c **** 
+1026:/Users/Administrator/sos-2x/kernel/sched.c **** /**
+1027:/Users/Administrator/sos-2x/kernel/sched.c ****  * When preemption is enabled. This function should not be called with
+1028:/Users/Administrator/sos-2x/kernel/sched.c ****  * a NULL Message. 
+1029:/Users/Administrator/sos-2x/kernel/sched.c ****  */
+1030:/Users/Administrator/sos-2x/kernel/sched.c **** 
+1031:/Users/Administrator/sos-2x/kernel/sched.c **** void sched_msg_alloc(Message *m)
+1032:/Users/Administrator/sos-2x/kernel/sched.c **** {
+ 2026               	.LM211:
+ 2027               	/* prologue: frame size=0 */
+ 2028 06d2 CF93      		push r28
+ 2029 06d4 DF93      		push r29
+ 2030               	/* prologue end (size=2) */
+ 2031 06d6 EC01      		movw r28,r24
+1033:/Users/Administrator/sos-2x/kernel/sched.c **** #ifdef SOS_USE_PREEMPTION
+1034:/Users/Administrator/sos-2x/kernel/sched.c **** 	HAS_CRITICAL_SECTION;
+1035:/Users/Administrator/sos-2x/kernel/sched.c **** #endif
+1036:/Users/Administrator/sos-2x/kernel/sched.c **** 
+1037:/Users/Administrator/sos-2x/kernel/sched.c **** 	DEBUG("sched_msg_alloc\n");
+1038:/Users/Administrator/sos-2x/kernel/sched.c ****   if(flag_msg_release(m->flag)){
+ 2033               	.LM212:
+ 2034 06d8 8A85      		ldd r24,Y+10
+ 2035 06da 9B85      		ldd r25,Y+11
+ 2036 06dc 82FF      		sbrs r24,2
+ 2037 06de 06C0      		rjmp .L135
+ 2038               	.LBB23:
+ 2039               	.LBB24:
+ 2041               	.Ltext5:
+ 2043               	.LM213:
+ 2044 06e0 40E0      		ldi r20,lo8(0)
+ 2045 06e2 62E0      		ldi r22,lo8(2)
+ 2046 06e4 8885      		ldd r24,Y+8
+ 2047 06e6 9985      		ldd r25,Y+9
+ 2048 06e8 0E94 0000 		call sos_blk_mem_change_own
+ 2049               	.L135:
+ 2050               	.LBE24:
+ 2051               	.LBE23:
+ 2053               	.Ltext6:
+1039:/Users/Administrator/sos-2x/kernel/sched.c **** 		ker_change_own(m->data, KER_SCHED_PID);
+1040:/Users/Administrator/sos-2x/kernel/sched.c ****   }
+1041:/Users/Administrator/sos-2x/kernel/sched.c **** 
+1042:/Users/Administrator/sos-2x/kernel/sched.c **** #ifdef SOS_USE_PREEMPTION
+1043:/Users/Administrator/sos-2x/kernel/sched.c **** 	// If preemption is disabled, simply queue the msg
+1044:/Users/Administrator/sos-2x/kernel/sched.c **** 	if (GET_PREEMPTION_STATUS() == DISABLED) {
+1045:/Users/Administrator/sos-2x/kernel/sched.c **** 		mq_enqueue(&schedpq, m);
+1046:/Users/Administrator/sos-2x/kernel/sched.c **** 		return;
+1047:/Users/Administrator/sos-2x/kernel/sched.c **** 	}
+1048:/Users/Administrator/sos-2x/kernel/sched.c **** 
+1049:/Users/Administrator/sos-2x/kernel/sched.c **** 	// dispatch msg if of higher priority and no race conditions
+1050:/Users/Administrator/sos-2x/kernel/sched.c **** 	if ((m->priority > curr_pri) && (preemption_point(m->did) == 1)) {
+1051:/Users/Administrator/sos-2x/kernel/sched.c **** 		do_dispatch(m);
+1052:/Users/Administrator/sos-2x/kernel/sched.c **** 
+1053:/Users/Administrator/sos-2x/kernel/sched.c **** 		ENTER_CRITICAL_SECTION();
+1054:/Users/Administrator/sos-2x/kernel/sched.c **** 		// if dispatched msg, need to check the queue for any other high priority msgs
+1055:/Users/Administrator/sos-2x/kernel/sched.c **** 		while((schedpq.head != NULL) && (schedpq.head->priority > curr_pri) &&
+1056:/Users/Administrator/sos-2x/kernel/sched.c **** 					(preemption_point(schedpq.head->did) == 1)) {
+1057:/Users/Administrator/sos-2x/kernel/sched.c **** 			Message *q_msg = mq_dequeue(&schedpq);
+1058:/Users/Administrator/sos-2x/kernel/sched.c **** 			LEAVE_CRITICAL_SECTION();
+1059:/Users/Administrator/sos-2x/kernel/sched.c **** 			do_dispatch(q_msg);
+1060:/Users/Administrator/sos-2x/kernel/sched.c **** 			ENTER_CRITICAL_SECTION();
+1061:/Users/Administrator/sos-2x/kernel/sched.c **** 		}
+1062:/Users/Administrator/sos-2x/kernel/sched.c **** 		LEAVE_CRITICAL_SECTION();
+1063:/Users/Administrator/sos-2x/kernel/sched.c **** 	}
+1064:/Users/Administrator/sos-2x/kernel/sched.c **** 	else {
+1065:/Users/Administrator/sos-2x/kernel/sched.c **** 		// if msg is not higher priority, queue up and return
+1066:/Users/Administrator/sos-2x/kernel/sched.c **** 		mq_enqueue(&schedpq, m);
+1067:/Users/Administrator/sos-2x/kernel/sched.c **** 	}
+1068:/Users/Administrator/sos-2x/kernel/sched.c **** #else
+1069:/Users/Administrator/sos-2x/kernel/sched.c ****   mq_enqueue(&schedpq, m);
+ 2055               	.LM214:
+ 2056 06ec BE01      		movw r22,r28
+ 2057 06ee 80E0      		ldi r24,lo8(schedpq)
+ 2058 06f0 90E0      		ldi r25,hi8(schedpq)
+ 2059 06f2 0E94 0000 		call mq_enqueue
+ 2060               	/* epilogue: frame size=0 */
+ 2061 06f6 DF91      		pop r29
+ 2062 06f8 CF91      		pop r28
+ 2063 06fa 0895      		ret
+ 2064               	/* epilogue end (size=3) */
+ 2065               	/* function sched_msg_alloc size 21 (16) */
+ 2067               	.Lscope19:
+ 2071               	.global	sched_msg_remove
+ 2073               	sched_msg_remove:
+1070:/Users/Administrator/sos-2x/kernel/sched.c **** #endif
+1071:/Users/Administrator/sos-2x/kernel/sched.c **** }
+1072:/Users/Administrator/sos-2x/kernel/sched.c **** 
+1073:/Users/Administrator/sos-2x/kernel/sched.c **** #ifdef SOS_USE_PREEMPTION
+1074:/Users/Administrator/sos-2x/kernel/sched.c **** /**
+1075:/Users/Administrator/sos-2x/kernel/sched.c ****  * Used when enabling preemption
+1076:/Users/Administrator/sos-2x/kernel/sched.c ****  */
+1077:/Users/Administrator/sos-2x/kernel/sched.c **** void sched_queue(Message *m) 
+1078:/Users/Administrator/sos-2x/kernel/sched.c **** {
+1079:/Users/Administrator/sos-2x/kernel/sched.c **** 	if ((m != NULL) && (m->priority > curr_pri) && (preemption_point(m->did) == 1)) {
+1080:/Users/Administrator/sos-2x/kernel/sched.c **** 		do_dispatch(m);
+1081:/Users/Administrator/sos-2x/kernel/sched.c **** 	}	
+1082:/Users/Administrator/sos-2x/kernel/sched.c **** 	else {
+1083:/Users/Administrator/sos-2x/kernel/sched.c **** 		if(m != NULL) mq_enqueue(&schedpq, m);
+1084:/Users/Administrator/sos-2x/kernel/sched.c **** 	}	
+1085:/Users/Administrator/sos-2x/kernel/sched.c **** 	while((schedpq.head != NULL) && (schedpq.head->priority > curr_pri) &&
+1086:/Users/Administrator/sos-2x/kernel/sched.c **** 				(preemption_point(schedpq.head->did) == 1)) {
+1087:/Users/Administrator/sos-2x/kernel/sched.c **** 		do_dispatch(mq_dequeue(&schedpq));
+1088:/Users/Administrator/sos-2x/kernel/sched.c **** 	}
+1089:/Users/Administrator/sos-2x/kernel/sched.c **** }
+1090:/Users/Administrator/sos-2x/kernel/sched.c **** 
+1091:/Users/Administrator/sos-2x/kernel/sched.c **** /**
+1092:/Users/Administrator/sos-2x/kernel/sched.c ****  * Checks if the msg can preempt current module
+1093:/Users/Administrator/sos-2x/kernel/sched.c ****  * based on conflicts due to function_calls.
+1094:/Users/Administrator/sos-2x/kernel/sched.c ****  * Returns 1 if can preempt or else returns 0
+1095:/Users/Administrator/sos-2x/kernel/sched.c ****  */
+1096:/Users/Administrator/sos-2x/kernel/sched.c **** uint8_t preemption_point (sos_pid_t pid)
+1097:/Users/Administrator/sos-2x/kernel/sched.c **** {
+1098:/Users/Administrator/sos-2x/kernel/sched.c **** 	uint8_t i;
+1099:/Users/Administrator/sos-2x/kernel/sched.c **** 	sos_module_t *module = ker_get_module(pid);
+1100:/Users/Administrator/sos-2x/kernel/sched.c **** 
+1101:/Users/Administrator/sos-2x/kernel/sched.c **** 	if((module == NULL) || (module->num_sub == 0)) return 1;
+1102:/Users/Administrator/sos-2x/kernel/sched.c **** 
+1103:/Users/Administrator/sos-2x/kernel/sched.c **** 	// iterate through the subscribed funcs checking for conflict
+1104:/Users/Administrator/sos-2x/kernel/sched.c **** 	for(i = 0; i < module->num_sub; i++) {
+1105:/Users/Administrator/sos-2x/kernel/sched.c **** 		sos_pid_t* j;
+1106:/Users/Administrator/sos-2x/kernel/sched.c **** 		// check against curr_pid
+1107:/Users/Administrator/sos-2x/kernel/sched.c **** 		if(module->sub_list[i] == curr_pid) return 0;
+1108:/Users/Administrator/sos-2x/kernel/sched.c **** 		// check against pid_stack
+1109:/Users/Administrator/sos-2x/kernel/sched.c **** 		for(j = pid_stack; j < pid_sp; j++) {
+1110:/Users/Administrator/sos-2x/kernel/sched.c **** 			if(module->sub_list[i] == *j) return 0;
+1111:/Users/Administrator/sos-2x/kernel/sched.c **** 		}
+1112:/Users/Administrator/sos-2x/kernel/sched.c **** 	}
+1113:/Users/Administrator/sos-2x/kernel/sched.c **** 	return 1;
+1114:/Users/Administrator/sos-2x/kernel/sched.c **** }
+1115:/Users/Administrator/sos-2x/kernel/sched.c **** #endif
+1116:/Users/Administrator/sos-2x/kernel/sched.c **** 
+1117:/Users/Administrator/sos-2x/kernel/sched.c **** void sched_msg_remove(Message *m)
+1118:/Users/Administrator/sos-2x/kernel/sched.c **** {
+ 2075               	.LM215:
+ 2076               	/* prologue: frame size=0 */
+ 2077 06fc CF93      		push r28
+ 2078 06fe DF93      		push r29
+ 2079               	/* prologue end (size=2) */
+ 2080 0700 EC01      		movw r28,r24
+ 2081               	.L138:
+1119:/Users/Administrator/sos-2x/kernel/sched.c ****   Message *tmp;
+1120:/Users/Administrator/sos-2x/kernel/sched.c ****   while(1) {
+1121:/Users/Administrator/sos-2x/kernel/sched.c **** 		tmp = mq_get(&schedpq, m);
+ 2083               	.LM216:
+ 2084 0702 BE01      		movw r22,r28
+ 2085 0704 80E0      		ldi r24,lo8(schedpq)
+ 2086 0706 90E0      		ldi r25,hi8(schedpq)
+ 2087 0708 0E94 0000 		call mq_get
+1122:/Users/Administrator/sos-2x/kernel/sched.c **** 		if(tmp) {
+ 2089               	.LM217:
+ 2090 070c 0097      		sbiw r24,0
+ 2091 070e 19F0      		breq .L139
+1123:/Users/Administrator/sos-2x/kernel/sched.c **** 			msg_dispose(tmp);
+ 2093               	.LM218:
+ 2094 0710 0E94 0000 		call msg_dispose
+ 2095 0714 F6CF      		rjmp .L138
+ 2096               	.L139:
+ 2097               	/* epilogue: frame size=0 */
+ 2098 0716 DF91      		pop r29
+ 2099 0718 CF91      		pop r28
+ 2100 071a 0895      		ret
+ 2101               	/* epilogue end (size=3) */
+ 2102               	/* function sched_msg_remove size 16 (11) */
+ 2107               	.Lscope20:
+ 2110               	.global	sched_gc
+ 2112               	sched_gc:
+1124:/Users/Administrator/sos-2x/kernel/sched.c **** 		} else {
+1125:/Users/Administrator/sos-2x/kernel/sched.c **** 			break;
+1126:/Users/Administrator/sos-2x/kernel/sched.c **** 		}
+1127:/Users/Administrator/sos-2x/kernel/sched.c ****   }
+1128:/Users/Administrator/sos-2x/kernel/sched.c **** }
+1129:/Users/Administrator/sos-2x/kernel/sched.c **** 
+1130:/Users/Administrator/sos-2x/kernel/sched.c **** void sched_gc( void )
+1131:/Users/Administrator/sos-2x/kernel/sched.c **** {
+ 2114               	.LM219:
+ 2115               	/* prologue: frame size=0 */
+ 2116 071c EF92      		push r14
+ 2117 071e FF92      		push r15
+ 2118 0720 1F93      		push r17
+ 2119 0722 CF93      		push r28
+ 2120 0724 DF93      		push r29
+ 2121               	/* prologue end (size=5) */
+1132:/Users/Administrator/sos-2x/kernel/sched.c **** 	register uint8_t i = 0;
+1133:/Users/Administrator/sos-2x/kernel/sched.c **** 	//
+1134:/Users/Administrator/sos-2x/kernel/sched.c **** 	// Mark message payload
+1135:/Users/Administrator/sos-2x/kernel/sched.c **** 	//
+1136:/Users/Administrator/sos-2x/kernel/sched.c **** 	mq_gc_mark_payload( &schedpq, KER_SCHED_PID );
+ 2123               	.LM220:
+ 2124 0726 62E0      		ldi r22,lo8(2)
+ 2125 0728 80E0      		ldi r24,lo8(schedpq)
+ 2126 072a 90E0      		ldi r25,hi8(schedpq)
+ 2127 072c 0E94 0000 		call mq_gc_mark_payload
+ 2128 0730 13E0      		ldi r17,lo8(3)
+ 2129 0732 E0E0      		ldi r30,lo8(mod_bin)
+ 2130 0734 EE2E      		mov r14,r30
+ 2131 0736 E0E0      		ldi r30,hi8(mod_bin)
+ 2132 0738 FE2E      		mov r15,r30
+ 2133               	.L149:
+ 2134               	.LBB25:
+1137:/Users/Administrator/sos-2x/kernel/sched.c **** 	
+1138:/Users/Administrator/sos-2x/kernel/sched.c **** 	//
+1139:/Users/Administrator/sos-2x/kernel/sched.c **** 	// Mark slab for module control blocks
+1140:/Users/Administrator/sos-2x/kernel/sched.c **** 	//
+1141:/Users/Administrator/sos-2x/kernel/sched.c **** 	for( i = 0; i < SCHED_NUMBER_BINS; i++ ) {
+1142:/Users/Administrator/sos-2x/kernel/sched.c **** 		sos_module_t *itr = mod_bin[i];
+ 2136               	.LM221:
+ 2137 073a F701      		movw r30,r14
+ 2138 073c C191      		ld r28,Z+
+ 2139 073e D191      		ld r29,Z+
+ 2140 0740 7F01      		movw r14,r30
+ 2141               	.L154:
+1143:/Users/Administrator/sos-2x/kernel/sched.c **** 		while( itr != NULL ) {
+1144:/Users/Administrator/sos-2x/kernel/sched.c **** 			slab_gc_mark( &sched_slab, itr );
+1145:/Users/Administrator/sos-2x/kernel/sched.c **** 			itr = itr->next;
+ 2143               	.LM222:
+ 2144 0742 2097      		sbiw r28,0
+ 2145 0744 49F0      		breq .L153
+ 2147               	.LM223:
+ 2148 0746 BE01      		movw r22,r28
+ 2149 0748 80E0      		ldi r24,lo8(sched_slab)
+ 2150 074a 90E0      		ldi r25,hi8(sched_slab)
+ 2151 074c 0E94 0000 		call slab_gc_mark
+ 2153               	.LM224:
+ 2154 0750 0990      		ld __tmp_reg__,Y+
+ 2155 0752 D881      		ld r29,Y
+ 2156 0754 C02D      		mov r28,__tmp_reg__
+ 2157 0756 F5CF      		rjmp .L154
+ 2158               	.L153:
+ 2159               	.LBE25:
+ 2161               	.LM225:
+ 2162 0758 1150      		subi r17,lo8(-(-1))
+ 2163 075a 17FF      		sbrs r17,7
+ 2164 075c EECF      		rjmp .L149
+1146:/Users/Administrator/sos-2x/kernel/sched.c **** 		}
+1147:/Users/Administrator/sos-2x/kernel/sched.c **** 	}
+1148:/Users/Administrator/sos-2x/kernel/sched.c **** 	slab_gc( &sched_slab, KER_SCHED_PID );
+ 2166               	.LM226:
+ 2167 075e 62E0      		ldi r22,lo8(2)
+ 2168 0760 80E0      		ldi r24,lo8(sched_slab)
+ 2169 0762 90E0      		ldi r25,hi8(sched_slab)
+ 2170 0764 0E94 0000 		call slab_gc
+1149:/Users/Administrator/sos-2x/kernel/sched.c **** 	malloc_gc( KER_SCHED_PID );
+ 2172               	.LM227:
+ 2173 0768 82E0      		ldi r24,lo8(2)
+ 2174 076a 0E94 0000 		call malloc_gc
+ 2175               	/* epilogue: frame size=0 */
+ 2176 076e DF91      		pop r29
+ 2177 0770 CF91      		pop r28
+ 2178 0772 1F91      		pop r17
+ 2179 0774 FF90      		pop r15
+ 2180 0776 EF90      		pop r14
+ 2181 0778 0895      		ret
+ 2182               	/* epilogue end (size=6) */
+ 2183               	/* function sched_gc size 47 (36) */
+ 2191               	.Lscope21:
+ 2194               	.global	sched_msg_gc
+ 2196               	sched_msg_gc:
+1150:/Users/Administrator/sos-2x/kernel/sched.c **** }
+1151:/Users/Administrator/sos-2x/kernel/sched.c **** 
+1152:/Users/Administrator/sos-2x/kernel/sched.c **** void sched_msg_gc( void )
+1153:/Users/Administrator/sos-2x/kernel/sched.c **** {
+ 2198               	.LM228:
+ 2199               	/* prologue: frame size=0 */
+ 2200               	/* prologue end (size=0) */
+1154:/Users/Administrator/sos-2x/kernel/sched.c **** 	mq_gc_mark_hdr( &schedpq, KER_SCHED_PID );
+ 2202               	.LM229:
+ 2203 077a 62E0      		ldi r22,lo8(2)
+ 2204 077c 80E0      		ldi r24,lo8(schedpq)
+ 2205 077e 90E0      		ldi r25,hi8(schedpq)
+ 2206 0780 0E94 0000 		call mq_gc_mark_hdr
+ 2207               	/* epilogue: frame size=0 */
+ 2208 0784 0895      		ret
+ 2209               	/* epilogue end (size=1) */
+ 2210               	/* function sched_msg_gc size 6 (5) */
+ 2212               	.Lscope22:
+ 2217               	.global	ker_msg_change_rules
+ 2219               	ker_msg_change_rules:
+1155:/Users/Administrator/sos-2x/kernel/sched.c **** }
+1156:/Users/Administrator/sos-2x/kernel/sched.c **** /**
+1157:/Users/Administrator/sos-2x/kernel/sched.c ****  * @brief Message filtering rules interface
+1158:/Users/Administrator/sos-2x/kernel/sched.c ****  * @param rules_in  new rule
+1159:/Users/Administrator/sos-2x/kernel/sched.c ****  */
+1160:/Users/Administrator/sos-2x/kernel/sched.c **** int8_t ker_msg_change_rules(sos_pid_t sid, uint8_t rules_in)
+1161:/Users/Administrator/sos-2x/kernel/sched.c **** {
+ 2221               	.LM230:
+ 2222               	/* prologue: frame size=0 */
+ 2223 0786 CF93      		push r28
+ 2224               	/* prologue end (size=1) */
+ 2225 0788 C62F      		mov r28,r22
+1162:/Users/Administrator/sos-2x/kernel/sched.c ****   sos_module_t *handle = ker_get_module(sid);
+ 2227               	.LM231:
+ 2228 078a 0E94 0000 		call ker_get_module
+ 2229 078e FC01      		movw r30,r24
+1163:/Users/Administrator/sos-2x/kernel/sched.c ****   if(handle == NULL) return -EINVAL;
+ 2231               	.LM232:
+ 2232 0790 892B      		or r24,r25
+ 2233 0792 19F4      		brne .L157
+ 2235               	.LM233:
+ 2236 0794 8AEE      		ldi r24,lo8(-22)
+ 2237 0796 9FEF      		ldi r25,hi8(-22)
+ 2238 0798 07C0      		rjmp .L156
+ 2239               	.L157:
+1164:/Users/Administrator/sos-2x/kernel/sched.c ****   //! keep kernel state
+1165:/Users/Administrator/sos-2x/kernel/sched.c ****   handle->flag &= 0x0F;
+ 2241               	.LM234:
+ 2242 079a 8581      		ldd r24,Z+5
+ 2243 079c 8F70      		andi r24,lo8(15)
+1166:/Users/Administrator/sos-2x/kernel/sched.c **** 
+1167:/Users/Administrator/sos-2x/kernel/sched.c ****   handle->flag |= (rules_in & 0xF0);
+ 2245               	.LM235:
+ 2246 079e C07F      		andi r28,lo8(-16)
+ 2247 07a0 8C2B      		or r24,r28
+ 2248 07a2 8583      		std Z+5,r24
+1168:/Users/Administrator/sos-2x/kernel/sched.c ****   return 0;
+ 2250               	.LM236:
+ 2251 07a4 80E0      		ldi r24,lo8(0)
+ 2252 07a6 90E0      		ldi r25,hi8(0)
+ 2253               	.L156:
+ 2254               	/* epilogue: frame size=0 */
+ 2255 07a8 CF91      		pop r28
+ 2256 07aa 0895      		ret
+ 2257               	/* epilogue end (size=2) */
+ 2258               	/* function ker_msg_change_rules size 19 (16) */
+ 2263               	.Lscope23:
+ 2268               	.global	sched_get_msg_rule
+ 2270               	sched_get_msg_rule:
+1169:/Users/Administrator/sos-2x/kernel/sched.c **** }
+1170:/Users/Administrator/sos-2x/kernel/sched.c **** 
+1171:/Users/Administrator/sos-2x/kernel/sched.c **** /**
+1172:/Users/Administrator/sos-2x/kernel/sched.c ****  * @brief get message rules
+1173:/Users/Administrator/sos-2x/kernel/sched.c ****  */
+1174:/Users/Administrator/sos-2x/kernel/sched.c **** int8_t sched_get_msg_rule(sos_pid_t pid, sos_ker_flag_t *rules)
+1175:/Users/Administrator/sos-2x/kernel/sched.c **** {
+ 2272               	.LM237:
+ 2273               	/* prologue: frame size=0 */
+ 2274 07ac CF93      		push r28
+ 2275 07ae DF93      		push r29
+ 2276               	/* prologue end (size=2) */
+ 2277 07b0 EB01      		movw r28,r22
+1176:/Users/Administrator/sos-2x/kernel/sched.c ****   sos_module_t *handle = ker_get_module(pid);
+ 2279               	.LM238:
+ 2280 07b2 0E94 0000 		call ker_get_module
+ 2281 07b6 FC01      		movw r30,r24
+1177:/Users/Administrator/sos-2x/kernel/sched.c ****   if(handle == NULL) return -EINVAL;
+ 2283               	.LM239:
+ 2284 07b8 892B      		or r24,r25
+ 2285 07ba 19F4      		brne .L159
+ 2287               	.LM240:
+ 2288 07bc 8AEE      		ldi r24,lo8(-22)
+ 2289 07be 9FEF      		ldi r25,hi8(-22)
+ 2290 07c0 05C0      		rjmp .L158
+ 2291               	.L159:
+1178:/Users/Administrator/sos-2x/kernel/sched.c ****   *rules = handle->flag & 0xF0;
+ 2293               	.LM241:
+ 2294 07c2 8581      		ldd r24,Z+5
+ 2295 07c4 807F      		andi r24,lo8(-16)
+ 2296 07c6 8883      		st Y,r24
+1179:/Users/Administrator/sos-2x/kernel/sched.c ****   return 0;
+ 2298               	.LM242:
+ 2299 07c8 80E0      		ldi r24,lo8(0)
+ 2300 07ca 90E0      		ldi r25,hi8(0)
+ 2301               	.L158:
+ 2302               	/* epilogue: frame size=0 */
+ 2303 07cc DF91      		pop r29
+ 2304 07ce CF91      		pop r28
+ 2305 07d0 0895      		ret
+ 2306               	/* epilogue end (size=3) */
+ 2307               	/* function sched_get_msg_rule size 19 (14) */
+ 2312               	.Lscope24:
+ 2315               	.global	sched
+ 2317               	sched:
+1180:/Users/Administrator/sos-2x/kernel/sched.c **** }
+1181:/Users/Administrator/sos-2x/kernel/sched.c **** 
+1182:/Users/Administrator/sos-2x/kernel/sched.c **** /**
+1183:/Users/Administrator/sos-2x/kernel/sched.c ****  * @brief post crash check up
+1184:/Users/Administrator/sos-2x/kernel/sched.c ****  */
+1185:/Users/Administrator/sos-2x/kernel/sched.c **** #if 0
+1186:/Users/Administrator/sos-2x/kernel/sched.c **** void sched_post_crash_checkup()
+1187:/Users/Administrator/sos-2x/kernel/sched.c **** {
+1188:/Users/Administrator/sos-2x/kernel/sched.c ****   sos_pid_t failed_pid;
+1189:/Users/Administrator/sos-2x/kernel/sched.c ****   mod_handle_t h;
+1190:/Users/Administrator/sos-2x/kernel/sched.c **** 
+1191:/Users/Administrator/sos-2x/kernel/sched.c ****   while((failed_pid = mem_check_memory()) != NULL_PID) {
+1192:/Users/Administrator/sos-2x/kernel/sched.c **** 	// we probably need to report failure here
+1193:/Users/Administrator/sos-2x/kernel/sched.c **** 	h = sched_get_mod_handle(failed_pid);
+1194:/Users/Administrator/sos-2x/kernel/sched.c **** 	if(h >= 0) {
+1195:/Users/Administrator/sos-2x/kernel/sched.c **** 	  module_list[h].flag |= SOS_KER_MEM_FAILED;
+1196:/Users/Administrator/sos-2x/kernel/sched.c **** 
+1197:/Users/Administrator/sos-2x/kernel/sched.c **** 	}
+1198:/Users/Administrator/sos-2x/kernel/sched.c ****   }
+1199:/Users/Administrator/sos-2x/kernel/sched.c ****   // Other crash testing goes here
+1200:/Users/Administrator/sos-2x/kernel/sched.c **** }
+1201:/Users/Administrator/sos-2x/kernel/sched.c **** #endif
+1202:/Users/Administrator/sos-2x/kernel/sched.c **** 
+1203:/Users/Administrator/sos-2x/kernel/sched.c **** #if 0
+1204:/Users/Administrator/sos-2x/kernel/sched.c **** static void sched_send_crash_report()
+1205:/Users/Administrator/sos-2x/kernel/sched.c **** {
+1206:/Users/Administrator/sos-2x/kernel/sched.c ****   if(crash_report != NULL) {
+1207:/Users/Administrator/sos-2x/kernel/sched.c **** 	post_net(KER_SCHED_PID, KER_SCHED_PID, MSG_SCHED_CRASH_REPORT,
+1208:/Users/Administrator/sos-2x/kernel/sched.c **** 			 crash_report_len, crash_report, SOS_MSG_RELEASE, BCAST_ADDRESS);
+1209:/Users/Administrator/sos-2x/kernel/sched.c ****   }
+1210:/Users/Administrator/sos-2x/kernel/sched.c **** }
+1211:/Users/Administrator/sos-2x/kernel/sched.c **** #endif
+1212:/Users/Administrator/sos-2x/kernel/sched.c **** 
+1213:/Users/Administrator/sos-2x/kernel/sched.c **** /**
+1214:/Users/Administrator/sos-2x/kernel/sched.c ****  * @brief Message filter.
+1215:/Users/Administrator/sos-2x/kernel/sched.c ****  * Check for promiscuous mode request in the destination module
+1216:/Users/Administrator/sos-2x/kernel/sched.c ****  * @return true for message shoud be filtered out, false for message is valid
+1217:/Users/Administrator/sos-2x/kernel/sched.c ****  */
+1218:/Users/Administrator/sos-2x/kernel/sched.c **** static inline bool sched_message_filtered(sos_module_t *h, Message *m)
+1219:/Users/Administrator/sos-2x/kernel/sched.c **** {
+1220:/Users/Administrator/sos-2x/kernel/sched.c ****   sos_ker_flag_t rules;
+1221:/Users/Administrator/sos-2x/kernel/sched.c ****   // check if it is from network
+1222:/Users/Administrator/sos-2x/kernel/sched.c ****   if(flag_msg_from_network(m->flag) == 0) return false;
+1223:/Users/Administrator/sos-2x/kernel/sched.c ****   rules = h->flag;
+1224:/Users/Administrator/sos-2x/kernel/sched.c **** 
+1225:/Users/Administrator/sos-2x/kernel/sched.c ****   // check for promiscuous mode
+1226:/Users/Administrator/sos-2x/kernel/sched.c ****   if((rules & SOS_MSG_RULES_PROMISCUOUS) == 0){
+1227:/Users/Administrator/sos-2x/kernel/sched.c **** 	// module request to have no promiscuous message
+1228:/Users/Administrator/sos-2x/kernel/sched.c **** 	if(m->daddr != node_address && m->daddr != BCAST_ADDRESS){
+1229:/Users/Administrator/sos-2x/kernel/sched.c **** 	  DEBUG("filtered\n");
+1230:/Users/Administrator/sos-2x/kernel/sched.c **** 	  return true;
+1231:/Users/Administrator/sos-2x/kernel/sched.c **** 	}
+1232:/Users/Administrator/sos-2x/kernel/sched.c ****   }
+1233:/Users/Administrator/sos-2x/kernel/sched.c ****   return false;
+1234:/Users/Administrator/sos-2x/kernel/sched.c **** }
+1235:/Users/Administrator/sos-2x/kernel/sched.c **** 
+1236:/Users/Administrator/sos-2x/kernel/sched.c **** void sched(void)
+1237:/Users/Administrator/sos-2x/kernel/sched.c **** {
+ 2319               	.LM243:
+ 2320               	/* prologue: frame size=0 */
+ 2321 07d2 8F92      		push r8
+ 2322 07d4 9F92      		push r9
+ 2323 07d6 AF92      		push r10
+ 2324 07d8 BF92      		push r11
+ 2325 07da CF92      		push r12
+ 2326 07dc DF92      		push r13
+ 2327 07de EF92      		push r14
+ 2328 07e0 FF92      		push r15
+ 2329 07e2 0F93      		push r16
+ 2330 07e4 1F93      		push r17
+ 2331 07e6 CF93      		push r28
+ 2332 07e8 DF93      		push r29
+ 2333               	/* prologue end (size=12) */
+1238:/Users/Administrator/sos-2x/kernel/sched.c **** 	ENABLE_GLOBAL_INTERRUPTS();
+ 2335               	.LM244:
+ 2336               	/* #APP */
+ 2337 07ea 7894      		sei
+ 2338               	/* #NOAPP */
+ 2339               	.L200:
+1239:/Users/Administrator/sos-2x/kernel/sched.c **** 
+1240:/Users/Administrator/sos-2x/kernel/sched.c **** 	ker_log_start();
+1241:/Users/Administrator/sos-2x/kernel/sched.c **** 	for(;;){
+1242:/Users/Administrator/sos-2x/kernel/sched.c **** 		SOS_MEASUREMENT_IDLE_END();
+1243:/Users/Administrator/sos-2x/kernel/sched.c **** #ifdef SOS_USE_PREEMPTION
+1244:/Users/Administrator/sos-2x/kernel/sched.c **** 		// Send the msgs on the queue
+1245:/Users/Administrator/sos-2x/kernel/sched.c **** 		if(schedpq.head != NULL) {
+1246:/Users/Administrator/sos-2x/kernel/sched.c **** 			do_dispatch(mq_dequeue(&schedpq));
+1247:/Users/Administrator/sos-2x/kernel/sched.c **** #else
+1248:/Users/Administrator/sos-2x/kernel/sched.c **** 	DISABLE_GLOBAL_INTERRUPTS();
+ 2341               	.LM245:
+ 2342               	/* #APP */
+ 2343 07ec F894      		cli
+1249:/Users/Administrator/sos-2x/kernel/sched.c **** 	
+1250:/Users/Administrator/sos-2x/kernel/sched.c **** 	if (int_ready != 0) {
+ 2345               	.LM246:
+ 2346               	/* #NOAPP */
+ 2347 07ee 8091 0000 		lds r24,int_ready
+ 2348 07f2 8823      		tst r24
+ 2349 07f4 B1F0      		breq .L163
+1251:/Users/Administrator/sos-2x/kernel/sched.c **** 		ENABLE_GLOBAL_INTERRUPTS();
+ 2351               	.LM247:
+ 2352               	/* #APP */
+ 2353 07f6 7894      		sei
+1252:/Users/Administrator/sos-2x/kernel/sched.c **** 		if (true == sched_stalled) continue;
+ 2355               	.LM248:
+ 2356               	/* #NOAPP */
+ 2357 07f8 8091 0000 		lds r24,sched_stalled
+ 2358 07fc 8130      		cpi r24,lo8(1)
+ 2359 07fe B1F3      		breq .L200
+ 2360               	.LBB26:
+ 2361               	.LBB27:
+ 2363               	.LM249:
+ 2364 0800 1092 0000 		sts int_ready,__zero_reg__
+ 2365 0804 13E0      		ldi r17,lo8(3)
+ 2366 0806 C0E0      		ldi r28,lo8(int_array)
+ 2367 0808 D0E0      		ldi r29,hi8(int_array)
+ 2368               	.L169:
+ 2370               	.LM250:
+ 2371 080a E881      		ld r30,Y
+ 2372 080c F981      		ldd r31,Y+1
+ 2373 080e 3097      		sbiw r30,0
+ 2374 0810 19F0      		breq .L167
+ 2375               	.LBB28:
+ 2377               	.LM251:
+ 2378 0812 1882      		st Y,__zero_reg__
+ 2379 0814 1982      		std Y+1,__zero_reg__
+ 2381               	.LM252:
+ 2382 0816 0995      		icall
+ 2383               	.L167:
+ 2384               	.LBE28:
+ 2386               	.LM253:
+ 2387 0818 1150      		subi r17,lo8(-(-1))
+ 2388 081a 2296      		adiw r28,2
+ 2389 081c 17FF      		sbrs r17,7
+ 2390 081e F5CF      		rjmp .L169
+ 2391               	.LBE27:
+ 2392               	.LBE26:
+ 2393 0820 99C0      		rjmp .L171
+ 2394               	.L163:
+1253:/Users/Administrator/sos-2x/kernel/sched.c **** 		handle_callback();
+1254:/Users/Administrator/sos-2x/kernel/sched.c **** 	} else if( schedpq.msg_cnt != 0 ) {
+ 2396               	.LM254:
+ 2397 0822 8091 0000 		lds r24,schedpq
+ 2398 0826 8823      		tst r24
+ 2399 0828 09F4      		brne .+2
+ 2400 082a 8DC0      		rjmp .L172
+1255:/Users/Administrator/sos-2x/kernel/sched.c **** 		ENABLE_GLOBAL_INTERRUPTS();
+ 2402               	.LM255:
+ 2403               	/* #APP */
+ 2404 082c 7894      		sei
+1256:/Users/Administrator/sos-2x/kernel/sched.c **** 		if (true == sched_stalled) continue;
+ 2406               	.LM256:
+ 2407               	/* #NOAPP */
+ 2408 082e 8091 0000 		lds r24,sched_stalled
+ 2409 0832 8130      		cpi r24,lo8(1)
+ 2410 0834 D9F2      		breq .L200
+ 2411               	.LBB29:
+ 2412               	.LBB30:
+ 2414               	.LM257:
+ 2415 0836 AA24      		clr r10
+ 2416 0838 BB24      		clr r11
+ 2418               	.LM258:
+ 2419 083a 1FEF      		ldi r17,lo8(-1)
+ 2420 083c 912E      		mov r9,r17
+ 2422               	.LM259:
+ 2423 083e C2E0      		ldi r28,lo8(2)
+ 2424 0840 8C2E      		mov r8,r28
+ 2426               	.LM260:
+ 2427 0842 80E0      		ldi r24,lo8(schedpq)
+ 2428 0844 90E0      		ldi r25,hi8(schedpq)
+ 2429 0846 0E94 0000 		call mq_dequeue
+ 2430 084a EC01      		movw r28,r24
+ 2432               	.LM261:
+ 2433 084c 892B      		or r24,r25
+ 2434 084e 09F4      		brne .+2
+ 2435 0850 81C0      		rjmp .L171
+ 2437               	.LM262:
+ 2438 0852 8881      		ld r24,Y
+ 2439 0854 0E94 0000 		call ker_get_module
+ 2440 0858 8C01      		movw r16,r24
+ 2442               	.LM263:
+ 2443 085a 8E81      		ldd r24,Y+6
+ 2444 085c 8330      		cpi r24,lo8(3)
+ 2445 085e 11F4      		brne .L176
+ 2447               	.LM264:
+ 2448 0860 A884      		ldd r10,Y+8
+ 2449 0862 B984      		ldd r11,Y+9
+ 2450               	.L176:
+ 2452               	.LM265:
+ 2453 0864 8A85      		ldd r24,Y+10
+ 2454 0866 9B85      		ldd r25,Y+11
+ 2455 0868 83FD      		sbrc r24,3
+ 2457               	.LM266:
+ 2458 086a 9980      		ldd r9,Y+1
+ 2459               	.L177:
+ 2461               	.LM267:
+ 2462 086c CE01      		movw r24,r28
+ 2463 086e 0E94 0000 		call monitor_deliver_incoming_msg_to_monitor
+ 2465               	.LM268:
+ 2466 0872 0115      		cp r16,__zero_reg__
+ 2467 0874 1105      		cpc r17,__zero_reg__
+ 2468 0876 09F4      		brne .+2
+ 2469 0878 4CC0      		rjmp .L187
+ 2470               	.LBB31:
+ 2471               	.LBB32:
+ 2473               	.LM269:
+ 2474 087a 6A85      		ldd r22,Y+10
+ 2475 087c 7B85      		ldd r23,Y+11
+ 2476 087e 872F      		mov r24,r23
+ 2477 0880 9927      		clr r25
+ 2478 0882 21E0      		ldi r18,lo8(1)
+ 2479 0884 30E0      		ldi r19,hi8(1)
+ 2480 0886 8223      		and r24,r18
+ 2481 0888 9323      		and r25,r19
+ 2482 088a 8217      		cp r24,r18
+ 2483 088c 9307      		cpc r25,r19
+ 2484 088e C9F4      		brne .L182
+ 2486               	.LM270:
+ 2487 0890 F801      		movw r30,r16
+ 2488 0892 8581      		ldd r24,Z+5
+ 2490               	.LM271:
+ 2491 0894 9927      		clr r25
+ 2492 0896 A6E0      		ldi r26,6
+ 2493 0898 9695      	1:	lsr r25
+ 2494 089a 8795      		ror r24
+ 2495 089c AA95      		dec r26
+ 2496 089e E1F7      		brne 1b
+ 2497 08a0 8170      		andi r24,lo8(1)
+ 2498 08a2 9070      		andi r25,hi8(1)
+ 2499 08a4 8217      		cp r24,r18
+ 2500 08a6 9307      		cpc r25,r19
+ 2501 08a8 61F0      		breq .L182
+ 2503               	.LM272:
+ 2504 08aa 2A81      		ldd r18,Y+2
+ 2505 08ac 3B81      		ldd r19,Y+3
+ 2506 08ae 8091 0000 		lds r24,node_address
+ 2507 08b2 9091 0000 		lds r25,(node_address)+1
+ 2508 08b6 2817      		cp r18,r24
+ 2509 08b8 3907      		cpc r19,r25
+ 2510 08ba 19F0      		breq .L182
+ 2511 08bc 2F5F      		subi r18,lo8(-1)
+ 2512 08be 3F4F      		sbci r19,hi8(-1)
+ 2513 08c0 41F5      		brne .L187
+ 2514               	.L182:
+ 2516               	.LM273:
+ 2517 08c2 40E0      		ldi r20,lo8(0)
+ 2518 08c4 50E0      		ldi r21,hi8(0)
+ 2519               	.LBE32:
+ 2520               	.LBE31:
+ 2521               	.LBB33:
+ 2522               	.LBB34:
+ 2524               	.LM274:
+ 2525 08c6 F801      		movw r30,r16
+ 2526 08c8 8281      		ldd r24,Z+2
+ 2527 08ca 9381      		ldd r25,Z+3
+ 2528 08cc AA27      		clr r26
+ 2529 08ce BB27      		clr r27
+ 2530 08d0 880F      		lsl r24
+ 2531 08d2 991F      		rol r25
+ 2532 08d4 AA1F      		rol r26
+ 2533 08d6 BB1F      		rol r27
+ 2534 08d8 0E96      		adiw r24,14
+ 2535 08da A11D      		adc r26,__zero_reg__
+ 2536 08dc B11D      		adc r27,__zero_reg__
+ 2537               	/* #APP */
+ 2538 08de ABBF      		out 59, r26
+ 2539 08e0 FC01      		movw r30, r24
+ 2540 08e2 C790      		elpm r12, Z+
+ 2541 08e4 D690      		elpm r13, Z
+ 2542               		
+ 2543               	/* #NOAPP */
+ 2544               	.LBE34:
+ 2546               	.LM275:
+ 2547 08e6 F801      		movw r30,r16
+ 2548 08e8 E680      		ldd r14,Z+6
+ 2549 08ea F780      		ldd r15,Z+7
+ 2551               	.LM276:
+ 2552 08ec 62FF      		sbrs r22,2
+ 2553 08ee 06C0      		rjmp .L184
+ 2554               	.LBB35:
+ 2556               	.Ltext7:
+ 2558               	.LM277:
+ 2559 08f0 8881      		ld r24,Y
+ 2560               	.LBB36:
+ 2562               	.LM278:
+ 2563 08f2 682F      		mov r22,r24
+ 2564 08f4 8885      		ldd r24,Y+8
+ 2565 08f6 9985      		ldd r25,Y+9
+ 2566 08f8 0E94 0000 		call sos_blk_mem_change_own
+ 2567               	.L184:
+ 2568               	.LBE36:
+ 2569               	.LBE35:
+ 2571               	.Ltext8:
+ 2573               	.LM279:
+ 2574 08fc F801      		movw r30,r16
+ 2575 08fe 8481      		ldd r24,Z+4
+ 2576 0900 8093 0000 		sts curr_pid,r24
+ 2578               	.LM280:
+ 2579 0904 BE01      		movw r22,r28
+ 2580 0906 C701      		movw r24,r14
+ 2581 0908 F601      		movw r30,r12
+ 2582 090a 0995      		icall
+ 2584               	.LM281:
+ 2585 090c 8823      		tst r24
+ 2586 090e 09F4      		brne .L187
+ 2587 0910 882E      		mov r8,r24
+ 2588               	.L187:
+ 2589               	.LBE33:
+ 2591               	.LM282:
+ 2592 0912 A114      		cp r10,__zero_reg__
+ 2593 0914 B104      		cpc r11,__zero_reg__
+ 2594 0916 21F0      		breq .L188
+ 2596               	.LM283:
+ 2597 0918 C501      		movw r24,r10
+ 2598 091a 0E94 0000 		call msg_dispose
+ 2599 091e 0FC0      		rjmp .L190
+ 2600               	.L188:
+ 2602               	.LM284:
+ 2603 0920 FFEF      		ldi r31,lo8(-1)
+ 2604 0922 9F16      		cp r9,r31
+ 2605 0924 61F0      		breq .L190
+ 2607               	.LM285:
+ 2608 0926 882D      		mov r24,r8
+ 2609 0928 9927      		clr r25
+ 2610 092a 7C01      		movw r14,r24
+ 2611 092c 8E01      		movw r16,r28
+ 2612 092e 24E1      		ldi r18,lo8(20)
+ 2613 0930 43E0      		ldi r20,lo8(3)
+ 2614 0932 62E0      		ldi r22,lo8(2)
+ 2615 0934 892D      		mov r24,r9
+ 2616 0936 0E94 0000 		call post_long
+ 2617 093a 87FF      		sbrs r24,7
+ 2618 093c 0BC0      		rjmp .L171
+ 2619               	.L190:
+ 2621               	.LM286:
+ 2622 093e CE01      		movw r24,r28
+ 2623 0940 0E94 0000 		call msg_dispose
+ 2624               	.LBE30:
+ 2625               	.LBE29:
+ 2626 0944 07C0      		rjmp .L171
+ 2627               	.L172:
+1257:/Users/Administrator/sos-2x/kernel/sched.c **** 		do_dispatch();
+1258:/Users/Administrator/sos-2x/kernel/sched.c **** #endif
+1259:/Users/Administrator/sos-2x/kernel/sched.c **** 		}
+1260:/Users/Administrator/sos-2x/kernel/sched.c **** 		else {
+1261:/Users/Administrator/sos-2x/kernel/sched.c **** 			SOS_MEASUREMENT_IDLE_START();
+1262:/Users/Administrator/sos-2x/kernel/sched.c **** 			// ENABLE_INTERRUPT() is done inside atomic_hardware_sleep()
+1263:/Users/Administrator/sos-2x/kernel/sched.c **** 			ker_log_flush();
+1264:/Users/Administrator/sos-2x/kernel/sched.c **** 			atomic_hardware_sleep();
+ 2629               	.LM287:
+ 2630 0946 85B7      		in r24,85-0x20
+ 2631 0948 8062      		ori r24,lo8(32)
+ 2632 094a 85BF      		out 85-0x20,r24
+ 2633               	/* #APP */
+ 2634 094c 7894      		sei
+ 2635 094e 8895      		sleep
+ 2636 0950 0000      		nop
+ 2637 0952 0000      		nop
+ 2638               	/* #NOAPP */
+ 2639               	.L171:
+1265:/Users/Administrator/sos-2x/kernel/sched.c **** 		}
+1266:/Users/Administrator/sos-2x/kernel/sched.c **** 		watchdog_reset();
+ 2641               	.LM288:
+ 2642               	/* #APP */
+ 2643 0954 A895      		wdr
+ 2645               	.LM289:
+ 2646               	/* #NOAPP */
+ 2647 0956 4ACF      		rjmp .L200
+ 2648               	/* epilogue: frame size=0 */
+ 2649               	/* epilogue: noreturn */
+ 2650               	/* epilogue end (size=0) */
+ 2651               	/* function sched size 212 (200) */
+ 2686               	.Lscope25:
+ 2689               	.global	ker_panic
+ 2691               	ker_panic:
+1267:/Users/Administrator/sos-2x/kernel/sched.c **** 	}
+1268:/Users/Administrator/sos-2x/kernel/sched.c **** }
+1269:/Users/Administrator/sos-2x/kernel/sched.c **** 
+1270:/Users/Administrator/sos-2x/kernel/sched.c **** 
+1271:/Users/Administrator/sos-2x/kernel/sched.c **** /**
+1272:/Users/Administrator/sos-2x/kernel/sched.c ****  * Use by SYS API to notify module's panic
+1273:/Users/Administrator/sos-2x/kernel/sched.c ****  */
+1274:/Users/Administrator/sos-2x/kernel/sched.c **** int8_t ker_mod_panic(sos_pid_t pid)
+1275:/Users/Administrator/sos-2x/kernel/sched.c **** {   
+1276:/Users/Administrator/sos-2x/kernel/sched.c **** #ifdef SOS_USE_EXCEPTION_HANDLING
+1277:/Users/Administrator/sos-2x/kernel/sched.c **** 	fault_pid = pid;
+1278:/Users/Administrator/sos-2x/kernel/sched.c ****   longjmp( sched_jbuf, 1 );
+1279:/Users/Administrator/sos-2x/kernel/sched.c **** #else
+1280:/Users/Administrator/sos-2x/kernel/sched.c ****   return ker_panic();
+1281:/Users/Administrator/sos-2x/kernel/sched.c **** #endif
+1282:/Users/Administrator/sos-2x/kernel/sched.c **** } 
+1283:/Users/Administrator/sos-2x/kernel/sched.c ****   
+1284:/Users/Administrator/sos-2x/kernel/sched.c **** /**
+1285:/Users/Administrator/sos-2x/kernel/sched.c ****  * Used by the kernel to notify kernel component panic
+1286:/Users/Administrator/sos-2x/kernel/sched.c ****  */
+1287:/Users/Administrator/sos-2x/kernel/sched.c **** int8_t ker_panic(void)
+1288:/Users/Administrator/sos-2x/kernel/sched.c **** {
+ 2693               	.LM290:
+ 2694               	/* prologue: frame size=0 */
+ 2695 0958 CF93      		push r28
+ 2696 095a DF93      		push r29
+ 2697               	/* prologue end (size=2) */
+1289:/Users/Administrator/sos-2x/kernel/sched.c ****   uint16_t val;
+1290:/Users/Administrator/sos-2x/kernel/sched.c ****   LED_DBG(LED_RED_ON);
+ 2699               	.LM291:
+ 2700 095c 81E0      		ldi r24,lo8(1)
+ 2701 095e 0E94 0000 		call ker_led
+1291:/Users/Administrator/sos-2x/kernel/sched.c ****   LED_DBG(LED_GREEN_ON);
+ 2703               	.LM292:
+ 2704 0962 82E0      		ldi r24,lo8(2)
+ 2705 0964 0E94 0000 		call ker_led
+1292:/Users/Administrator/sos-2x/kernel/sched.c ****   LED_DBG(LED_YELLOW_ON);
+ 2707               	.LM293:
+ 2708 0968 83E0      		ldi r24,lo8(3)
+ 2709 096a 0E94 0000 		call ker_led
+1293:/Users/Administrator/sos-2x/kernel/sched.c ****   val = 0xffff;
+ 2711               	.LM294:
+ 2712 096e CFEF      		ldi r28,lo8(-1)
+ 2713 0970 DFEF      		ldi r29,hi8(-1)
+ 2714               	.L202:
+1294:/Users/Administrator/sos-2x/kernel/sched.c **** #ifdef SOS_SIM
+1295:/Users/Administrator/sos-2x/kernel/sched.c **** 		printf("kernel panic\n");
+1296:/Users/Administrator/sos-2x/kernel/sched.c **** 		printf("Possible faulting module = %d\n", ker_get_current_pid());
+1297:/Users/Administrator/sos-2x/kernel/sched.c ****     exit(1);
+1298:/Users/Administrator/sos-2x/kernel/sched.c ****     return -EINVAL;
+1299:/Users/Administrator/sos-2x/kernel/sched.c **** #else
+1300:/Users/Administrator/sos-2x/kernel/sched.c ****   while (1){
+1301:/Users/Administrator/sos-2x/kernel/sched.c **** #ifndef DISABLE_WDT
+1302:/Users/Administrator/sos-2x/kernel/sched.c ****     watchdog_reset();
+ 2716               	.LM295:
+ 2717               	/* #APP */
+ 2718 0972 A895      		wdr
+1303:/Users/Administrator/sos-2x/kernel/sched.c **** #endif
+1304:/Users/Administrator/sos-2x/kernel/sched.c ****     if (val == 0){
+ 2720               	.LM296:
+ 2721               	/* #NOAPP */
+ 2722 0974 2097      		sbiw r28,0
+ 2723 0976 49F4      		brne .L204
+1305:/Users/Administrator/sos-2x/kernel/sched.c ****       LED_DBG(LED_RED_TOGGLE);
+ 2725               	.LM297:
+ 2726 0978 87E0      		ldi r24,lo8(7)
+ 2727 097a 0E94 0000 		call ker_led
+1306:/Users/Administrator/sos-2x/kernel/sched.c ****       LED_DBG(LED_GREEN_TOGGLE);
+ 2729               	.LM298:
+ 2730 097e 88E0      		ldi r24,lo8(8)
+ 2731 0980 0E94 0000 		call ker_led
+1307:/Users/Administrator/sos-2x/kernel/sched.c ****       LED_DBG(LED_YELLOW_TOGGLE);
+ 2733               	.LM299:
+ 2734 0984 89E0      		ldi r24,lo8(9)
+ 2735 0986 0E94 0000 		call ker_led
+ 2736               	.L204:
+1308:/Users/Administrator/sos-2x/kernel/sched.c **** #ifdef SOS_SIM
+1309:/Users/Administrator/sos-2x/kernel/sched.c ****       DEBUG("Malloc_Exception");
+1310:/Users/Administrator/sos-2x/kernel/sched.c **** #endif
+1311:/Users/Administrator/sos-2x/kernel/sched.c ****     }
+1312:/Users/Administrator/sos-2x/kernel/sched.c ****     val--;
+ 2738               	.LM300:
+ 2739 098a 2197      		sbiw r28,1
+ 2740 098c F2CF      		rjmp .L202
+ 2741               	/* epilogue: frame size=0 */
+ 2742               	/* epilogue: noreturn */
+ 2743               	/* epilogue end (size=0) */
+ 2744               	/* function ker_panic size 28 (26) */
+ 2749               	.Lscope26:
+ 2753               	.global	ker_mod_panic
+ 2755               	ker_mod_panic:
+ 2757               	.LM301:
+ 2758               	/* prologue: frame size=0 */
+ 2759               	/* prologue end (size=0) */
+ 2761               	.LM302:
+ 2762 098e 0E94 0000 		call ker_panic
+ 2764               	.LM303:
+ 2765 0992 9927      		clr r25
+ 2766 0994 87FD      		sbrc r24,7
+ 2767 0996 9095      		com r25
+ 2768               	/* epilogue: frame size=0 */
+ 2769 0998 0895      		ret
+ 2770               	/* epilogue end (size=1) */
+ 2771               	/* function ker_mod_panic size 6 (5) */
+ 2773               	.Lscope27:
+ 2775               		.comm curr_pid,1,1
+ 2776               		.comm pid_sp,2,1
+ 2777               		.lcomm sched_module,8
+ 2778               		.lcomm int_array,8
+ 2779               	.global	schedpq
+ 2780               		.section	.noinit,"aw",@nobits
+ 2783               	schedpq:
+ 2784 0000 0000 0000 		.skip 16,0
+ 2784      0000 0000 
+ 2784      0000 0000 
+ 2784      0000 0000 
+ 2785               		.lcomm sched_slab,6
+ 2786               		.lcomm pid_stack,16
+ 2787               		.lcomm short_msg,20
+ 2790               	mod_bin:
+ 2791 0010 0000 0000 		.skip 8,0
+ 2791      0000 0000 
+ 2792               		.lcomm pid_pool,4
+ 2806               		.text
+ 2808               	Letext:
+ 2809               	/* File "/Users/Administrator/sos-2x/kernel/sched.c": code 1303 = 0x0517 (1111), prologues  91, epi
+DEFINED SYMBOLS
+                            *ABS*:00000000 sched.c
+                            *ABS*:0000003f __SREG__
+                            *ABS*:0000003e __SP_H__
+                            *ABS*:0000003d __SP_L__
+                            *ABS*:00000000 __tmp_reg__
+                            *ABS*:00000001 __zero_reg__
+/var/tmp//ccish1Kc.s:275    .bss:00000000 sched_stalled
+                             .bss:00000001 int_ready
+/var/tmp//ccish1Kc.s:281    .progmem.data:00000000 mod_header
+/var/tmp//ccish1Kc.s:294    .text:00000000 sched_handler
+/var/tmp//ccish1Kc.s:330    .text:00000016 sched_add_interrupt
+/var/tmp//ccish1Kc.s:2777   .bss:0000000c int_array
+/var/tmp//ccish1Kc.s:277    .bss:00000002 cache.0
+/var/tmp//ccish1Kc.s:367    .text:00000034 ker_get_module
+/var/tmp//ccish1Kc.s:2790   .noinit:00000010 mod_bin
+/var/tmp//ccish1Kc.s:445    .text:00000080 ker_get_module_state
+/var/tmp//ccish1Kc.s:482    .text:00000094 ker_sys_get_module_state
+                            *COM*:00000001 curr_pid
+/var/tmp//ccish1Kc.s:521    .text:000000ac ker_set_current_pid
+/var/tmp//ccish1Kc.s:554    .text:000000be ker_get_current_pid
+/var/tmp//ccish1Kc.s:575    .text:000000c6 ker_get_caller_pid
+                            *COM*:00000002 pid_sp
+/var/tmp//ccish1Kc.s:599    .text:000000d6 sched_get_all_module
+/var/tmp//ccish1Kc.s:621    .text:000000dc sched_register_module
+/var/tmp//ccish1Kc.s:775    .text:0000018e sched_register_kernel_module
+/var/tmp//ccish1Kc.s:863    .text:000001e8 sched_init
+/var/tmp//ccish1Kc.s:2783   .noinit:00000000 schedpq
+/var/tmp//ccish1Kc.s:2787   .bss:0000003e pid_pool
+/var/tmp//ccish1Kc.s:2785   .bss:0000001a pid_stack
+/var/tmp//ccish1Kc.s:2786   .bss:0000002a short_msg
+/var/tmp//ccish1Kc.s:362    .bss:00000004 sched_module
+/var/tmp//ccish1Kc.s:2778   .bss:00000014 sched_slab
+/var/tmp//ccish1Kc.s:988    .text:00000294 do_register_module
+/var/tmp//ccish1Kc.s:1276   .text:00000394 ker_spawn_module
+/var/tmp//ccish1Kc.s:1357   .text:000003f6 ker_register_module
+/var/tmp//ccish1Kc.s:1443   .text:00000456 ker_deregister_module
+/var/tmp//ccish1Kc.s:1751   .text:000005c6 ker_killall
+/var/tmp//ccish1Kc.s:1872   .text:00000630 sched_dispatch_short_message
+/var/tmp//ccish1Kc.s:1988   .text:000006bc ker_query_task
+/var/tmp//ccish1Kc.s:2024   .text:000006d2 sched_msg_alloc
+/var/tmp//ccish1Kc.s:2073   .text:000006fc sched_msg_remove
+/var/tmp//ccish1Kc.s:2112   .text:0000071c sched_gc
+/var/tmp//ccish1Kc.s:2196   .text:0000077a sched_msg_gc
+/var/tmp//ccish1Kc.s:2219   .text:00000786 ker_msg_change_rules
+/var/tmp//ccish1Kc.s:2270   .text:000007ac sched_get_msg_rule
+/var/tmp//ccish1Kc.s:2317   .text:000007d2 sched
+/var/tmp//ccish1Kc.s:2691   .text:00000958 ker_panic
+/var/tmp//ccish1Kc.s:2755   .text:0000098e ker_mod_panic
+/var/tmp//ccish1Kc.s:2808   .text:0000099a Letext
+
+UNDEFINED SYMBOLS
+__do_copy_data
+__do_clear_bss
+timer_preallocate
+fntable_link
+post_long
+timer_remove_all
+mq_init
+node_address
+ker_slab_init
+sos_blk_mem_longterm_alloc
+sos_blk_mem_free
+ker_slab_alloc
+ker_slab_free
+sensor_remove_all
+ker_timestamp_deregister
+monitor_remove_all
+fntable_remove_all
+mem_remove_all
+sos_blk_mem_change_own
+mq_enqueue
+mq_get
+msg_dispose
+mq_gc_mark_payload
+slab_gc_mark
+slab_gc
+malloc_gc
+mq_gc_mark_hdr
+mq_dequeue
+monitor_deliver_incoming_msg_to_monitor
+ker_led

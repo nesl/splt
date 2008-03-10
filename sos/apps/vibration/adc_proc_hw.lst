@@ -1,0 +1,89 @@
+   1               		.file	"adc_proc_hw.c"
+   2               		.arch atmega128
+   3               	__SREG__ = 0x3f
+   4               	__SP_H__ = 0x3e
+   5               	__SP_L__ = 0x3d
+   6               	__tmp_reg__ = 0
+   7               	__zero_reg__ = 1
+   8               		.global __do_copy_data
+   9               		.global __do_clear_bss
+  12               		.text
+  13               	.Ltext0:
+ 106               	.global	adc_proc_hardware_init
+ 108               	adc_proc_hardware_init:
+   1:/Users/Administrator/sos-2x/processor/avr/adc_proc_hw.c **** /* -*- Mode: C; tab-width:2 -*- */
+   2:/Users/Administrator/sos-2x/processor/avr/adc_proc_hw.c **** /* ex: set ts=2 shiftwidth=2 softtabstop=2 cindent: */
+   3:/Users/Administrator/sos-2x/processor/avr/adc_proc_hw.c **** 
+   4:/Users/Administrator/sos-2x/processor/avr/adc_proc_hw.c **** //-----------------------------------------------------------------------------
+   5:/Users/Administrator/sos-2x/processor/avr/adc_proc_hw.c **** // INCLUDES
+   6:/Users/Administrator/sos-2x/processor/avr/adc_proc_hw.c **** #include <adc_proc_hw.h>
+   7:/Users/Administrator/sos-2x/processor/avr/adc_proc_hw.c **** 
+   8:/Users/Administrator/sos-2x/processor/avr/adc_proc_hw.c **** // set to external AREF as hardware default
+   9:/Users/Administrator/sos-2x/processor/avr/adc_proc_hw.c **** #define DEFAULT_VREF ADC_PROC_REF_AREF
+  10:/Users/Administrator/sos-2x/processor/avr/adc_proc_hw.c **** // set GND as default input
+  11:/Users/Administrator/sos-2x/processor/avr/adc_proc_hw.c **** #define DEFAULT_MUX_CH ADC_PROC_GND
+  12:/Users/Administrator/sos-2x/processor/avr/adc_proc_hw.c **** // Set Prescaler division factor to 64 
+  13:/Users/Administrator/sos-2x/processor/avr/adc_proc_hw.c **** #define DEFAULT_PRESCALER ADC_PROC_CLK_64
+  14:/Users/Administrator/sos-2x/processor/avr/adc_proc_hw.c **** 
+  15:/Users/Administrator/sos-2x/processor/avr/adc_proc_hw.c **** //-----------------------------------------------------------------------------
+  16:/Users/Administrator/sos-2x/processor/avr/adc_proc_hw.c **** // INITIALIZE ADC hardware
+  17:/Users/Administrator/sos-2x/processor/avr/adc_proc_hw.c **** int8_t adc_proc_hardware_init() {
+ 110               	.LM1:
+ 111               	/* prologue: frame size=0 */
+ 112               	/* prologue end (size=0) */
+  18:/Users/Administrator/sos-2x/processor/avr/adc_proc_hw.c ****   HAS_CRITICAL_SECTION;
+  19:/Users/Administrator/sos-2x/processor/avr/adc_proc_hw.c **** 
+  20:/Users/Administrator/sos-2x/processor/avr/adc_proc_hw.c ****   ENTER_CRITICAL_SECTION();
+ 114               	.LM2:
+ 115               	/* #APP */
+ 116 0000 9FB7      		in r25, __SREG__
+ 117 0002 F894      		cli
+ 118               		
+  21:/Users/Administrator/sos-2x/processor/avr/adc_proc_hw.c **** 	ADMUX = (DEFAULT_VREF | DEFAULT_MUX_CH);
+ 120               	.LM3:
+ 121               	/* #NOAPP */
+ 122 0004 8FE1      		ldi r24,lo8(31)
+ 123 0006 87B9      		out 39-0x20,r24
+  22:/Users/Administrator/sos-2x/processor/avr/adc_proc_hw.c **** 
+  23:/Users/Administrator/sos-2x/processor/avr/adc_proc_hw.c **** 	// disable ADC, clear any pending interrupts and enable ADC
+  24:/Users/Administrator/sos-2x/processor/avr/adc_proc_hw.c **** 	ADCSR &= ~_BV(ADEN);
+ 125               	.LM4:
+ 126 0008 3798      		cbi 38-0x20,7
+  25:/Users/Administrator/sos-2x/processor/avr/adc_proc_hw.c **** 	ADCSR |= DEFAULT_PRESCALER;
+ 128               	.LM5:
+ 129 000a 86B1      		in r24,38-0x20
+ 130 000c 8660      		ori r24,lo8(6)
+ 131 000e 86B9      		out 38-0x20,r24
+  26:/Users/Administrator/sos-2x/processor/avr/adc_proc_hw.c **** 	LEAVE_CRITICAL_SECTION();
+ 133               	.LM6:
+ 134               	/* #APP */
+ 135 0010 9FBF      		out __SREG__, r25
+ 136               		
+  27:/Users/Administrator/sos-2x/processor/avr/adc_proc_hw.c **** 
+  28:/Users/Administrator/sos-2x/processor/avr/adc_proc_hw.c **** 	return SOS_OK;
+  29:/Users/Administrator/sos-2x/processor/avr/adc_proc_hw.c **** }
+ 138               	.LM7:
+ 139               	/* #NOAPP */
+ 140 0012 80E0      		ldi r24,lo8(0)
+ 141 0014 90E0      		ldi r25,hi8(0)
+ 142               	/* epilogue: frame size=0 */
+ 143 0016 0895      		ret
+ 144               	/* epilogue end (size=1) */
+ 145               	/* function adc_proc_hardware_init size 19 (18) */
+ 150               	.Lscope0:
+ 152               		.text
+ 154               	Letext:
+ 155               	/* File "/Users/Administrator/sos-2x/processor/avr/adc_proc_hw.c": code   19 = 0x0013 (  18), prolo
+DEFINED SYMBOLS
+                            *ABS*:00000000 adc_proc_hw.c
+                            *ABS*:0000003f __SREG__
+                            *ABS*:0000003e __SP_H__
+                            *ABS*:0000003d __SP_L__
+                            *ABS*:00000000 __tmp_reg__
+                            *ABS*:00000001 __zero_reg__
+/var/tmp//ccN0bH1b.s:108    .text:00000000 adc_proc_hardware_init
+/var/tmp//ccN0bH1b.s:154    .text:00000018 Letext
+
+UNDEFINED SYMBOLS
+__do_copy_data
+__do_clear_bss

@@ -1,0 +1,320 @@
+   1               		.file	"systime.c"
+   2               		.arch atmega128
+   3               	__SREG__ = 0x3f
+   4               	__SP_H__ = 0x3e
+   5               	__SP_L__ = 0x3d
+   6               	__tmp_reg__ = 0
+   7               	__zero_reg__ = 1
+   8               		.global __do_copy_data
+   9               		.global __do_clear_bss
+  12               		.text
+  13               	.Ltext0:
+ 105               	.global	ker_systime16L
+ 107               	ker_systime16L:
+   1:/Users/Administrator/sos-2x/processor/avr/systime.c **** /* -*- Mode: C; tab-width:4 -*- */
+   2:/Users/Administrator/sos-2x/processor/avr/systime.c **** /* ex: set ts=4 shiftwidth=4 softtabstop=4 cindent: */
+   3:/Users/Administrator/sos-2x/processor/avr/systime.c **** /*
+   4:/Users/Administrator/sos-2x/processor/avr/systime.c ****  * Copyright (c) 2003, Vanderbilt University
+   5:/Users/Administrator/sos-2x/processor/avr/systime.c ****  * All rights reserved.
+   6:/Users/Administrator/sos-2x/processor/avr/systime.c ****  *
+   7:/Users/Administrator/sos-2x/processor/avr/systime.c ****  * Permission to use, copy, modify, and distribute this software and its
+   8:/Users/Administrator/sos-2x/processor/avr/systime.c ****  * documentation for any purpose, without fee, and without written agreement is
+   9:/Users/Administrator/sos-2x/processor/avr/systime.c ****  * hereby granted, provided that the above copyright notice, the following
+  10:/Users/Administrator/sos-2x/processor/avr/systime.c ****  * two paragraphs and the author appear in all copies of this software.
+  11:/Users/Administrator/sos-2x/processor/avr/systime.c ****  * 
+  12:/Users/Administrator/sos-2x/processor/avr/systime.c ****  * IN NO EVENT SHALL THE VANDERBILT UNIVERSITY BE LIABLE TO ANY PARTY FOR
+  13:/Users/Administrator/sos-2x/processor/avr/systime.c ****  * DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES ARISING OUT
+  14:/Users/Administrator/sos-2x/processor/avr/systime.c ****  * OF THE USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF THE VANDERBILT
+  15:/Users/Administrator/sos-2x/processor/avr/systime.c ****  * UNIVERSITY HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  16:/Users/Administrator/sos-2x/processor/avr/systime.c ****  * 
+  17:/Users/Administrator/sos-2x/processor/avr/systime.c ****  * THE VANDERBILT UNIVERSITY SPECIFICALLY DISCLAIMS ANY WARRANTIES,
+  18:/Users/Administrator/sos-2x/processor/avr/systime.c ****  * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
+  19:/Users/Administrator/sos-2x/processor/avr/systime.c ****  * AND FITNESS FOR A PARTICULAR PURPOSE.  THE SOFTWARE PROVIDED HEREUNDER IS
+  20:/Users/Administrator/sos-2x/processor/avr/systime.c ****  * ON AN "AS IS" BASIS, AND THE VANDERBILT UNIVERSITY HAS NO OBLIGATION TO
+  21:/Users/Administrator/sos-2x/processor/avr/systime.c ****  * PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
+  22:/Users/Administrator/sos-2x/processor/avr/systime.c ****  *
+  23:/Users/Administrator/sos-2x/processor/avr/systime.c ****  * Author: Miklos Maroti
+  24:/Users/Administrator/sos-2x/processor/avr/systime.c ****  * Date last modified: 12/07/03
+  25:/Users/Administrator/sos-2x/processor/avr/systime.c ****  */
+  26:/Users/Administrator/sos-2x/processor/avr/systime.c **** 
+  27:/Users/Administrator/sos-2x/processor/avr/systime.c **** /**
+  28:/Users/Administrator/sos-2x/processor/avr/systime.c ****  * @author Simon Han (Port from TinyOS distribution)
+  29:/Users/Administrator/sos-2x/processor/avr/systime.c ****  * This module provides a 921.6 KHz timer on the MICA2 platform,
+  30:/Users/Administrator/sos-2x/processor/avr/systime.c ****  * and 500 KHz timer on the MICA2DOT platform. We use 1/8 prescaling.
+  31:/Users/Administrator/sos-2x/processor/avr/systime.c ****  */
+  32:/Users/Administrator/sos-2x/processor/avr/systime.c **** #include <hardware_types.h>
+  33:/Users/Administrator/sos-2x/processor/avr/systime.c **** #include <hardware_proc.h>
+  34:/Users/Administrator/sos-2x/processor/avr/systime.c **** #include <sos_types.h>
+  35:/Users/Administrator/sos-2x/processor/avr/systime.c **** #include <measurement.h>
+  36:/Users/Administrator/sos-2x/processor/avr/systime.c **** #include <systime.h>
+  37:/Users/Administrator/sos-2x/processor/avr/systime.c **** 
+  38:/Users/Administrator/sos-2x/processor/avr/systime.c **** void WakeupTimer_fired();
+  39:/Users/Administrator/sos-2x/processor/avr/systime.c **** 
+  40:/Users/Administrator/sos-2x/processor/avr/systime.c **** // this field holds the high 16 bits of the current time
+  41:/Users/Administrator/sos-2x/processor/avr/systime.c **** union time_u
+  42:/Users/Administrator/sos-2x/processor/avr/systime.c **** {
+  43:/Users/Administrator/sos-2x/processor/avr/systime.c **** 	struct
+  44:/Users/Administrator/sos-2x/processor/avr/systime.c **** 	{
+  45:/Users/Administrator/sos-2x/processor/avr/systime.c **** 		uint16_t low;
+  46:/Users/Administrator/sos-2x/processor/avr/systime.c **** 		uint16_t high;
+  47:/Users/Administrator/sos-2x/processor/avr/systime.c **** 	};
+  48:/Users/Administrator/sos-2x/processor/avr/systime.c **** 	uint32_t full;
+  49:/Users/Administrator/sos-2x/processor/avr/systime.c **** };
+  50:/Users/Administrator/sos-2x/processor/avr/systime.c **** 
+  51:/Users/Administrator/sos-2x/processor/avr/systime.c **** static volatile uint16_t currentTime;
+  52:/Users/Administrator/sos-2x/processor/avr/systime.c **** 
+  53:/Users/Administrator/sos-2x/processor/avr/systime.c **** uint16_t ker_systime16L()
+  54:/Users/Administrator/sos-2x/processor/avr/systime.c **** {
+ 109               	.LM1:
+ 110               	/* prologue: frame size=0 */
+ 111               	/* prologue end (size=0) */
+  55:/Users/Administrator/sos-2x/processor/avr/systime.c **** 	return TCNT3;
+ 113               	.LM2:
+ 114 0000 8091 8800 		lds r24,136
+ 115 0004 9091 8900 		lds r25,(136)+1
+ 116               	/* epilogue: frame size=0 */
+ 117 0008 0895      		ret
+ 118               	/* epilogue end (size=1) */
+ 119               	/* function ker_systime16L size 5 (4) */
+ 121               	.Lscope0:
+ 124               	.global	ker_systime16H
+ 126               	ker_systime16H:
+  56:/Users/Administrator/sos-2x/processor/avr/systime.c **** }
+  57:/Users/Administrator/sos-2x/processor/avr/systime.c **** 
+  58:/Users/Administrator/sos-2x/processor/avr/systime.c **** uint16_t ker_systime16H()
+  59:/Users/Administrator/sos-2x/processor/avr/systime.c **** {
+ 128               	.LM3:
+ 129               	/* prologue: frame size=0 */
+ 130               	/* prologue end (size=0) */
+  60:/Users/Administrator/sos-2x/processor/avr/systime.c **** 	return currentTime;
+ 132               	.LM4:
+ 133 000a 8091 0000 		lds r24,currentTime
+ 134 000e 9091 0000 		lds r25,(currentTime)+1
+ 135               	/* epilogue: frame size=0 */
+ 136 0012 0895      		ret
+ 137               	/* epilogue end (size=1) */
+ 138               	/* function ker_systime16H size 5 (4) */
+ 140               	.Lscope1:
+ 143               	.global	ker_systime32
+ 145               	ker_systime32:
+  61:/Users/Administrator/sos-2x/processor/avr/systime.c **** }
+  62:/Users/Administrator/sos-2x/processor/avr/systime.c **** 
+  63:/Users/Administrator/sos-2x/processor/avr/systime.c **** uint32_t ker_systime32()
+  64:/Users/Administrator/sos-2x/processor/avr/systime.c **** {
+ 147               	.LM5:
+ 148               	/* prologue: frame size=0 */
+ 149               	/* prologue end (size=0) */
+  65:/Users/Administrator/sos-2x/processor/avr/systime.c **** 	register union time_u time;
+  66:/Users/Administrator/sos-2x/processor/avr/systime.c **** 	HAS_CRITICAL_SECTION;
+  67:/Users/Administrator/sos-2x/processor/avr/systime.c **** 
+  68:/Users/Administrator/sos-2x/processor/avr/systime.c **** 	ENTER_CRITICAL_SECTION();
+ 151               	.LM6:
+ 152               	/* #APP */
+ 153 0014 6FB7      		in r22, __SREG__
+ 154 0016 F894      		cli
+ 155               		
+  69:/Users/Administrator/sos-2x/processor/avr/systime.c **** 	{
+  70:/Users/Administrator/sos-2x/processor/avr/systime.c **** 		time.low = TCNT3;
+ 157               	.LM7:
+ 158               	/* #NOAPP */
+ 159 0018 8091 8800 		lds r24,136
+ 160 001c 9091 8900 		lds r25,(136)+1
+ 161 0020 9C01      		movw r18,r24
+  71:/Users/Administrator/sos-2x/processor/avr/systime.c **** 		time.high = currentTime;
+ 163               	.LM8:
+ 164 0022 8091 0000 		lds r24,currentTime
+ 165 0026 9091 0000 		lds r25,(currentTime)+1
+ 166 002a AC01      		movw r20,r24
+  72:/Users/Administrator/sos-2x/processor/avr/systime.c **** 
+  73:/Users/Administrator/sos-2x/processor/avr/systime.c **** 		// maybe there was a pending interrupt
+  74:/Users/Administrator/sos-2x/processor/avr/systime.c **** 		if( bit_is_set(ETIFR, TOV3) && ((int16_t)time.low) >= 0 )
+ 168               	.LM9:
+ 169 002c 8091 7C00 		lds r24,124
+ 170 0030 82FF      		sbrs r24,2
+ 171 0032 04C0      		rjmp .L4
+ 173               	.LM10:
+ 174 0034 37FD      		sbrc r19,7
+ 175 0036 02C0      		rjmp .L4
+  75:/Users/Administrator/sos-2x/processor/avr/systime.c **** 			++time.high;
+ 177               	.LM11:
+ 178 0038 4F5F      		subi r20,lo8(-(1))
+ 179 003a 5F4F      		sbci r21,hi8(-(1))
+ 180               	.L4:
+  76:/Users/Administrator/sos-2x/processor/avr/systime.c **** 	}
+  77:/Users/Administrator/sos-2x/processor/avr/systime.c **** 	LEAVE_CRITICAL_SECTION();
+ 182               	.LM12:
+ 183               	/* #APP */
+ 184 003c 6FBF      		out __SREG__, r22
+ 185               		
+  78:/Users/Administrator/sos-2x/processor/avr/systime.c **** 
+  79:/Users/Administrator/sos-2x/processor/avr/systime.c **** 	return time.full;
+  80:/Users/Administrator/sos-2x/processor/avr/systime.c **** }
+ 187               	.LM13:
+ 188               	/* #NOAPP */
+ 189 003e CA01      		movw r24,r20
+ 190 0040 B901      		movw r22,r18
+ 191               	/* epilogue: frame size=0 */
+ 192 0042 0895      		ret
+ 193               	/* epilogue end (size=1) */
+ 194               	/* function ker_systime32 size 31 (30) */
+ 200               	.Lscope2:
+ 203               	.global	__vector_29
+ 205               	__vector_29:
+  81:/Users/Administrator/sos-2x/processor/avr/systime.c **** 
+  82:/Users/Administrator/sos-2x/processor/avr/systime.c **** /*
+  83:/Users/Administrator/sos-2x/processor/avr/systime.c **** uint32_t ker_systime_castTime16(uint16_t time16)
+  84:/Users/Administrator/sos-2x/processor/avr/systime.c **** {
+  85:/Users/Administrator/sos-2x/processor/avr/systime.c **** 	uint32_t time = call SysTime.getTime32();
+  86:/Users/Administrator/sos-2x/processor/avr/systime.c **** 	time += (int16_t)time16 - (int16_t)time;
+  87:/Users/Administrator/sos-2x/processor/avr/systime.c **** 	return time;
+  88:/Users/Administrator/sos-2x/processor/avr/systime.c **** }
+  89:/Users/Administrator/sos-2x/processor/avr/systime.c **** */
+  90:/Users/Administrator/sos-2x/processor/avr/systime.c **** 
+  91:/Users/Administrator/sos-2x/processor/avr/systime.c **** // Use SIGNAL instead of INTERRUPT to get atomic update of time
+  92:/Users/Administrator/sos-2x/processor/avr/systime.c **** SIGNAL(SIG_OVERFLOW3)
+  93:/Users/Administrator/sos-2x/processor/avr/systime.c **** {
+ 207               	.LM14:
+ 208               	/* prologue: frame size=0 */
+ 209 0044 1F92      		push __zero_reg__
+ 210 0046 0F92      		push __tmp_reg__
+ 211 0048 0FB6      		in __tmp_reg__,__SREG__
+ 212 004a 0F92      		push __tmp_reg__
+ 213 004c 1124      		clr __zero_reg__
+ 214 004e 2F93      		push r18
+ 215 0050 8F93      		push r24
+ 216 0052 9F93      		push r25
+ 217               	/* prologue end (size=8) */
+  94:/Users/Administrator/sos-2x/processor/avr/systime.c **** 	SOS_MEASUREMENT_IDLE_END();
+  95:/Users/Administrator/sos-2x/processor/avr/systime.c **** 	++currentTime;
+ 219               	.LM15:
+ 220 0054 8091 0000 		lds r24,currentTime
+ 221 0058 9091 0000 		lds r25,(currentTime)+1
+ 222 005c 0196      		adiw r24,1
+ 223 005e 9093 0000 		sts (currentTime)+1,r25
+ 224 0062 8093 0000 		sts currentTime,r24
+  96:/Users/Administrator/sos-2x/processor/avr/systime.c **** 	if(currentTime == TIMER3_MAX_GTIME)
+ 226               	.LM16:
+ 227 0066 8091 0000 		lds r24,currentTime
+ 228 006a 9091 0000 		lds r25,(currentTime)+1
+ 229 006e 8050      		subi r24,lo8(32512)
+ 230 0070 9F47      		sbci r25,hi8(32512)
+ 231 0072 21F4      		brne .L5
+  97:/Users/Administrator/sos-2x/processor/avr/systime.c **** 		currentTime = 0;	
+ 233               	.LM17:
+ 234 0074 1092 0000 		sts (currentTime)+1,__zero_reg__
+ 235 0078 1092 0000 		sts currentTime,__zero_reg__
+ 236               	.L5:
+ 237               	/* epilogue: frame size=0 */
+ 238 007c 9F91      		pop r25
+ 239 007e 8F91      		pop r24
+ 240 0080 2F91      		pop r18
+ 241 0082 0F90      		pop __tmp_reg__
+ 242 0084 0FBE      		out __SREG__,__tmp_reg__
+ 243 0086 0F90      		pop __tmp_reg__
+ 244 0088 1F90      		pop __zero_reg__
+ 245 008a 1895      		reti
+ 246               	/* epilogue end (size=8) */
+ 247               	/* function __vector_29 size 37 (21) */
+ 249               	.Lscope3:
+ 252               	.global	systime_init
+ 254               	systime_init:
+  98:/Users/Administrator/sos-2x/processor/avr/systime.c **** 	
+  99:/Users/Administrator/sos-2x/processor/avr/systime.c **** 	#ifdef UBMAC
+ 100:/Users/Administrator/sos-2x/processor/avr/systime.c **** 	WakeupTimer_fired();		
+ 101:/Users/Administrator/sos-2x/processor/avr/systime.c **** 	#endif
+ 102:/Users/Administrator/sos-2x/processor/avr/systime.c **** }
+ 103:/Users/Administrator/sos-2x/processor/avr/systime.c **** 
+ 104:/Users/Administrator/sos-2x/processor/avr/systime.c **** void systime_init()
+ 105:/Users/Administrator/sos-2x/processor/avr/systime.c **** {
+ 256               	.LM18:
+ 257               	/* prologue: frame size=0 */
+ 258               	/* prologue end (size=0) */
+ 106:/Users/Administrator/sos-2x/processor/avr/systime.c **** 	uint8_t etimsk;
+ 107:/Users/Administrator/sos-2x/processor/avr/systime.c **** 	HAS_CRITICAL_SECTION;
+ 108:/Users/Administrator/sos-2x/processor/avr/systime.c **** 
+ 109:/Users/Administrator/sos-2x/processor/avr/systime.c **** 	TCCR3A = 0x00;
+ 260               	.LM19:
+ 261 008c 1092 8B00 		sts 139,__zero_reg__
+ 110:/Users/Administrator/sos-2x/processor/avr/systime.c **** 	TCCR3B = 0x00;
+ 263               	.LM20:
+ 264 0090 1092 8A00 		sts 138,__zero_reg__
+ 111:/Users/Administrator/sos-2x/processor/avr/systime.c **** 
+ 112:/Users/Administrator/sos-2x/processor/avr/systime.c **** 	ENTER_CRITICAL_SECTION();
+ 266               	.LM21:
+ 267               	/* #APP */
+ 268 0094 8FB7      		in r24, __SREG__
+ 269 0096 F894      		cli
+ 270               		
+ 113:/Users/Administrator/sos-2x/processor/avr/systime.c **** 	{
+ 114:/Users/Administrator/sos-2x/processor/avr/systime.c **** 		etimsk = ETIMSK;
+ 272               	.LM22:
+ 273               	/* #NOAPP */
+ 274 0098 9091 7D00 		lds r25,125
+ 115:/Users/Administrator/sos-2x/processor/avr/systime.c **** 		etimsk &= (1<<OCIE1C);
+ 276               	.LM23:
+ 277 009c 9170      		andi r25,lo8(1)
+ 116:/Users/Administrator/sos-2x/processor/avr/systime.c **** 		etimsk |= (1<<TOIE3);
+ 279               	.LM24:
+ 280 009e 9460      		ori r25,lo8(4)
+ 117:/Users/Administrator/sos-2x/processor/avr/systime.c **** 		ETIMSK = etimsk;
+ 282               	.LM25:
+ 283 00a0 9093 7D00 		sts 125,r25
+ 118:/Users/Administrator/sos-2x/processor/avr/systime.c **** 	}
+ 119:/Users/Administrator/sos-2x/processor/avr/systime.c **** 	LEAVE_CRITICAL_SECTION();
+ 285               	.LM26:
+ 286               	/* #APP */
+ 287 00a4 8FBF      		out __SREG__, r24
+ 288               		
+ 120:/Users/Administrator/sos-2x/processor/avr/systime.c **** 	//! start the timer
+ 121:/Users/Administrator/sos-2x/processor/avr/systime.c **** 	//! start the timer with 1/64 prescaler, 115.2 KHz on MICA2
+ 122:/Users/Administrator/sos-2x/processor/avr/systime.c **** 	TCCR3B = 0x03;
+ 290               	.LM27:
+ 291               	/* #NOAPP */
+ 292 00a6 83E0      		ldi r24,lo8(3)
+ 293 00a8 8093 8A00 		sts 138,r24
+ 294               	/* epilogue: frame size=0 */
+ 295 00ac 0895      		ret
+ 296               	/* epilogue end (size=1) */
+ 297               	/* function systime_init size 24 (23) */
+ 303               	.Lscope4:
+ 306               	.global	systime_stop
+ 308               	systime_stop:
+ 123:/Users/Administrator/sos-2x/processor/avr/systime.c **** }
+ 124:/Users/Administrator/sos-2x/processor/avr/systime.c **** 
+ 125:/Users/Administrator/sos-2x/processor/avr/systime.c **** void systime_stop()
+ 126:/Users/Administrator/sos-2x/processor/avr/systime.c **** {
+ 310               	.LM28:
+ 311               	/* prologue: frame size=0 */
+ 312               	/* prologue end (size=0) */
+ 127:/Users/Administrator/sos-2x/processor/avr/systime.c **** 	// stop the timer
+ 128:/Users/Administrator/sos-2x/processor/avr/systime.c **** 	TCCR3B = 0x00;
+ 314               	.LM29:
+ 315 00ae 1092 8A00 		sts 138,__zero_reg__
+ 316               	/* epilogue: frame size=0 */
+ 317 00b2 0895      		ret
+ 318               	/* epilogue end (size=1) */
+ 319               	/* function systime_stop size 3 (2) */
+ 321               	.Lscope5:
+ 323               		.lcomm currentTime,2
+ 325               		.text
+ 327               	Letext:
+ 328               	/* File "/Users/Administrator/sos-2x/processor/avr/systime.c": code  105 = 0x0069 (  84), prologues
+DEFINED SYMBOLS
+                            *ABS*:00000000 systime.c
+                            *ABS*:0000003f __SREG__
+                            *ABS*:0000003e __SP_H__
+                            *ABS*:0000003d __SP_L__
+                            *ABS*:00000000 __tmp_reg__
+                            *ABS*:00000001 __zero_reg__
+/var/tmp//ccqWw1ux.s:107    .text:00000000 ker_systime16L
+/var/tmp//ccqWw1ux.s:126    .text:0000000a ker_systime16H
+                             .bss:00000000 currentTime
+/var/tmp//ccqWw1ux.s:145    .text:00000014 ker_systime32
+/var/tmp//ccqWw1ux.s:205    .text:00000044 __vector_29
+/var/tmp//ccqWw1ux.s:254    .text:0000008c systime_init
+/var/tmp//ccqWw1ux.s:308    .text:000000ae systime_stop
+/var/tmp//ccqWw1ux.s:327    .text:000000b4 Letext
+
+UNDEFINED SYMBOLS
+__do_copy_data
+__do_clear_bss

@@ -1,0 +1,2251 @@
+   1               		.file	"fntable.c"
+   2               		.arch atmega128
+   3               	__SREG__ = 0x3f
+   4               	__SP_H__ = 0x3e
+   5               	__SP_L__ = 0x3d
+   6               	__tmp_reg__ = 0
+   7               	__zero_reg__ = 1
+   8               		.global __do_copy_data
+   9               		.global __do_clear_bss
+  12               		.text
+  13               	.Ltext0:
+ 181               	.global	fntable_init
+ 183               	fntable_init:
+   1:/Users/Administrator/sos-2x/kernel/fntable.c **** /* -*- Mode: C; tab-width:4 -*- */
+   2:/Users/Administrator/sos-2x/kernel/fntable.c **** /* ex: set ts=4 shiftwidth=4 softtabstop=4 cindent: */
+   3:/Users/Administrator/sos-2x/kernel/fntable.c **** /*
+   4:/Users/Administrator/sos-2x/kernel/fntable.c ****  * Copyright (c) 2003 The Regents of the University of California.
+   5:/Users/Administrator/sos-2x/kernel/fntable.c ****  * All rights reserved.
+   6:/Users/Administrator/sos-2x/kernel/fntable.c ****  *
+   7:/Users/Administrator/sos-2x/kernel/fntable.c ****  * Redistribution and use in source and binary forms, with or without
+   8:/Users/Administrator/sos-2x/kernel/fntable.c ****  * modification, are permitted provided that the following conditions
+   9:/Users/Administrator/sos-2x/kernel/fntable.c ****  * are met:
+  10:/Users/Administrator/sos-2x/kernel/fntable.c ****  * 1. Redistributions of source code must retain the above copyright
+  11:/Users/Administrator/sos-2x/kernel/fntable.c ****  *    notice, this list of conditions and the following disclaimer.
+  12:/Users/Administrator/sos-2x/kernel/fntable.c ****  * 2. Redistributions in binary form must reproduce the above
+  13:/Users/Administrator/sos-2x/kernel/fntable.c ****  *    copyright notice, this list of conditions and the following
+  14:/Users/Administrator/sos-2x/kernel/fntable.c ****  *    disclaimer in the documentation and/or other materials provided
+  15:/Users/Administrator/sos-2x/kernel/fntable.c ****  *    with the distribution.
+  16:/Users/Administrator/sos-2x/kernel/fntable.c ****  * 3. All advertising materials mentioning features or use of this
+  17:/Users/Administrator/sos-2x/kernel/fntable.c ****  *    software must display the following acknowledgement:
+  18:/Users/Administrator/sos-2x/kernel/fntable.c ****  *       This product includes software developed by Networked &
+  19:/Users/Administrator/sos-2x/kernel/fntable.c ****  *       Embedded Systems Lab at UCLA
+  20:/Users/Administrator/sos-2x/kernel/fntable.c ****  * 4. Neither the name of the University nor that of the Laboratory
+  21:/Users/Administrator/sos-2x/kernel/fntable.c ****  *    may be used to endorse or promote products derived from this
+  22:/Users/Administrator/sos-2x/kernel/fntable.c ****  *    software without specific prior written permission.
+  23:/Users/Administrator/sos-2x/kernel/fntable.c ****  *
+  24:/Users/Administrator/sos-2x/kernel/fntable.c ****  * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS''
+  25:/Users/Administrator/sos-2x/kernel/fntable.c ****  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+  26:/Users/Administrator/sos-2x/kernel/fntable.c ****  * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+  27:/Users/Administrator/sos-2x/kernel/fntable.c ****  * PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE REGENTS
+  28:/Users/Administrator/sos-2x/kernel/fntable.c ****  * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+  29:/Users/Administrator/sos-2x/kernel/fntable.c ****  * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+  30:/Users/Administrator/sos-2x/kernel/fntable.c ****  * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+  31:/Users/Administrator/sos-2x/kernel/fntable.c ****  * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+  32:/Users/Administrator/sos-2x/kernel/fntable.c ****  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+  33:/Users/Administrator/sos-2x/kernel/fntable.c ****  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+  34:/Users/Administrator/sos-2x/kernel/fntable.c ****  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+  35:/Users/Administrator/sos-2x/kernel/fntable.c ****  * SUCH DAMAGE.
+  36:/Users/Administrator/sos-2x/kernel/fntable.c ****  *
+  37:/Users/Administrator/sos-2x/kernel/fntable.c ****  */
+  38:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+  39:/Users/Administrator/sos-2x/kernel/fntable.c **** /**
+  40:/Users/Administrator/sos-2x/kernel/fntable.c ****  * @brief    Function Pointer Table
+  41:/Users/Administrator/sos-2x/kernel/fntable.c ****  * @author   Ram Kumar (ram@ee.ucla.edu)
+  42:/Users/Administrator/sos-2x/kernel/fntable.c ****  */
+  43:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+  44:/Users/Administrator/sos-2x/kernel/fntable.c **** #include <sos_types.h>
+  45:/Users/Administrator/sos-2x/kernel/fntable.c **** #include <sos_sched.h>
+  46:/Users/Administrator/sos-2x/kernel/fntable.c **** #include <malloc.h>
+  47:/Users/Administrator/sos-2x/kernel/fntable.c **** #include <message.h>
+  48:/Users/Administrator/sos-2x/kernel/fntable.c **** #include <sos_module_types.h>
+  49:/Users/Administrator/sos-2x/kernel/fntable.c **** #include <sos_linker_conf.h>
+  50:/Users/Administrator/sos-2x/kernel/fntable.c **** #include <fntable_types.h>
+  51:/Users/Administrator/sos-2x/kernel/fntable.c **** #include <fntable.h>
+  52:/Users/Administrator/sos-2x/kernel/fntable.c **** #include <error_type.h>
+  53:/Users/Administrator/sos-2x/kernel/fntable.c **** #ifdef SOS_SFI
+  54:/Users/Administrator/sos-2x/kernel/fntable.c **** #include <sfi_jumptable.h>
+  55:/Users/Administrator/sos-2x/kernel/fntable.c **** #endif
+  56:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+  57:/Users/Administrator/sos-2x/kernel/fntable.c **** /*
+  58:/Users/Administrator/sos-2x/kernel/fntable.c **** #ifndef SOS_DEBUG_FN_TABLE
+  59:/Users/Administrator/sos-2x/kernel/fntable.c **** #undef DEBUG
+  60:/Users/Administrator/sos-2x/kernel/fntable.c **** #define DEBUG(...)
+  61:/Users/Administrator/sos-2x/kernel/fntable.c **** #endif
+  62:/Users/Administrator/sos-2x/kernel/fntable.c **** */
+  63:/Users/Administrator/sos-2x/kernel/fntable.c **** //----------------------------------------------------------------------------
+  64:/Users/Administrator/sos-2x/kernel/fntable.c **** // Typedefs
+  65:/Users/Administrator/sos-2x/kernel/fntable.c **** //----------------------------------------------------------------------------
+  66:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+  67:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+  68:/Users/Administrator/sos-2x/kernel/fntable.c **** //----------------------------------------------------------------------------
+  69:/Users/Administrator/sos-2x/kernel/fntable.c **** // Global Variables
+  70:/Users/Administrator/sos-2x/kernel/fntable.c **** //----------------------------------------------------------------------------
+  71:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+  72:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+  73:/Users/Administrator/sos-2x/kernel/fntable.c **** //! Local Functions
+  74:/Users/Administrator/sos-2x/kernel/fntable.c **** static bool check_proto(uint8_t *proto1, uint8_t *proto2);
+  75:/Users/Administrator/sos-2x/kernel/fntable.c **** static func_cb_ptr fntable_get_prov_cb(func_cb_ptr funct, uint8_t fid,
+  76:/Users/Administrator/sos-2x/kernel/fntable.c **** 		uint8_t start, uint8_t end);
+  77:/Users/Administrator/sos-2x/kernel/fntable.c **** static void fntable_link_provided_functions(func_cb_ptr funct,
+  78:/Users/Administrator/sos-2x/kernel/fntable.c **** 		uint8_t start, uint8_t end, bool link);
+  79:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+  80:/Users/Administrator/sos-2x/kernel/fntable.c **** // Function exposed to wiring engine for ViRe
+  81:/Users/Administrator/sos-2x/kernel/fntable.c **** func_cb_ptr fntable_real_subscribe(mod_header_ptr sub_h,
+  82:/Users/Administrator/sos-2x/kernel/fntable.c **** 		sos_pid_t pub_pid, uint8_t fid, uint8_t table_index);
+  83:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+  84:/Users/Administrator/sos-2x/kernel/fntable.c **** /**
+  85:/Users/Administrator/sos-2x/kernel/fntable.c ****  * @brief Initializes the function pointer list to NULL
+  86:/Users/Administrator/sos-2x/kernel/fntable.c ****  */
+  87:/Users/Administrator/sos-2x/kernel/fntable.c **** int8_t fntable_init()
+  88:/Users/Administrator/sos-2x/kernel/fntable.c **** {
+ 185               	.LM1:
+ 186               	/* prologue: frame size=0 */
+ 187               	/* prologue end (size=0) */
+  89:/Users/Administrator/sos-2x/kernel/fntable.c ****     return SOS_OK;
+  90:/Users/Administrator/sos-2x/kernel/fntable.c **** }
+ 189               	.LM2:
+ 190 0000 80E0      		ldi r24,lo8(0)
+ 191 0002 90E0      		ldi r25,hi8(0)
+ 192               	/* epilogue: frame size=0 */
+ 193 0004 0895      		ret
+ 194               	/* epilogue end (size=1) */
+ 195               	/* function fntable_init size 3 (2) */
+ 197               	.Lscope0:
+ 205               	fntable_get_prov_cb:
+  91:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+  92:/Users/Administrator/sos-2x/kernel/fntable.c **** /**
+  93:/Users/Administrator/sos-2x/kernel/fntable.c ****  * @brief subscribe to function pointer
+  94:/Users/Administrator/sos-2x/kernel/fntable.c ****  * @param sos_pid_t sub_pid Module requesting function. (User) *
+  95:/Users/Administrator/sos-2x/kernel/fntable.c ****  * @param sos_pid_t pub_pid Module implementing the requested function. (Provider)
+  96:/Users/Administrator/sos-2x/kernel/fntable.c ****  * @param uint8_t fid function id the module is going to subscribe
+  97:/Users/Administrator/sos-2x/kernel/fntable.c ****  * @param uint8_t table_index the index to the function record, starting zero, this is used for get
+  98:/Users/Administrator/sos-2x/kernel/fntable.c ****  * @return errno
+  99:/Users/Administrator/sos-2x/kernel/fntable.c ****  *
+ 100:/Users/Administrator/sos-2x/kernel/fntable.c ****  */
+ 101:/Users/Administrator/sos-2x/kernel/fntable.c **** int8_t ker_fntable_subscribe(sos_pid_t sub_pid, sos_pid_t pub_pid,
+ 102:/Users/Administrator/sos-2x/kernel/fntable.c **** 							 uint8_t fid, uint8_t table_index)
+ 103:/Users/Administrator/sos-2x/kernel/fntable.c **** {
+ 104:/Users/Administrator/sos-2x/kernel/fntable.c **** 	sos_module_t *mod;
+ 105:/Users/Administrator/sos-2x/kernel/fntable.c **** 	mod_header_ptr sub_h;
+ 106:/Users/Administrator/sos-2x/kernel/fntable.c **** 	func_cb_ptr cb;
+ 107:/Users/Administrator/sos-2x/kernel/fntable.c **** 	func_cb_ptr *cb_in_ram;
+ 108:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+ 109:/Users/Administrator/sos-2x/kernel/fntable.c **** 	mod = ker_get_module(sub_pid);
+ 110:/Users/Administrator/sos-2x/kernel/fntable.c **** 	if(mod == NULL) {	
+ 111:/Users/Administrator/sos-2x/kernel/fntable.c **** 		ker_panic();
+ 112:/Users/Administrator/sos-2x/kernel/fntable.c **** 		return -EINVAL;
+ 113:/Users/Administrator/sos-2x/kernel/fntable.c **** 	}
+ 114:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+ 115:/Users/Administrator/sos-2x/kernel/fntable.c **** 	sub_h = mod->header;
+ 116:/Users/Administrator/sos-2x/kernel/fntable.c **** 	cb_in_ram = (func_cb_ptr*)(mod->handler_state);
+ 117:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+ 118:/Users/Administrator/sos-2x/kernel/fntable.c **** 	cb = fntable_real_subscribe(sub_h, pub_pid, fid, table_index);
+ 119:/Users/Administrator/sos-2x/kernel/fntable.c **** 	if(cb != 0) {
+ 120:/Users/Administrator/sos-2x/kernel/fntable.c **** 		cb_in_ram[table_index] = cb;
+ 121:/Users/Administrator/sos-2x/kernel/fntable.c **** 	} else {
+ 122:/Users/Administrator/sos-2x/kernel/fntable.c **** 		cb_in_ram[table_index] = sos_get_header_member(sub_h,
+ 123:/Users/Administrator/sos-2x/kernel/fntable.c **** 				offsetof(mod_header_t, funct[table_index]));
+ 124:/Users/Administrator/sos-2x/kernel/fntable.c **** 	}
+ 125:/Users/Administrator/sos-2x/kernel/fntable.c **** #ifdef SOS_USE_PREEMPTION
+ 126:/Users/Administrator/sos-2x/kernel/fntable.c ****   // Add this pid to the subscribtion list
+ 127:/Users/Administrator/sos-2x/kernel/fntable.c ****   if(mod->num_sub >= mod->max_sub) {
+ 128:/Users/Administrator/sos-2x/kernel/fntable.c **** 	ker_panic();
+ 129:/Users/Administrator/sos-2x/kernel/fntable.c **** 	return -EINVAL;
+ 130:/Users/Administrator/sos-2x/kernel/fntable.c ****   }
+ 131:/Users/Administrator/sos-2x/kernel/fntable.c ****   // ?? double check num_sub - 1 ??
+ 132:/Users/Administrator/sos-2x/kernel/fntable.c ****   mod->sub_list[(mod->num_sub - 1)] = pub_pid;
+ 133:/Users/Administrator/sos-2x/kernel/fntable.c ****   mod->num_sub++;
+ 134:/Users/Administrator/sos-2x/kernel/fntable.c **** #endif
+ 135:/Users/Administrator/sos-2x/kernel/fntable.c **** 	return SOS_OK;
+ 136:/Users/Administrator/sos-2x/kernel/fntable.c **** }
+ 137:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+ 138:/Users/Administrator/sos-2x/kernel/fntable.c **** void* ker_fntable_get_dfunc_addr(sos_pid_t pub_pid, uint8_t fid)
+ 139:/Users/Administrator/sos-2x/kernel/fntable.c **** {
+ 140:/Users/Administrator/sos-2x/kernel/fntable.c **** 	sos_module_t *mod;
+ 141:/Users/Administrator/sos-2x/kernel/fntable.c **** 	uint8_t num_sub_func;
+ 142:/Users/Administrator/sos-2x/kernel/fntable.c **** 	uint8_t num_prov_func;
+ 143:/Users/Administrator/sos-2x/kernel/fntable.c **** 	mod_header_ptr pub_h;
+ 144:/Users/Administrator/sos-2x/kernel/fntable.c **** 	func_cb_ptr pub_cb = 0;
+ 145:/Users/Administrator/sos-2x/kernel/fntable.c **** 	
+ 146:/Users/Administrator/sos-2x/kernel/fntable.c **** 	mod = ker_get_module(pub_pid);
+ 147:/Users/Administrator/sos-2x/kernel/fntable.c **** 	if(mod == NULL) {	
+ 148:/Users/Administrator/sos-2x/kernel/fntable.c **** 		return NULL;
+ 149:/Users/Administrator/sos-2x/kernel/fntable.c **** 	}
+ 150:/Users/Administrator/sos-2x/kernel/fntable.c **** 	
+ 151:/Users/Administrator/sos-2x/kernel/fntable.c **** 	pub_h = mod->header;
+ 152:/Users/Administrator/sos-2x/kernel/fntable.c **** 	num_sub_func = sos_read_header_byte(pub_h,
+ 153:/Users/Administrator/sos-2x/kernel/fntable.c **** 			offsetof(mod_header_t, num_sub_func));
+ 154:/Users/Administrator/sos-2x/kernel/fntable.c **** 	num_prov_func = sos_read_header_byte(pub_h,
+ 155:/Users/Administrator/sos-2x/kernel/fntable.c **** 			offsetof(mod_header_t, num_prov_func));
+ 156:/Users/Administrator/sos-2x/kernel/fntable.c **** 			
+ 157:/Users/Administrator/sos-2x/kernel/fntable.c **** 	pub_cb = fntable_get_prov_cb(
+ 158:/Users/Administrator/sos-2x/kernel/fntable.c **** 			sos_get_header_member(pub_h, offsetof(mod_header_t, funct)),
+ 159:/Users/Administrator/sos-2x/kernel/fntable.c **** 			fid, num_sub_func, num_sub_func + num_prov_func);
+ 160:/Users/Administrator/sos-2x/kernel/fntable.c **** 	if(pub_cb == 0) {
+ 161:/Users/Administrator/sos-2x/kernel/fntable.c **** 		return NULL;
+ 162:/Users/Administrator/sos-2x/kernel/fntable.c **** 	}
+ 163:/Users/Administrator/sos-2x/kernel/fntable.c **** 	// TODO: typechecking
+ 164:/Users/Administrator/sos-2x/kernel/fntable.c **** 	
+ 165:/Users/Administrator/sos-2x/kernel/fntable.c **** 	return (void*)sos_read_header_ptr(pub_cb, offsetof(func_cb_t, ptr));
+ 166:/Users/Administrator/sos-2x/kernel/fntable.c **** }
+ 167:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+ 168:/Users/Administrator/sos-2x/kernel/fntable.c **** func_cb_ptr fntable_real_subscribe(mod_header_ptr sub_h, sos_pid_t pub_pid, uint8_t fid, uint8_t ta
+ 169:/Users/Administrator/sos-2x/kernel/fntable.c **** {
+ 170:/Users/Administrator/sos-2x/kernel/fntable.c **** 	mod_header_ptr pub_h;
+ 171:/Users/Administrator/sos-2x/kernel/fntable.c **** 	uint8_t proto_pub[4];
+ 172:/Users/Administrator/sos-2x/kernel/fntable.c **** 	uint8_t proto_sub[4];
+ 173:/Users/Administrator/sos-2x/kernel/fntable.c **** 	func_cb_ptr pub_cb = 0;
+ 174:/Users/Administrator/sos-2x/kernel/fntable.c **** 	uint8_t i = 0;
+ 175:/Users/Administrator/sos-2x/kernel/fntable.c **** 	uint8_t num_sub_func;
+ 176:/Users/Administrator/sos-2x/kernel/fntable.c **** 	uint8_t num_prov_func;
+ 177:/Users/Administrator/sos-2x/kernel/fntable.c **** 	sos_module_t *mod;
+ 178:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+ 179:/Users/Administrator/sos-2x/kernel/fntable.c **** 	mod = ker_get_module(pub_pid);
+ 180:/Users/Administrator/sos-2x/kernel/fntable.c **** 	if(mod == NULL) return 0;
+ 181:/Users/Administrator/sos-2x/kernel/fntable.c **** 	pub_h = mod->header;
+ 182:/Users/Administrator/sos-2x/kernel/fntable.c **** 	num_sub_func = sos_read_header_byte(pub_h,
+ 183:/Users/Administrator/sos-2x/kernel/fntable.c **** 			offsetof(mod_header_t, num_sub_func));
+ 184:/Users/Administrator/sos-2x/kernel/fntable.c **** 	num_prov_func = sos_read_header_byte(pub_h,
+ 185:/Users/Administrator/sos-2x/kernel/fntable.c **** 			offsetof(mod_header_t, num_prov_func));
+ 186:/Users/Administrator/sos-2x/kernel/fntable.c **** 	pub_cb = fntable_get_prov_cb(
+ 187:/Users/Administrator/sos-2x/kernel/fntable.c **** 			sos_get_header_member(pub_h, offsetof(mod_header_t, funct)),
+ 188:/Users/Administrator/sos-2x/kernel/fntable.c **** 			fid, num_sub_func, num_sub_func + num_prov_func);
+ 189:/Users/Administrator/sos-2x/kernel/fntable.c **** 	if(pub_cb == 0) {
+ 190:/Users/Administrator/sos-2x/kernel/fntable.c **** 		return 0;
+ 191:/Users/Administrator/sos-2x/kernel/fntable.c **** 	}
+ 192:/Users/Administrator/sos-2x/kernel/fntable.c **** 	for(i = 0; i < 4; i++) {
+ 193:/Users/Administrator/sos-2x/kernel/fntable.c **** 		proto_pub[i] = sos_read_header_byte(pub_cb,
+ 194:/Users/Administrator/sos-2x/kernel/fntable.c **** 				offsetof(func_cb_t, proto[i]));
+ 195:/Users/Administrator/sos-2x/kernel/fntable.c **** 		proto_sub[i] = sos_read_header_byte(sub_h,
+ 196:/Users/Administrator/sos-2x/kernel/fntable.c **** 				offsetof(mod_header_t, funct[table_index].proto[i]));
+ 197:/Users/Administrator/sos-2x/kernel/fntable.c **** 	}
+ 198:/Users/Administrator/sos-2x/kernel/fntable.c **** 	if(check_proto(proto_pub, proto_sub)) {
+ 199:/Users/Administrator/sos-2x/kernel/fntable.c **** 		return pub_cb;
+ 200:/Users/Administrator/sos-2x/kernel/fntable.c **** 	}
+ 201:/Users/Administrator/sos-2x/kernel/fntable.c **** 	return 0;
+ 202:/Users/Administrator/sos-2x/kernel/fntable.c **** }
+ 203:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+ 204:/Users/Administrator/sos-2x/kernel/fntable.c **** static func_cb_ptr fntable_get_prov_cb(func_cb_ptr funct, uint8_t fid, uint8_t start, uint8_t end)
+ 205:/Users/Administrator/sos-2x/kernel/fntable.c **** {
+ 207               	.LM3:
+ 208               	/* prologue: frame size=0 */
+ 209 0006 0F93      		push r16
+ 210 0008 1F93      		push r17
+ 211 000a CF93      		push r28
+ 212               	/* prologue end (size=3) */
+ 213 000c FC01      		movw r30,r24
+ 214 000e 062F      		mov r16,r22
+ 215 0010 842F      		mov r24,r20
+ 216 0012 122F      		mov r17,r18
+ 206:/Users/Administrator/sos-2x/kernel/fntable.c **** 	uint8_t i;
+ 207:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+ 208:/Users/Administrator/sos-2x/kernel/fntable.c **** 	for(i = start; i < end; i++) {
+ 218               	.LM4:
+ 219 0014 C42F      		mov r28,r20
+ 220 0016 4217      		cp r20,r18
+ 221 0018 80F5      		brsh .L9
+ 222 001a 9F01      		movw r18,r30
+ 223 001c 4427      		clr r20
+ 224 001e 5527      		clr r21
+ 225 0020 220F      		lsl r18
+ 226 0022 331F      		rol r19
+ 227 0024 441F      		rol r20
+ 228 0026 551F      		rol r21
+ 229 0028 682F      		mov r22,r24
+ 230 002a 7727      		clr r23
+ 231 002c 93E0      		ldi r25,3
+ 232 002e 660F      	1:	lsl r22
+ 233 0030 771F      		rol r23
+ 234 0032 9A95      		dec r25
+ 235 0034 E1F7      		brne 1b
+ 236               	.L7:
+ 237               	.LBB2:
+ 209:/Users/Administrator/sos-2x/kernel/fntable.c **** 		if(sos_read_header_byte(funct,
+ 239               	.LM5:
+ 240 0036 695F      		subi r22,lo8(-(7))
+ 241 0038 7F4F      		sbci r23,hi8(-(7))
+ 242 003a CB01      		movw r24,r22
+ 243 003c AA27      		clr r26
+ 244 003e BB27      		clr r27
+ 245 0040 6750      		subi r22,lo8(-(-7))
+ 246 0042 7040      		sbci r23,hi8(-(-7))
+ 247 0044 820F      		add r24,r18
+ 248 0046 931F      		adc r25,r19
+ 249 0048 A41F      		adc r26,r20
+ 250 004a B51F      		adc r27,r21
+ 251               	/* #APP */
+ 252 004c ABBF      		out 59, r26
+ 253 004e FC01      		movw r30, r24
+ 254 0050 8791      		elpm r24, Z+
+ 255               		
+ 256               	/* #NOAPP */
+ 257               	.LBE2:
+ 258 0052 8017      		cp r24,r16
+ 259 0054 69F4      		brne .L5
+ 210:/Users/Administrator/sos-2x/kernel/fntable.c **** 					i * sizeof(func_cb_t) + offsetof(func_cb_t, fid))
+ 211:/Users/Administrator/sos-2x/kernel/fntable.c **** 			   	== fid) {
+ 212:/Users/Administrator/sos-2x/kernel/fntable.c **** 			return sos_get_header_member(funct,
+ 261               	.LM6:
+ 262 0056 CB01      		movw r24,r22
+ 263 0058 AA27      		clr r26
+ 264 005a BB27      		clr r27
+ 265 005c 280F      		add r18,r24
+ 266 005e 391F      		adc r19,r25
+ 267 0060 4A1F      		adc r20,r26
+ 268 0062 5B1F      		adc r21,r27
+ 269 0064 5695      		lsr r21
+ 270 0066 4795      		ror r20
+ 271 0068 3795      		ror r19
+ 272 006a 2795      		ror r18
+ 273 006c C901      		movw r24,r18
+ 274 006e 07C0      		rjmp .L2
+ 275               	.L5:
+ 277               	.LM7:
+ 278 0070 CF5F      		subi r28,lo8(-(1))
+ 279 0072 685F      		subi r22,lo8(-(8))
+ 280 0074 7F4F      		sbci r23,hi8(-(8))
+ 281 0076 C117      		cp r28,r17
+ 282 0078 F0F2      		brlo .L7
+ 283               	.L9:
+ 213:/Users/Administrator/sos-2x/kernel/fntable.c **** 					i * sizeof(func_cb_t));
+ 214:/Users/Administrator/sos-2x/kernel/fntable.c **** 		}
+ 215:/Users/Administrator/sos-2x/kernel/fntable.c **** 	}
+ 216:/Users/Administrator/sos-2x/kernel/fntable.c **** 	return 0;
+ 285               	.LM8:
+ 286 007a 80E0      		ldi r24,lo8(0)
+ 287 007c 90E0      		ldi r25,hi8(0)
+ 288               	.L2:
+ 289               	/* epilogue: frame size=0 */
+ 290 007e CF91      		pop r28
+ 291 0080 1F91      		pop r17
+ 292 0082 0F91      		pop r16
+ 293 0084 0895      		ret
+ 294               	/* epilogue end (size=4) */
+ 295               	/* function fntable_get_prov_cb size 69 (62) */
+ 303               	.Lscope1:
+ 308               	.global	ker_fntable_get_dfunc_addr
+ 310               	ker_fntable_get_dfunc_addr:
+ 312               	.LM9:
+ 313               	/* prologue: frame size=0 */
+ 314 0086 1F93      		push r17
+ 315 0088 CF93      		push r28
+ 316 008a DF93      		push r29
+ 317               	/* prologue end (size=3) */
+ 318 008c 162F      		mov r17,r22
+ 320               	.LM10:
+ 321 008e C0E0      		ldi r28,lo8(0)
+ 322 0090 D0E0      		ldi r29,hi8(0)
+ 324               	.LM11:
+ 325 0092 0E94 0000 		call ker_get_module
+ 326 0096 FC01      		movw r30,r24
+ 328               	.LM12:
+ 329 0098 892B      		or r24,r25
+ 330 009a 19F1      		breq .L13
+ 332               	.LM13:
+ 333 009c 8281      		ldd r24,Z+2
+ 334 009e 9381      		ldd r25,Z+3
+ 335               	.LBB3:
+ 337               	.LM14:
+ 338 00a0 AA27      		clr r26
+ 339 00a2 BB27      		clr r27
+ 340 00a4 880F      		lsl r24
+ 341 00a6 991F      		rol r25
+ 342 00a8 AA1F      		rol r26
+ 343 00aa BB1F      		rol r27
+ 344 00ac 0496      		adiw r24,4
+ 345 00ae A11D      		adc r26,__zero_reg__
+ 346 00b0 B11D      		adc r27,__zero_reg__
+ 347               	/* #APP */
+ 348 00b2 ABBF      		out 59, r26
+ 349 00b4 FC01      		movw r30, r24
+ 350 00b6 3791      		elpm r19, Z+
+ 351               		
+ 352               	/* #NOAPP */
+ 353               	.LBE3:
+ 354               	.LBB4:
+ 356               	.LM15:
+ 357 00b8 0196      		adiw r24,1
+ 358 00ba A11D      		adc r26,__zero_reg__
+ 359 00bc B11D      		adc r27,__zero_reg__
+ 360               	/* #APP */
+ 361 00be ABBF      		out 59, r26
+ 362 00c0 FC01      		movw r30, r24
+ 363 00c2 2791      		elpm r18, Z+
+ 364               		
+ 365               	/* #NOAPP */
+ 366               	.LBE4:
+ 368               	.LM16:
+ 369 00c4 230F      		add r18,r19
+ 370 00c6 0B96      		adiw r24,11
+ 371 00c8 A11D      		adc r26,__zero_reg__
+ 372 00ca B11D      		adc r27,__zero_reg__
+ 373 00cc B695      		lsr r27
+ 374 00ce A795      		ror r26
+ 375 00d0 9795      		ror r25
+ 376 00d2 8795      		ror r24
+ 377 00d4 432F      		mov r20,r19
+ 378 00d6 612F      		mov r22,r17
+ 379 00d8 0E94 0000 		call fntable_get_prov_cb
+ 380 00dc EC01      		movw r28,r24
+ 382               	.LM17:
+ 383 00de 892B      		or r24,r25
+ 384 00e0 11F4      		brne .L12
+ 385               	.L13:
+ 387               	.LM18:
+ 388 00e2 CE01      		movw r24,r28
+ 389 00e4 0BC0      		rjmp .L10
+ 390               	.L12:
+ 391               	.LBB5:
+ 393               	.LM19:
+ 394 00e6 CE01      		movw r24,r28
+ 395 00e8 AA27      		clr r26
+ 396 00ea BB27      		clr r27
+ 397 00ec 880F      		lsl r24
+ 398 00ee 991F      		rol r25
+ 399 00f0 AA1F      		rol r26
+ 400 00f2 BB1F      		rol r27
+ 401               	.LBE5:
+ 402               	/* #APP */
+ 403 00f4 ABBF      		out 59, r26
+ 404 00f6 FC01      		movw r30, r24
+ 405 00f8 8791      		elpm r24, Z+
+ 406 00fa 9691      		elpm r25, Z
+ 407               		
+ 408               	/* #NOAPP */
+ 409               	.L10:
+ 410               	/* epilogue: frame size=0 */
+ 411 00fc DF91      		pop r29
+ 412 00fe CF91      		pop r28
+ 413 0100 1F91      		pop r17
+ 414 0102 0895      		ret
+ 415               	/* epilogue end (size=4) */
+ 416               	/* function ker_fntable_get_dfunc_addr size 79 (72) */
+ 429               	.Lscope2:
+ 435               	check_proto:
+ 217:/Users/Administrator/sos-2x/kernel/fntable.c **** }
+ 218:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+ 219:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+ 220:/Users/Administrator/sos-2x/kernel/fntable.c **** /**
+ 221:/Users/Administrator/sos-2x/kernel/fntable.c ****  * @brief link the module into correct address
+ 222:/Users/Administrator/sos-2x/kernel/fntable.c ****  * NOTE: this rountine assumes the header is in RAM
+ 223:/Users/Administrator/sos-2x/kernel/fntable.c ****  * fix offsetof(mod_header_t, module_handler)
+ 224:/Users/Administrator/sos-2x/kernel/fntable.c ****  * fix offsetof(mod_header_t, funct) + (n * sizeof(func_cb_t)) + offsetof(func_cb_t, ptr) for n = [
+ 225:/Users/Administrator/sos-2x/kernel/fntable.c ****  */
+ 226:/Users/Administrator/sos-2x/kernel/fntable.c **** static inline func_addr_t mod_header_size(uint8_t num_funcs)
+ 227:/Users/Administrator/sos-2x/kernel/fntable.c **** {
+ 228:/Users/Administrator/sos-2x/kernel/fntable.c **** 	return offsetof(mod_header_t, funct) + 
+ 229:/Users/Administrator/sos-2x/kernel/fntable.c **** 		(num_funcs * sizeof(func_cb_t)) + offsetof(func_cb_t, ptr);
+ 230:/Users/Administrator/sos-2x/kernel/fntable.c **** }
+ 231:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+ 232:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+ 233:/Users/Administrator/sos-2x/kernel/fntable.c **** /**
+ 234:/Users/Administrator/sos-2x/kernel/fntable.c ****  * @brief link the functions
+ 235:/Users/Administrator/sos-2x/kernel/fntable.c ****  */
+ 236:/Users/Administrator/sos-2x/kernel/fntable.c **** int8_t fntable_link(sos_module_t *m)
+ 237:/Users/Administrator/sos-2x/kernel/fntable.c **** {
+ 238:/Users/Administrator/sos-2x/kernel/fntable.c ****    uint8_t num_prov_func;
+ 239:/Users/Administrator/sos-2x/kernel/fntable.c ****    uint8_t num_sub_func;
+ 240:/Users/Administrator/sos-2x/kernel/fntable.c ****    
+ 241:/Users/Administrator/sos-2x/kernel/fntable.c ****    fntable_link_subscribed_functions(m);
+ 242:/Users/Administrator/sos-2x/kernel/fntable.c ****    num_prov_func = sos_read_header_byte(m->header,
+ 243:/Users/Administrator/sos-2x/kernel/fntable.c ****                                         offsetof(mod_header_t, num_prov_func));
+ 244:/Users/Administrator/sos-2x/kernel/fntable.c ****    num_sub_func = sos_read_header_byte(m->header,
+ 245:/Users/Administrator/sos-2x/kernel/fntable.c ****                                        offsetof(mod_header_t, num_sub_func));
+ 246:/Users/Administrator/sos-2x/kernel/fntable.c ****    if(num_prov_func > 0) {
+ 247:/Users/Administrator/sos-2x/kernel/fntable.c ****       fntable_link_provided_functions(
+ 248:/Users/Administrator/sos-2x/kernel/fntable.c ****          sos_get_header_member(m->header, offsetof(mod_header_t, funct)),
+ 249:/Users/Administrator/sos-2x/kernel/fntable.c ****          num_sub_func,
+ 250:/Users/Administrator/sos-2x/kernel/fntable.c ****          num_sub_func + num_prov_func, true);
+ 251:/Users/Administrator/sos-2x/kernel/fntable.c ****    }
+ 252:/Users/Administrator/sos-2x/kernel/fntable.c ****    return SOS_OK;
+ 253:/Users/Administrator/sos-2x/kernel/fntable.c **** }
+ 254:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+ 255:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+ 256:/Users/Administrator/sos-2x/kernel/fntable.c **** void fntable_link_subscribed_functions(sos_module_t *m)
+ 257:/Users/Administrator/sos-2x/kernel/fntable.c **** {
+ 258:/Users/Administrator/sos-2x/kernel/fntable.c ****    uint8_t num_sub_func;
+ 259:/Users/Administrator/sos-2x/kernel/fntable.c ****    uint8_t num_prov_func;
+ 260:/Users/Administrator/sos-2x/kernel/fntable.c ****    uint8_t i;
+ 261:/Users/Administrator/sos-2x/kernel/fntable.c ****    func_cb_ptr *cb_in_ram = (func_cb_ptr*)(m->handler_state);
+ 262:/Users/Administrator/sos-2x/kernel/fntable.c ****    
+ 263:/Users/Administrator/sos-2x/kernel/fntable.c ****    num_sub_func = sos_read_header_byte(m->header,
+ 264:/Users/Administrator/sos-2x/kernel/fntable.c ****                                        offsetof(mod_header_t, num_sub_func));
+ 265:/Users/Administrator/sos-2x/kernel/fntable.c ****    num_prov_func = sos_read_header_byte(m->header,
+ 266:/Users/Administrator/sos-2x/kernel/fntable.c ****                                         offsetof(mod_header_t, num_prov_func));
+ 267:/Users/Administrator/sos-2x/kernel/fntable.c ****    
+ 268:/Users/Administrator/sos-2x/kernel/fntable.c ****    for(i = 0; i < num_sub_func; i++) {
+ 269:/Users/Administrator/sos-2x/kernel/fntable.c ****       uint8_t pub_pid = sos_read_header_byte(m->header,
+ 270:/Users/Administrator/sos-2x/kernel/fntable.c ****                                              offsetof(mod_header_t, funct[i].pid));
+ 271:/Users/Administrator/sos-2x/kernel/fntable.c ****       uint8_t pub_fid = sos_read_header_byte(m->header,
+ 272:/Users/Administrator/sos-2x/kernel/fntable.c ****                                              offsetof(mod_header_t, funct[i].fid));
+ 273:/Users/Administrator/sos-2x/kernel/fntable.c ****       func_cb_ptr pub_cb = 0;
+ 274:/Users/Administrator/sos-2x/kernel/fntable.c ****       if(pub_pid == m->pid) {
+ 275:/Users/Administrator/sos-2x/kernel/fntable.c ****          pub_cb = fntable_get_prov_cb(
+ 276:/Users/Administrator/sos-2x/kernel/fntable.c ****             sos_get_header_member(m->header,
+ 277:/Users/Administrator/sos-2x/kernel/fntable.c ****                                   offsetof(mod_header_t, funct)),
+ 278:/Users/Administrator/sos-2x/kernel/fntable.c ****             pub_fid,
+ 279:/Users/Administrator/sos-2x/kernel/fntable.c ****             num_sub_func, (num_sub_func + num_prov_func));
+ 280:/Users/Administrator/sos-2x/kernel/fntable.c ****       } else if(pub_pid != RUNTIME_PID) {
+ 281:/Users/Administrator/sos-2x/kernel/fntable.c ****          pub_cb = fntable_real_subscribe(m->header, pub_pid, pub_fid, i);
+ 282:/Users/Administrator/sos-2x/kernel/fntable.c ****       }
+ 283:/Users/Administrator/sos-2x/kernel/fntable.c ****       if(pub_cb != 0) {
+ 284:/Users/Administrator/sos-2x/kernel/fntable.c **** 			cb_in_ram[i] = pub_cb;
+ 285:/Users/Administrator/sos-2x/kernel/fntable.c **** 		} else {
+ 286:/Users/Administrator/sos-2x/kernel/fntable.c **** 			cb_in_ram[i] = sos_get_header_member(m->header,
+ 287:/Users/Administrator/sos-2x/kernel/fntable.c **** 					offsetof(mod_header_t, funct[i]));
+ 288:/Users/Administrator/sos-2x/kernel/fntable.c **** 		}
+ 289:/Users/Administrator/sos-2x/kernel/fntable.c **** 	}
+ 290:/Users/Administrator/sos-2x/kernel/fntable.c **** }
+ 291:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+ 292:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+ 293:/Users/Administrator/sos-2x/kernel/fntable.c **** /**
+ 294:/Users/Administrator/sos-2x/kernel/fntable.c ****  * @brief given provided function table, search ALL OTHER modules to find the match
+ 295:/Users/Administrator/sos-2x/kernel/fntable.c ****  *
+ 296:/Users/Administrator/sos-2x/kernel/fntable.c ****  * PROFILE NEEDED
+ 297:/Users/Administrator/sos-2x/kernel/fntable.c ****  * NOTE: it will be good idea to profile this...
+ 298:/Users/Administrator/sos-2x/kernel/fntable.c ****  */
+ 299:/Users/Administrator/sos-2x/kernel/fntable.c **** static void fntable_link_provided_functions(func_cb_ptr funct, uint8_t start, uint8_t end, bool lin
+ 300:/Users/Administrator/sos-2x/kernel/fntable.c **** {
+ 301:/Users/Administrator/sos-2x/kernel/fntable.c **** 	sos_module_t **all_modules = sched_get_all_module();
+ 302:/Users/Administrator/sos-2x/kernel/fntable.c **** 	uint8_t bin_itr;
+ 303:/Users/Administrator/sos-2x/kernel/fntable.c **** 	uint8_t pub_pid = sos_read_header_byte(
+ 304:/Users/Administrator/sos-2x/kernel/fntable.c **** 			//funct[start].pid);
+ 305:/Users/Administrator/sos-2x/kernel/fntable.c **** 			funct, start * sizeof(func_cb_t) + offsetof(func_cb_t, pid));
+ 306:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+ 307:/Users/Administrator/sos-2x/kernel/fntable.c **** 	//! search both function users and dyanmic functions
+ 308:/Users/Administrator/sos-2x/kernel/fntable.c **** 	for(bin_itr = 0; bin_itr < SCHED_NUMBER_BINS; bin_itr++) {
+ 309:/Users/Administrator/sos-2x/kernel/fntable.c **** 		sos_module_t *h = all_modules[bin_itr];
+ 310:/Users/Administrator/sos-2x/kernel/fntable.c **** 		while(h != NULL) {
+ 311:/Users/Administrator/sos-2x/kernel/fntable.c **** 			uint8_t num_sub = sos_read_header_byte(
+ 312:/Users/Administrator/sos-2x/kernel/fntable.c **** 					h->header, offsetof(mod_header_t, num_sub_func));
+ 313:/Users/Administrator/sos-2x/kernel/fntable.c **** 			uint8_t i;
+ 314:/Users/Administrator/sos-2x/kernel/fntable.c **** 			for(i = 0; i < num_sub; i++) {
+ 315:/Users/Administrator/sos-2x/kernel/fntable.c **** 				uint8_t sub_pid =
+ 316:/Users/Administrator/sos-2x/kernel/fntable.c **** 					sos_read_header_byte(
+ 317:/Users/Administrator/sos-2x/kernel/fntable.c **** 							h->header, offsetof(mod_header_t, funct[i].pid));
+ 318:/Users/Administrator/sos-2x/kernel/fntable.c **** 				if(sub_pid == pub_pid) {
+ 319:/Users/Administrator/sos-2x/kernel/fntable.c **** 					uint8_t sub_fid =
+ 320:/Users/Administrator/sos-2x/kernel/fntable.c **** 						sos_read_header_byte(
+ 321:/Users/Administrator/sos-2x/kernel/fntable.c **** 								h->header, offsetof(mod_header_t, funct[i].fid));
+ 322:/Users/Administrator/sos-2x/kernel/fntable.c **** 					func_cb_ptr pub_cb =
+ 323:/Users/Administrator/sos-2x/kernel/fntable.c **** 						fntable_get_prov_cb(funct, sub_fid, start, end);
+ 324:/Users/Administrator/sos-2x/kernel/fntable.c **** 					if(pub_cb != 0) {
+ 325:/Users/Administrator/sos-2x/kernel/fntable.c **** 						//! found function to be linked
+ 326:/Users/Administrator/sos-2x/kernel/fntable.c **** 						uint8_t proto_pub[4];
+ 327:/Users/Administrator/sos-2x/kernel/fntable.c **** 						uint8_t proto_sub[4];
+ 328:/Users/Administrator/sos-2x/kernel/fntable.c **** 						uint8_t j;
+ 329:/Users/Administrator/sos-2x/kernel/fntable.c **** 						func_cb_ptr *cb_in_ram =
+ 330:/Users/Administrator/sos-2x/kernel/fntable.c **** 							(func_cb_ptr*)(h->handler_state);
+ 331:/Users/Administrator/sos-2x/kernel/fntable.c **** 						for(j = 0; j < 4; j++) {
+ 332:/Users/Administrator/sos-2x/kernel/fntable.c **** 							proto_sub[j] =
+ 333:/Users/Administrator/sos-2x/kernel/fntable.c **** 								sos_read_header_byte(
+ 334:/Users/Administrator/sos-2x/kernel/fntable.c **** 										h->header,
+ 335:/Users/Administrator/sos-2x/kernel/fntable.c **** 										offsetof(mod_header_t, funct[i].proto[j]));
+ 336:/Users/Administrator/sos-2x/kernel/fntable.c **** 							proto_pub[j] = sos_read_header_byte(
+ 337:/Users/Administrator/sos-2x/kernel/fntable.c **** 									pub_cb, offsetof(func_cb_t, proto[j]));
+ 338:/Users/Administrator/sos-2x/kernel/fntable.c **** 						}
+ 339:/Users/Administrator/sos-2x/kernel/fntable.c **** 						if(link) {
+ 340:/Users/Administrator/sos-2x/kernel/fntable.c **** 							if(check_proto(proto_pub, proto_sub)) {
+ 341:/Users/Administrator/sos-2x/kernel/fntable.c **** 								cb_in_ram[i] = pub_cb;
+ 342:/Users/Administrator/sos-2x/kernel/fntable.c **** 							}
+ 343:/Users/Administrator/sos-2x/kernel/fntable.c **** 						} else {
+ 344:/Users/Administrator/sos-2x/kernel/fntable.c **** 							//! remove link
+ 345:/Users/Administrator/sos-2x/kernel/fntable.c **** 							cb_in_ram[i] =
+ 346:/Users/Administrator/sos-2x/kernel/fntable.c **** 								sos_get_header_member( h->header,
+ 347:/Users/Administrator/sos-2x/kernel/fntable.c **** 										offsetof(mod_header_t, funct[i]));
+ 348:/Users/Administrator/sos-2x/kernel/fntable.c **** 						}
+ 349:/Users/Administrator/sos-2x/kernel/fntable.c **** 					}
+ 350:/Users/Administrator/sos-2x/kernel/fntable.c **** 				} else if((sub_pid == RUNTIME_PID) && (link == false)) {
+ 351:/Users/Administrator/sos-2x/kernel/fntable.c **** 					func_cb_ptr *cb_in_ram = (func_cb_ptr *)(h->handler_state);
+ 352:/Users/Administrator/sos-2x/kernel/fntable.c **** 					func_cb_ptr sub_cb_in_ram = cb_in_ram[i];
+ 353:/Users/Administrator/sos-2x/kernel/fntable.c **** 					uint8_t k;
+ 354:/Users/Administrator/sos-2x/kernel/fntable.c **** 					//! compare to see whether there is a match
+ 355:/Users/Administrator/sos-2x/kernel/fntable.c **** 					for(k = start; k < end; k++) {
+ 356:/Users/Administrator/sos-2x/kernel/fntable.c **** 						if((funct + (k * sizeof(func_cb_t))) == sub_cb_in_ram) {
+ 357:/Users/Administrator/sos-2x/kernel/fntable.c **** 							//! found dynamic function
+ 358:/Users/Administrator/sos-2x/kernel/fntable.c **** 							cb_in_ram[i] =
+ 359:/Users/Administrator/sos-2x/kernel/fntable.c **** 								sos_get_header_member(h->header,
+ 360:/Users/Administrator/sos-2x/kernel/fntable.c **** 										offsetof(mod_header_t, funct[i]));
+ 361:/Users/Administrator/sos-2x/kernel/fntable.c **** 							//! send message back to subscriber
+ 362:/Users/Administrator/sos-2x/kernel/fntable.c **** 							post_short(h->pid, FNTABLE_PID, MSG_DFUNC_REMOVED,
+ 363:/Users/Administrator/sos-2x/kernel/fntable.c **** 									i, 0, 0);
+ 364:/Users/Administrator/sos-2x/kernel/fntable.c **** 							break;
+ 365:/Users/Administrator/sos-2x/kernel/fntable.c **** 						}
+ 366:/Users/Administrator/sos-2x/kernel/fntable.c **** 					}
+ 367:/Users/Administrator/sos-2x/kernel/fntable.c **** 				}
+ 368:/Users/Administrator/sos-2x/kernel/fntable.c **** 			}
+ 369:/Users/Administrator/sos-2x/kernel/fntable.c **** 			h = h->next;
+ 370:/Users/Administrator/sos-2x/kernel/fntable.c **** 		}
+ 371:/Users/Administrator/sos-2x/kernel/fntable.c **** 	}
+ 372:/Users/Administrator/sos-2x/kernel/fntable.c **** }
+ 373:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+ 374:/Users/Administrator/sos-2x/kernel/fntable.c **** int8_t fntable_remove_all(sos_module_t *m)
+ 375:/Users/Administrator/sos-2x/kernel/fntable.c **** {
+ 376:/Users/Administrator/sos-2x/kernel/fntable.c **** 	uint8_t num_sub_func;
+ 377:/Users/Administrator/sos-2x/kernel/fntable.c **** 	uint8_t num_prov_func;
+ 378:/Users/Administrator/sos-2x/kernel/fntable.c **** 	uint8_t i;
+ 379:/Users/Administrator/sos-2x/kernel/fntable.c **** 	func_cb_ptr *cb_in_ram = (func_cb_ptr *)(m->handler_state);
+ 380:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+ 381:/Users/Administrator/sos-2x/kernel/fntable.c **** 	num_prov_func = sos_read_header_byte(m->header,
+ 382:/Users/Administrator/sos-2x/kernel/fntable.c **** 			offsetof(mod_header_t, num_prov_func));
+ 383:/Users/Administrator/sos-2x/kernel/fntable.c **** 	//! check whether there is any provided functions
+ 384:/Users/Administrator/sos-2x/kernel/fntable.c **** 	if(num_prov_func == 0) return SOS_OK;
+ 385:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+ 386:/Users/Administrator/sos-2x/kernel/fntable.c **** 	num_sub_func = sos_read_header_byte(
+ 387:/Users/Administrator/sos-2x/kernel/fntable.c **** 			m->header, offsetof(mod_header_t, num_sub_func));
+ 388:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+ 389:/Users/Administrator/sos-2x/kernel/fntable.c **** 	//! unlink all provided functions
+ 390:/Users/Administrator/sos-2x/kernel/fntable.c **** 	fntable_link_provided_functions(
+ 391:/Users/Administrator/sos-2x/kernel/fntable.c **** 			sos_get_header_member(m->header, offsetof(mod_header_t, funct)),
+ 392:/Users/Administrator/sos-2x/kernel/fntable.c **** 			num_sub_func,
+ 393:/Users/Administrator/sos-2x/kernel/fntable.c **** 			num_sub_func + num_prov_func, false);
+ 394:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+ 395:/Users/Administrator/sos-2x/kernel/fntable.c **** 	//! search all used functions and send a message to the providers as well
+ 396:/Users/Administrator/sos-2x/kernel/fntable.c **** 	//! send message to the function provider based on function pointer table.
+ 397:/Users/Administrator/sos-2x/kernel/fntable.c **** 	//! we can ignore RUNTIME_PID as provider cannot have it.
+ 398:/Users/Administrator/sos-2x/kernel/fntable.c **** 	for(i = 0; i < num_sub_func; i++) {
+ 399:/Users/Administrator/sos-2x/kernel/fntable.c **** 		func_cb_ptr pub_cb = cb_in_ram[i];
+ 400:/Users/Administrator/sos-2x/kernel/fntable.c **** 		uint8_t pub_pid = sos_read_header_byte(
+ 401:/Users/Administrator/sos-2x/kernel/fntable.c **** 				pub_cb, offsetof(func_cb_t, pid));
+ 402:/Users/Administrator/sos-2x/kernel/fntable.c **** 		if(pub_pid == m->pid || pub_pid == RUNTIME_PID) {
+ 403:/Users/Administrator/sos-2x/kernel/fntable.c **** 			//! if function pointer is pointing to self,
+ 404:/Users/Administrator/sos-2x/kernel/fntable.c **** 			//! we won't send remove message
+ 405:/Users/Administrator/sos-2x/kernel/fntable.c **** 			//! similarly if function pointer is pointing to RUNTIME_PID,
+ 406:/Users/Administrator/sos-2x/kernel/fntable.c **** 			//! this means that it is pointing to self
+ 407:/Users/Administrator/sos-2x/kernel/fntable.c **** 			continue;
+ 408:/Users/Administrator/sos-2x/kernel/fntable.c **** 		}
+ 409:/Users/Administrator/sos-2x/kernel/fntable.c **** 		post_short(pub_pid, FNTABLE_PID, MSG_DFUNC_REMOVED,
+ 410:/Users/Administrator/sos-2x/kernel/fntable.c **** 				m->pid, 0, 0);
+ 411:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+ 412:/Users/Administrator/sos-2x/kernel/fntable.c **** 	}
+ 413:/Users/Administrator/sos-2x/kernel/fntable.c **** 	return SOS_OK;
+ 414:/Users/Administrator/sos-2x/kernel/fntable.c **** }
+ 415:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+ 416:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+ 417:/Users/Administrator/sos-2x/kernel/fntable.c **** // Check that two function prototypes match
+ 418:/Users/Administrator/sos-2x/kernel/fntable.c **** // NOTE: both prototypes are in read-only memory now
+ 419:/Users/Administrator/sos-2x/kernel/fntable.c **** static bool check_proto(uint8_t *proto1, uint8_t *proto2)
+ 420:/Users/Administrator/sos-2x/kernel/fntable.c **** {
+ 437               	.LM20:
+ 438               	/* prologue: frame size=0 */
+ 439 0104 CF93      		push r28
+ 440 0106 DF93      		push r29
+ 441               	/* prologue end (size=2) */
+ 442 0108 FC01      		movw r30,r24
+ 443 010a DB01      		movw r26,r22
+ 421:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+ 422:/Users/Administrator/sos-2x/kernel/fntable.c **** 	if ((proto1[0] == proto2[0]) &&
+ 445               	.LM21:
+ 446 010c 9081      		ld r25,Z
+ 447 010e 8C91      		ld r24,X
+ 448 0110 9817      		cp r25,r24
+ 449 0112 81F4      		brne .L15
+ 451               	.LM22:
+ 452 0114 9181      		ldd r25,Z+1
+ 453 0116 EB01      		movw r28,r22
+ 454 0118 8981      		ldd r24,Y+1
+ 455 011a 9817      		cp r25,r24
+ 456 011c 59F4      		brne .L15
+ 457 011e 9281      		ldd r25,Z+2
+ 458 0120 8A81      		ldd r24,Y+2
+ 459 0122 9817      		cp r25,r24
+ 460 0124 39F4      		brne .L15
+ 461 0126 9381      		ldd r25,Z+3
+ 462 0128 8B81      		ldd r24,Y+3
+ 463 012a 9817      		cp r25,r24
+ 464 012c 19F4      		brne .L15
+ 423:/Users/Administrator/sos-2x/kernel/fntable.c **** 		(proto1[1] == proto2[1]) &&
+ 424:/Users/Administrator/sos-2x/kernel/fntable.c **** 		(proto1[2] == proto2[2]) &&
+ 425:/Users/Administrator/sos-2x/kernel/fntable.c **** 		(proto1[3] == proto2[3])) {
+ 426:/Users/Administrator/sos-2x/kernel/fntable.c **** 	   return true;
+ 466               	.LM23:
+ 467 012e 81E0      		ldi r24,lo8(1)
+ 468 0130 90E0      		ldi r25,hi8(1)
+ 469 0132 02C0      		rjmp .L14
+ 470               	.L15:
+ 427:/Users/Administrator/sos-2x/kernel/fntable.c **** 	}
+ 428:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+ 429:/Users/Administrator/sos-2x/kernel/fntable.c **** 	return false;
+ 472               	.LM24:
+ 473 0134 80E0      		ldi r24,lo8(0)
+ 474 0136 90E0      		ldi r25,hi8(0)
+ 475               	.L14:
+ 476               	/* epilogue: frame size=0 */
+ 477 0138 DF91      		pop r29
+ 478 013a CF91      		pop r28
+ 479 013c 0895      		ret
+ 480               	/* epilogue end (size=3) */
+ 481               	/* function check_proto size 29 (24) */
+ 483               	.Lscope3:
+ 490               	.global	fntable_real_subscribe
+ 492               	fntable_real_subscribe:
+ 494               	.LM25:
+ 495               	/* prologue: frame size=8 */
+ 496 013e 7F92      		push r7
+ 497 0140 8F92      		push r8
+ 498 0142 9F92      		push r9
+ 499 0144 AF92      		push r10
+ 500 0146 BF92      		push r11
+ 501 0148 CF92      		push r12
+ 502 014a DF92      		push r13
+ 503 014c EF92      		push r14
+ 504 014e FF92      		push r15
+ 505 0150 0F93      		push r16
+ 506 0152 1F93      		push r17
+ 507 0154 CF93      		push r28
+ 508 0156 DF93      		push r29
+ 509 0158 CDB7      		in r28,__SP_L__
+ 510 015a DEB7      		in r29,__SP_H__
+ 511 015c 2897      		sbiw r28,8
+ 512 015e 0FB6      		in __tmp_reg__,__SREG__
+ 513 0160 F894      		cli
+ 514 0162 DEBF      		out __SP_H__,r29
+ 515 0164 0FBE      		out __SREG__,__tmp_reg__
+ 516 0166 CDBF      		out __SP_L__,r28
+ 517               	/* prologue end (size=21) */
+ 518 0168 6C01      		movw r12,r24
+ 519 016a 862F      		mov r24,r22
+ 520 016c 142F      		mov r17,r20
+ 521 016e B22E      		mov r11,r18
+ 523               	.LM26:
+ 524 0170 8824      		clr r8
+ 525 0172 9924      		clr r9
+ 527               	.LM27:
+ 528 0174 7724      		clr r7
+ 530               	.LM28:
+ 531 0176 0E94 0000 		call ker_get_module
+ 532 017a FC01      		movw r30,r24
+ 534               	.LM29:
+ 535 017c 892B      		or r24,r25
+ 536 017e 09F4      		brne .+2
+ 537 0180 72C0      		rjmp .L26
+ 539               	.LM30:
+ 540 0182 8281      		ldd r24,Z+2
+ 541 0184 9381      		ldd r25,Z+3
+ 542               	.LBB6:
+ 544               	.LM31:
+ 545 0186 AA27      		clr r26
+ 546 0188 BB27      		clr r27
+ 547 018a 880F      		lsl r24
+ 548 018c 991F      		rol r25
+ 549 018e AA1F      		rol r26
+ 550 0190 BB1F      		rol r27
+ 551 0192 0496      		adiw r24,4
+ 552 0194 A11D      		adc r26,__zero_reg__
+ 553 0196 B11D      		adc r27,__zero_reg__
+ 554               	/* #APP */
+ 555 0198 ABBF      		out 59, r26
+ 556 019a FC01      		movw r30, r24
+ 557 019c 3791      		elpm r19, Z+
+ 558               		
+ 559               	/* #NOAPP */
+ 560               	.LBE6:
+ 561               	.LBB7:
+ 563               	.LM32:
+ 564 019e 0196      		adiw r24,1
+ 565 01a0 A11D      		adc r26,__zero_reg__
+ 566 01a2 B11D      		adc r27,__zero_reg__
+ 567               	/* #APP */
+ 568 01a4 ABBF      		out 59, r26
+ 569 01a6 FC01      		movw r30, r24
+ 570 01a8 2791      		elpm r18, Z+
+ 571               		
+ 572               	/* #NOAPP */
+ 573               	.LBE7:
+ 575               	.LM33:
+ 576 01aa 230F      		add r18,r19
+ 577 01ac 0B96      		adiw r24,11
+ 578 01ae A11D      		adc r26,__zero_reg__
+ 579 01b0 B11D      		adc r27,__zero_reg__
+ 580 01b2 B695      		lsr r27
+ 581 01b4 A795      		ror r26
+ 582 01b6 9795      		ror r25
+ 583 01b8 8795      		ror r24
+ 584 01ba 432F      		mov r20,r19
+ 585 01bc 612F      		mov r22,r17
+ 586 01be 0E94 0000 		call fntable_get_prov_cb
+ 587 01c2 4C01      		movw r8,r24
+ 589               	.LM34:
+ 590 01c4 0097      		sbiw r24,0
+ 591 01c6 09F4      		brne .+2
+ 592 01c8 4EC0      		rjmp .L26
+ 593 01ca 7C01      		movw r14,r24
+ 594 01cc 0027      		clr r16
+ 595 01ce 1127      		clr r17
+ 596 01d0 EE0C      		lsl r14
+ 597 01d2 FF1C      		rol r15
+ 598 01d4 001F      		rol r16
+ 599 01d6 111F      		rol r17
+ 600 01d8 A601      		movw r20,r12
+ 601 01da 6627      		clr r22
+ 602 01dc 7727      		clr r23
+ 603 01de 440F      		lsl r20
+ 604 01e0 551F      		rol r21
+ 605 01e2 661F      		rol r22
+ 606 01e4 771F      		rol r23
+ 607 01e6 2B2D      		mov r18,r11
+ 608 01e8 3327      		clr r19
+ 609 01ea A3E0      		ldi r26,3
+ 610 01ec 220F      	1:	lsl r18
+ 611 01ee 331F      		rol r19
+ 612 01f0 AA95      		dec r26
+ 613 01f2 E1F7      		brne 1b
+ 614 01f4 2E5E      		subi r18,lo8(-(18))
+ 615 01f6 3F4F      		sbci r19,hi8(-(18))
+ 616 01f8 5E01      		movw r10,r28
+ 617 01fa 0894      		sec
+ 618 01fc A11C      		adc r10,__zero_reg__
+ 619 01fe B11C      		adc r11,__zero_reg__
+ 620 0200 CC24      		clr r12
+ 621 0202 DD24      		clr r13
+ 622               	.L22:
+ 623               	.LBB8:
+ 625               	.LM35:
+ 626 0204 82E0      		ldi r24,lo8(2)
+ 627 0206 90E0      		ldi r25,hi8(2)
+ 628 0208 C80E      		add r12,r24
+ 629 020a D91E      		adc r13,r25
+ 630 020c C601      		movw r24,r12
+ 631 020e AA27      		clr r26
+ 632 0210 BB27      		clr r27
+ 633 0212 8E0D      		add r24,r14
+ 634 0214 9F1D      		adc r25,r15
+ 635 0216 A01F      		adc r26,r16
+ 636 0218 B11F      		adc r27,r17
+ 637               	/* #APP */
+ 638 021a ABBF      		out 59, r26
+ 639 021c FC01      		movw r30, r24
+ 640 021e 8791      		elpm r24, Z+
+ 641               		
+ 642               	/* #NOAPP */
+ 643               	.LBE8:
+ 644 0220 F501      		movw r30,r10
+ 645 0222 8083      		st Z,r24
+ 646               	.LBB9:
+ 648               	.LM36:
+ 649 0224 C901      		movw r24,r18
+ 650 0226 AA27      		clr r26
+ 651 0228 BB27      		clr r27
+ 652 022a 840F      		add r24,r20
+ 653 022c 951F      		adc r25,r21
+ 654 022e A61F      		adc r26,r22
+ 655 0230 B71F      		adc r27,r23
+ 656               	/* #APP */
+ 657 0232 ABBF      		out 59, r26
+ 658 0234 FC01      		movw r30, r24
+ 659 0236 8791      		elpm r24, Z+
+ 660               		
+ 661               	/* #NOAPP */
+ 662               	.LBE9:
+ 663 0238 F501      		movw r30,r10
+ 664 023a 8483      		std Z+4,r24
+ 666               	.LM37:
+ 667 023c 7394      		inc r7
+ 668 023e 0894      		sec
+ 669 0240 C108      		sbc r12,__zero_reg__
+ 670 0242 D108      		sbc r13,__zero_reg__
+ 671 0244 0894      		sec
+ 672 0246 A11C      		adc r10,__zero_reg__
+ 673 0248 B11C      		adc r11,__zero_reg__
+ 674 024a 2F5F      		subi r18,lo8(-(1))
+ 675 024c 3F4F      		sbci r19,hi8(-(1))
+ 676 024e F3E0      		ldi r31,lo8(3)
+ 677 0250 F715      		cp r31,r7
+ 678 0252 C0F6      		brsh .L22
+ 680               	.LM38:
+ 681 0254 BE01      		movw r22,r28
+ 682 0256 6B5F      		subi r22,lo8(-(5))
+ 683 0258 7F4F      		sbci r23,hi8(-(5))
+ 684 025a CE01      		movw r24,r28
+ 685 025c 0196      		adiw r24,1
+ 686 025e 0E94 0000 		call check_proto
+ 687 0262 8823      		tst r24
+ 688 0264 11F0      		breq .L23
+ 689               	.L26:
+ 691               	.LM39:
+ 692 0266 C401      		movw r24,r8
+ 693 0268 02C0      		rjmp .L16
+ 694               	.L23:
+ 696               	.LM40:
+ 697 026a 80E0      		ldi r24,lo8(0)
+ 698 026c 90E0      		ldi r25,hi8(0)
+ 699               	.L16:
+ 700               	/* epilogue: frame size=8 */
+ 701 026e 2896      		adiw r28,8
+ 702 0270 0FB6      		in __tmp_reg__,__SREG__
+ 703 0272 F894      		cli
+ 704 0274 DEBF      		out __SP_H__,r29
+ 705 0276 0FBE      		out __SREG__,__tmp_reg__
+ 706 0278 CDBF      		out __SP_L__,r28
+ 707 027a DF91      		pop r29
+ 708 027c CF91      		pop r28
+ 709 027e 1F91      		pop r17
+ 710 0280 0F91      		pop r16
+ 711 0282 FF90      		pop r15
+ 712 0284 EF90      		pop r14
+ 713 0286 DF90      		pop r13
+ 714 0288 CF90      		pop r12
+ 715 028a BF90      		pop r11
+ 716 028c AF90      		pop r10
+ 717 028e 9F90      		pop r9
+ 718 0290 8F90      		pop r8
+ 719 0292 7F90      		pop r7
+ 720 0294 0895      		ret
+ 721               	/* epilogue end (size=20) */
+ 722               	/* function fntable_real_subscribe size 192 (151) */
+ 744               	.Lscope4:
+ 751               	.global	ker_fntable_subscribe
+ 753               	ker_fntable_subscribe:
+ 755               	.LM41:
+ 756               	/* prologue: frame size=0 */
+ 757 0296 CF92      		push r12
+ 758 0298 DF92      		push r13
+ 759 029a EF92      		push r14
+ 760 029c FF92      		push r15
+ 761 029e 0F93      		push r16
+ 762 02a0 1F93      		push r17
+ 763 02a2 CF93      		push r28
+ 764 02a4 DF93      		push r29
+ 765               	/* prologue end (size=8) */
+ 766 02a6 C62E      		mov r12,r22
+ 767 02a8 D42E      		mov r13,r20
+ 768 02aa C22F      		mov r28,r18
+ 770               	.LM42:
+ 771 02ac 0E94 0000 		call ker_get_module
+ 772 02b0 FC01      		movw r30,r24
+ 774               	.LM43:
+ 775 02b2 892B      		or r24,r25
+ 776 02b4 29F4      		brne .L28
+ 778               	.LM44:
+ 779 02b6 0E94 0000 		call ker_panic
+ 781               	.LM45:
+ 782 02ba 8AEE      		ldi r24,lo8(-22)
+ 783 02bc 9FEF      		ldi r25,hi8(-22)
+ 784 02be 35C0      		rjmp .L27
+ 785               	.L28:
+ 787               	.LM46:
+ 788 02c0 0281      		ldd r16,Z+2
+ 789 02c2 1381      		ldd r17,Z+3
+ 791               	.LM47:
+ 792 02c4 E680      		ldd r14,Z+6
+ 793 02c6 F780      		ldd r15,Z+7
+ 795               	.LM48:
+ 796 02c8 2C2F      		mov r18,r28
+ 797 02ca 4D2D      		mov r20,r13
+ 798 02cc 6C2D      		mov r22,r12
+ 799 02ce C801      		movw r24,r16
+ 800 02d0 0E94 0000 		call fntable_real_subscribe
+ 801 02d4 DD27      		clr r29
+ 803               	.LM49:
+ 804 02d6 0097      		sbiw r24,0
+ 805 02d8 39F0      		breq .L29
+ 807               	.LM50:
+ 808 02da CC0F      		add r28,r28
+ 809 02dc DD1F      		adc r29,r29
+ 810 02de CE0D      		add r28,r14
+ 811 02e0 DF1D      		adc r29,r15
+ 812 02e2 8883      		st Y,r24
+ 813 02e4 9983      		std Y+1,r25
+ 814 02e6 1FC0      		rjmp .L30
+ 815               	.L29:
+ 817               	.LM51:
+ 818 02e8 FE01      		movw r30,r28
+ 819 02ea EC0F      		add r30,r28
+ 820 02ec FD1F      		adc r31,r29
+ 821 02ee EE0D      		add r30,r14
+ 822 02f0 FF1D      		adc r31,r15
+ 823 02f2 C801      		movw r24,r16
+ 824 02f4 AA27      		clr r26
+ 825 02f6 BB27      		clr r27
+ 826 02f8 880F      		lsl r24
+ 827 02fa 991F      		rol r25
+ 828 02fc AA1F      		rol r26
+ 829 02fe BB1F      		rol r27
+ 830 0300 73E0      		ldi r23,3
+ 831 0302 CC0F      	1:	lsl r28
+ 832 0304 DD1F      		rol r29
+ 833 0306 7A95      		dec r23
+ 834 0308 E1F7      		brne 1b
+ 835 030a 6096      		adiw r28,16
+ 836 030c 9E01      		movw r18,r28
+ 837 030e 4427      		clr r20
+ 838 0310 5527      		clr r21
+ 839 0312 820F      		add r24,r18
+ 840 0314 931F      		adc r25,r19
+ 841 0316 A41F      		adc r26,r20
+ 842 0318 B51F      		adc r27,r21
+ 843 031a B695      		lsr r27
+ 844 031c A795      		ror r26
+ 845 031e 9795      		ror r25
+ 846 0320 8795      		ror r24
+ 847 0322 8083      		st Z,r24
+ 848 0324 9183      		std Z+1,r25
+ 849               	.L30:
+ 851               	.LM52:
+ 852 0326 80E0      		ldi r24,lo8(0)
+ 853 0328 90E0      		ldi r25,hi8(0)
+ 854               	.L27:
+ 855               	/* epilogue: frame size=0 */
+ 856 032a DF91      		pop r29
+ 857 032c CF91      		pop r28
+ 858 032e 1F91      		pop r17
+ 859 0330 0F91      		pop r16
+ 860 0332 FF90      		pop r15
+ 861 0334 EF90      		pop r14
+ 862 0336 DF90      		pop r13
+ 863 0338 CF90      		pop r12
+ 864 033a 0895      		ret
+ 865               	/* epilogue end (size=9) */
+ 866               	/* function ker_fntable_subscribe size 83 (66) */
+ 874               	.Lscope5:
+ 878               	.global	fntable_link_subscribed_functions
+ 880               	fntable_link_subscribed_functions:
+ 882               	.LM53:
+ 883               	/* prologue: frame size=0 */
+ 884 033c 3F92      		push r3
+ 885 033e 4F92      		push r4
+ 886 0340 5F92      		push r5
+ 887 0342 6F92      		push r6
+ 888 0344 7F92      		push r7
+ 889 0346 8F92      		push r8
+ 890 0348 9F92      		push r9
+ 891 034a AF92      		push r10
+ 892 034c BF92      		push r11
+ 893 034e CF92      		push r12
+ 894 0350 DF92      		push r13
+ 895 0352 EF92      		push r14
+ 896 0354 FF92      		push r15
+ 897 0356 0F93      		push r16
+ 898 0358 1F93      		push r17
+ 899 035a CF93      		push r28
+ 900 035c DF93      		push r29
+ 901               	/* prologue end (size=17) */
+ 902 035e 5C01      		movw r10,r24
+ 904               	.LM54:
+ 905 0360 FC01      		movw r30,r24
+ 906 0362 2681      		ldd r18,Z+6
+ 907 0364 3781      		ldd r19,Z+7
+ 908               	.LBB10:
+ 910               	.LM55:
+ 911 0366 8281      		ldd r24,Z+2
+ 912 0368 9381      		ldd r25,Z+3
+ 913 036a AA27      		clr r26
+ 914 036c BB27      		clr r27
+ 915 036e 880F      		lsl r24
+ 916 0370 991F      		rol r25
+ 917 0372 AA1F      		rol r26
+ 918 0374 BB1F      		rol r27
+ 919 0376 0496      		adiw r24,4
+ 920 0378 A11D      		adc r26,__zero_reg__
+ 921 037a B11D      		adc r27,__zero_reg__
+ 922               	/* #APP */
+ 923 037c ABBF      		out 59, r26
+ 924 037e FC01      		movw r30, r24
+ 925 0380 7790      		elpm r7, Z+
+ 926               		
+ 927               	/* #NOAPP */
+ 928               	.LBE10:
+ 929               	.LBB11:
+ 931               	.LM56:
+ 932 0382 0196      		adiw r24,1
+ 933 0384 A11D      		adc r26,__zero_reg__
+ 934 0386 B11D      		adc r27,__zero_reg__
+ 935               	/* #APP */
+ 936 0388 ABBF      		out 59, r26
+ 937 038a FC01      		movw r30, r24
+ 938 038c 3790      		elpm r3, Z+
+ 939               		
+ 940               	/* #NOAPP */
+ 941               	.LBE11:
+ 943               	.LM57:
+ 944 038e 6624      		clr r6
+ 945 0390 6714      		cp r6,r7
+ 946 0392 08F0      		brlo .+2
+ 947 0394 6CC0      		rjmp .L42
+ 948 0396 50E1      		ldi r21,lo8(16)
+ 949 0398 452E      		mov r4,r21
+ 950 039a 512C      		mov r5,__zero_reg__
+ 951 039c C0E0      		ldi r28,lo8(0)
+ 952 039e D0E0      		ldi r29,hi8(0)
+ 953 03a0 6901      		movw r12,r18
+ 954               	.L40:
+ 955               	.LBB12:
+ 956               	.LBB13:
+ 958               	.LM58:
+ 959 03a2 F501      		movw r30,r10
+ 960 03a4 8280      		ldd r8,Z+2
+ 961 03a6 9380      		ldd r9,Z+3
+ 962 03a8 7401      		movw r14,r8
+ 963 03aa 0027      		clr r16
+ 964 03ac 1127      		clr r17
+ 965 03ae EE0C      		lsl r14
+ 966 03b0 FF1C      		rol r15
+ 967 03b2 001F      		rol r16
+ 968 03b4 111F      		rol r17
+ 969 03b6 6696      		adiw r28,22
+ 970 03b8 CE01      		movw r24,r28
+ 971 03ba AA27      		clr r26
+ 972 03bc BB27      		clr r27
+ 973 03be 8E0D      		add r24,r14
+ 974 03c0 9F1D      		adc r25,r15
+ 975 03c2 A01F      		adc r26,r16
+ 976 03c4 B11F      		adc r27,r17
+ 977               	/* #APP */
+ 978 03c6 ABBF      		out 59, r26
+ 979 03c8 FC01      		movw r30, r24
+ 980 03ca 6791      		elpm r22, Z+
+ 981               		
+ 982               	/* #NOAPP */
+ 983               	.LBE13:
+ 984               	.LBB14:
+ 986               	.LM59:
+ 987 03cc 2196      		adiw r28,1
+ 988 03ce CE01      		movw r24,r28
+ 989 03d0 AA27      		clr r26
+ 990 03d2 BB27      		clr r27
+ 991 03d4 6797      		sbiw r28,23
+ 992 03d6 8E0D      		add r24,r14
+ 993 03d8 9F1D      		adc r25,r15
+ 994 03da A01F      		adc r26,r16
+ 995 03dc B11F      		adc r27,r17
+ 996               	/* #APP */
+ 997 03de ABBF      		out 59, r26
+ 998 03e0 FC01      		movw r30, r24
+ 999 03e2 9791      		elpm r25, Z+
+ 1000               		
+ 1001               	/* #NOAPP */
+ 1002               	.LBE14:
+ 1004               	.LM60:
+ 1005 03e4 F501      		movw r30,r10
+ 1006 03e6 8481      		ldd r24,Z+4
+ 1007 03e8 6817      		cp r22,r24
+ 1008 03ea A1F4      		brne .L35
+ 1010               	.LM61:
+ 1011 03ec 20E1      		ldi r18,lo8(16)
+ 1012 03ee 30E0      		ldi r19,hi8(16)
+ 1013 03f0 40E0      		ldi r20,hlo8(16)
+ 1014 03f2 50E0      		ldi r21,hhi8(16)
+ 1015 03f4 E20E      		add r14,r18
+ 1016 03f6 F31E      		adc r15,r19
+ 1017 03f8 041F      		adc r16,r20
+ 1018 03fa 151F      		adc r17,r21
+ 1019 03fc 1695      		lsr r17
+ 1020 03fe 0795      		ror r16
+ 1021 0400 F794      		ror r15
+ 1022 0402 E794      		ror r14
+ 1023 0404 272D      		mov r18,r7
+ 1024 0406 230D      		add r18,r3
+ 1025 0408 472D      		mov r20,r7
+ 1026 040a 692F      		mov r22,r25
+ 1027 040c C701      		movw r24,r14
+ 1028 040e 0E94 0000 		call fntable_get_prov_cb
+ 1029 0412 07C0      		rjmp .L36
+ 1030               	.L35:
+ 1032               	.LM62:
+ 1033 0414 6F3F      		cpi r22,lo8(-1)
+ 1034 0416 39F0      		breq .L38
+ 1036               	.LM63:
+ 1037 0418 262D      		mov r18,r6
+ 1038 041a 492F      		mov r20,r25
+ 1039 041c C401      		movw r24,r8
+ 1040 041e 0E94 0000 		call fntable_real_subscribe
+ 1041               	.L36:
+ 1043               	.LM64:
+ 1044 0422 0097      		sbiw r24,0
+ 1045 0424 A1F4      		brne .L43
+ 1046               	.L38:
+ 1048               	.LM65:
+ 1049 0426 F501      		movw r30,r10
+ 1050 0428 8281      		ldd r24,Z+2
+ 1051 042a 9381      		ldd r25,Z+3
+ 1052 042c AA27      		clr r26
+ 1053 042e BB27      		clr r27
+ 1054 0430 880F      		lsl r24
+ 1055 0432 991F      		rol r25
+ 1056 0434 AA1F      		rol r26
+ 1057 0436 BB1F      		rol r27
+ 1058 0438 9201      		movw r18,r4
+ 1059 043a 4427      		clr r20
+ 1060 043c 5527      		clr r21
+ 1061 043e 820F      		add r24,r18
+ 1062 0440 931F      		adc r25,r19
+ 1063 0442 A41F      		adc r26,r20
+ 1064 0444 B51F      		adc r27,r21
+ 1065 0446 B695      		lsr r27
+ 1066 0448 A795      		ror r26
+ 1067 044a 9795      		ror r25
+ 1068 044c 8795      		ror r24
+ 1069               	.L43:
+ 1070 044e F601      		movw r30,r12
+ 1071 0450 8083      		st Z,r24
+ 1072 0452 9183      		std Z+1,r25
+ 1073               	.LBE12:
+ 1075               	.LM66:
+ 1076 0454 6394      		inc r6
+ 1077 0456 22E0      		ldi r18,lo8(2)
+ 1078 0458 30E0      		ldi r19,hi8(2)
+ 1079 045a C20E      		add r12,r18
+ 1080 045c D31E      		adc r13,r19
+ 1081 045e 2896      		adiw r28,8
+ 1082 0460 48E0      		ldi r20,lo8(8)
+ 1083 0462 50E0      		ldi r21,hi8(8)
+ 1084 0464 440E      		add r4,r20
+ 1085 0466 551E      		adc r5,r21
+ 1086 0468 6714      		cp r6,r7
+ 1087 046a 08F4      		brsh .+2
+ 1088 046c 9ACF      		rjmp .L40
+ 1089               	.L42:
+ 1090               	/* epilogue: frame size=0 */
+ 1091 046e DF91      		pop r29
+ 1092 0470 CF91      		pop r28
+ 1093 0472 1F91      		pop r17
+ 1094 0474 0F91      		pop r16
+ 1095 0476 FF90      		pop r15
+ 1096 0478 EF90      		pop r14
+ 1097 047a DF90      		pop r13
+ 1098 047c CF90      		pop r12
+ 1099 047e BF90      		pop r11
+ 1100 0480 AF90      		pop r10
+ 1101 0482 9F90      		pop r9
+ 1102 0484 8F90      		pop r8
+ 1103 0486 7F90      		pop r7
+ 1104 0488 6F90      		pop r6
+ 1105 048a 5F90      		pop r5
+ 1106 048c 4F90      		pop r4
+ 1107 048e 3F90      		pop r3
+ 1108 0490 0895      		ret
+ 1109               	/* epilogue end (size=18) */
+ 1110               	/* function fntable_link_subscribed_functions size 191 (156) */
+ 1131               	.Lscope6:
+ 1139               	fntable_link_provided_functions:
+ 1141               	.LM67:
+ 1142               	/* prologue: frame size=28 */
+ 1143 0492 2F92      		push r2
+ 1144 0494 3F92      		push r3
+ 1145 0496 4F92      		push r4
+ 1146 0498 5F92      		push r5
+ 1147 049a 6F92      		push r6
+ 1148 049c 7F92      		push r7
+ 1149 049e 8F92      		push r8
+ 1150 04a0 9F92      		push r9
+ 1151 04a2 AF92      		push r10
+ 1152 04a4 BF92      		push r11
+ 1153 04a6 CF92      		push r12
+ 1154 04a8 DF92      		push r13
+ 1155 04aa EF92      		push r14
+ 1156 04ac FF92      		push r15
+ 1157 04ae 0F93      		push r16
+ 1158 04b0 1F93      		push r17
+ 1159 04b2 CF93      		push r28
+ 1160 04b4 DF93      		push r29
+ 1161 04b6 CDB7      		in r28,__SP_L__
+ 1162 04b8 DEB7      		in r29,__SP_H__
+ 1163 04ba 6C97      		sbiw r28,28
+ 1164 04bc 0FB6      		in __tmp_reg__,__SREG__
+ 1165 04be F894      		cli
+ 1166 04c0 DEBF      		out __SP_H__,r29
+ 1167 04c2 0FBE      		out __SREG__,__tmp_reg__
+ 1168 04c4 CDBF      		out __SP_L__,r28
+ 1169               	/* prologue end (size=26) */
+ 1170 04c6 8987      		std Y+9,r24
+ 1171 04c8 9A87      		std Y+10,r25
+ 1172 04ca 6B87      		std Y+11,r22
+ 1173 04cc 4C87      		std Y+12,r20
+ 1174 04ce 2D87      		std Y+13,r18
+ 1176               	.LM68:
+ 1177 04d0 0E94 0000 		call sched_get_all_module
+ 1178 04d4 8E87      		std Y+14,r24
+ 1179 04d6 9F87      		std Y+15,r25
+ 1180               	.LBB15:
+ 1182               	.LM69:
+ 1183 04d8 2985      		ldd r18,Y+9
+ 1184 04da 3A85      		ldd r19,Y+10
+ 1185 04dc C901      		movw r24,r18
+ 1186 04de AA27      		clr r26
+ 1187 04e0 BB27      		clr r27
+ 1188 04e2 880F      		lsl r24
+ 1189 04e4 991F      		rol r25
+ 1190 04e6 AA1F      		rol r26
+ 1191 04e8 BB1F      		rol r27
+ 1192 04ea 4B85      		ldd r20,Y+11
+ 1193 04ec 242F      		mov r18,r20
+ 1194 04ee 3327      		clr r19
+ 1195 04f0 13E0      		ldi r17,3
+ 1196 04f2 220F      	1:	lsl r18
+ 1197 04f4 331F      		rol r19
+ 1198 04f6 1A95      		dec r17
+ 1199 04f8 E1F7      		brne 1b
+ 1200 04fa 2A5F      		subi r18,lo8(-(6))
+ 1201 04fc 3F4F      		sbci r19,hi8(-(6))
+ 1202 04fe 4427      		clr r20
+ 1203 0500 5527      		clr r21
+ 1204 0502 820F      		add r24,r18
+ 1205 0504 931F      		adc r25,r19
+ 1206 0506 A41F      		adc r26,r20
+ 1207 0508 B51F      		adc r27,r21
+ 1208               	/* #APP */
+ 1209 050a ABBF      		out 59, r26
+ 1210 050c FC01      		movw r30, r24
+ 1211 050e 6791      		elpm r22, Z+
+ 1212               		
+ 1213               	/* #NOAPP */
+ 1214 0510 698B      		std Y+17,r22
+ 1215               	.LBE15:
+ 1217               	.LM70:
+ 1218 0512 188A      		std Y+16,__zero_reg__
+ 1219               	.L71:
+ 1220               	.LBB16:
+ 1222               	.LM71:
+ 1223 0514 7889      		ldd r23,Y+16
+ 1224 0516 E72F      		mov r30,r23
+ 1225 0518 FF27      		clr r31
+ 1226 051a EE0F      		add r30,r30
+ 1227 051c FF1F      		adc r31,r31
+ 1228 051e 8E85      		ldd r24,Y+14
+ 1229 0520 9F85      		ldd r25,Y+15
+ 1230 0522 E80F      		add r30,r24
+ 1231 0524 F91F      		adc r31,r25
+ 1232               	.L82:
+ 1233 0526 A080      		ld r10,Z
+ 1234 0528 B180      		ldd r11,Z+1
+ 1236               	.LM72:
+ 1237 052a A114      		cp r10,__zero_reg__
+ 1238 052c B104      		cpc r11,__zero_reg__
+ 1239 052e 09F4      		brne .+2
+ 1240 0530 50C1      		rjmp .L75
+ 1241               	.LBB17:
+ 1242               	.LBB18:
+ 1244               	.LM73:
+ 1245 0532 F501      		movw r30,r10
+ 1246 0534 8281      		ldd r24,Z+2
+ 1247 0536 9381      		ldd r25,Z+3
+ 1248 0538 AA27      		clr r26
+ 1249 053a BB27      		clr r27
+ 1250 053c 880F      		lsl r24
+ 1251 053e 991F      		rol r25
+ 1252 0540 AA1F      		rol r26
+ 1253 0542 BB1F      		rol r27
+ 1254 0544 0496      		adiw r24,4
+ 1255 0546 A11D      		adc r26,__zero_reg__
+ 1256 0548 B11D      		adc r27,__zero_reg__
+ 1257               	/* #APP */
+ 1258 054a ABBF      		out 59, r26
+ 1259 054c FC01      		movw r30, r24
+ 1260 054e 2791      		elpm r18, Z+
+ 1261               		
+ 1262               	/* #NOAPP */
+ 1263 0550 2A8B      		std Y+18,r18
+ 1264               	.LBE18:
+ 1266               	.LM74:
+ 1267 0552 1B8A      		std Y+19,__zero_reg__
+ 1268 0554 3B89      		ldd r19,Y+19
+ 1269 0556 3217      		cp r19,r18
+ 1270 0558 08F0      		brlo .+2
+ 1271 055a 39C1      		rjmp .L77
+ 1272 055c 60E1      		ldi r22,lo8(16)
+ 1273 055e 70E0      		ldi r23,hi8(16)
+ 1274 0560 6F8B      		std Y+23,r22
+ 1275 0562 788F      		std Y+24,r23
+ 1276 0564 698F      		std Y+25,r22
+ 1277 0566 7A8F      		std Y+26,r23
+ 1278 0568 4424      		clr r4
+ 1279 056a 5524      		clr r5
+ 1280 056c 1201      		movw r2,r4
+ 1281 056e 4B8E      		std Y+27,r4
+ 1282 0570 5C8E      		std Y+28,r5
+ 1283               	.L69:
+ 1284               	.LBB19:
+ 1285               	.LBB20:
+ 1287               	.LM75:
+ 1288 0572 F501      		movw r30,r10
+ 1289 0574 6281      		ldd r22,Z+2
+ 1290 0576 7381      		ldd r23,Z+3
+ 1291 0578 9B01      		movw r18,r22
+ 1292 057a 4427      		clr r20
+ 1293 057c 5527      		clr r21
+ 1294 057e 220F      		lsl r18
+ 1295 0580 331F      		rol r19
+ 1296 0582 441F      		rol r20
+ 1297 0584 551F      		rol r21
+ 1298 0586 86E1      		ldi r24,lo8(22)
+ 1299 0588 90E0      		ldi r25,hi8(22)
+ 1300 058a 480E      		add r4,r24
+ 1301 058c 591E      		adc r5,r25
+ 1302 058e C201      		movw r24,r4
+ 1303 0590 AA27      		clr r26
+ 1304 0592 BB27      		clr r27
+ 1305 0594 EAEE      		ldi r30,lo8(-22)
+ 1306 0596 FFEF      		ldi r31,hi8(-22)
+ 1307 0598 4E0E      		add r4,r30
+ 1308 059a 5F1E      		adc r5,r31
+ 1309 059c 820F      		add r24,r18
+ 1310 059e 931F      		adc r25,r19
+ 1311 05a0 A41F      		adc r26,r20
+ 1312 05a2 B51F      		adc r27,r21
+ 1313               	/* #APP */
+ 1314 05a4 ABBF      		out 59, r26
+ 1315 05a6 FC01      		movw r30, r24
+ 1316 05a8 8791      		elpm r24, Z+
+ 1317               		
+ 1318               	/* #NOAPP */
+ 1319               	.LBE20:
+ 1321               	.LM76:
+ 1322 05aa F989      		ldd r31,Y+17
+ 1323 05ac 8F17      		cp r24,r31
+ 1324 05ae 09F0      		breq .+2
+ 1325 05b0 C6C0      		rjmp .L53
+ 1326               	.LBB21:
+ 1327               	.LBB22:
+ 1329               	.LM77:
+ 1330 05b2 67E1      		ldi r22,lo8(23)
+ 1331 05b4 70E0      		ldi r23,hi8(23)
+ 1332 05b6 460E      		add r4,r22
+ 1333 05b8 571E      		adc r5,r23
+ 1334 05ba C201      		movw r24,r4
+ 1335 05bc AA27      		clr r26
+ 1336 05be BB27      		clr r27
+ 1337 05c0 E9EE      		ldi r30,lo8(-23)
+ 1338 05c2 FFEF      		ldi r31,hi8(-23)
+ 1339 05c4 4E0E      		add r4,r30
+ 1340 05c6 5F1E      		adc r5,r31
+ 1341 05c8 280F      		add r18,r24
+ 1342 05ca 391F      		adc r19,r25
+ 1343 05cc 4A1F      		adc r20,r26
+ 1344 05ce 5B1F      		adc r21,r27
+ 1345               	/* #APP */
+ 1346 05d0 4BBF      		out 59, r20
+ 1347 05d2 F901      		movw r30, r18
+ 1348 05d4 8791      		elpm r24, Z+
+ 1349               		
+ 1350               	/* #NOAPP */
+ 1351               	.LBE22:
+ 1353               	.LM78:
+ 1354 05d6 2C85      		ldd r18,Y+12
+ 1355 05d8 4B85      		ldd r20,Y+11
+ 1356 05da 682F      		mov r22,r24
+ 1357 05dc 8985      		ldd r24,Y+9
+ 1358 05de 9A85      		ldd r25,Y+10
+ 1359 05e0 0E94 0000 		call fntable_get_prov_cb
+ 1360 05e4 3C01      		movw r6,r24
+ 1362               	.LM79:
+ 1363 05e6 0097      		sbiw r24,0
+ 1364 05e8 09F4      		brne .+2
+ 1365 05ea D1C0      		rjmp .L52
+ 1366               	.LBB23:
+ 1368               	.LM80:
+ 1369 05ec F501      		movw r30,r10
+ 1370 05ee 0680      		ldd __tmp_reg__,Z+6
+ 1371 05f0 F781      		ldd r31,Z+7
+ 1372 05f2 E02D      		mov r30,__tmp_reg__
+ 1373 05f4 ED8B      		std Y+21,r30
+ 1374 05f6 FE8B      		std Y+22,r31
+ 1375 05f8 7C01      		movw r14,r24
+ 1376 05fa 0027      		clr r16
+ 1377 05fc 1127      		clr r17
+ 1378 05fe EE0C      		lsl r14
+ 1379 0600 FF1C      		rol r15
+ 1380 0602 001F      		rol r16
+ 1381 0604 111F      		rol r17
+ 1382 0606 4E01      		movw r8,r28
+ 1383 0608 0894      		sec
+ 1384 060a 811C      		adc r8,__zero_reg__
+ 1385 060c 911C      		adc r9,__zero_reg__
+ 1386 060e 6B8D      		ldd r22,Y+27
+ 1387 0610 7C8D      		ldd r23,Y+28
+ 1388 0612 6E5E      		subi r22,lo8(-(18))
+ 1389 0614 7F4F      		sbci r23,hi8(-(18))
+ 1390 0616 CC24      		clr r12
+ 1391 0618 DD24      		clr r13
+ 1392 061a F3E0      		ldi r31,lo8(3)
+ 1393 061c FC8B      		std Y+20,r31
+ 1394               	.L58:
+ 1395               	.LBB24:
+ 1397               	.LM81:
+ 1398 061e F501      		movw r30,r10
+ 1399 0620 8281      		ldd r24,Z+2
+ 1400 0622 9381      		ldd r25,Z+3
+ 1401 0624 AA27      		clr r26
+ 1402 0626 BB27      		clr r27
+ 1403 0628 880F      		lsl r24
+ 1404 062a 991F      		rol r25
+ 1405 062c AA1F      		rol r26
+ 1406 062e BB1F      		rol r27
+ 1407 0630 9B01      		movw r18,r22
+ 1408 0632 4427      		clr r20
+ 1409 0634 5527      		clr r21
+ 1410 0636 820F      		add r24,r18
+ 1411 0638 931F      		adc r25,r19
+ 1412 063a A41F      		adc r26,r20
+ 1413 063c B51F      		adc r27,r21
+ 1414               	/* #APP */
+ 1415 063e ABBF      		out 59, r26
+ 1416 0640 FC01      		movw r30, r24
+ 1417 0642 8791      		elpm r24, Z+
+ 1418               		
+ 1419               	/* #NOAPP */
+ 1420               	.LBE24:
+ 1421 0644 D401      		movw r26,r8
+ 1422 0646 8C93      		st X,r24
+ 1423               	.LBB25:
+ 1425               	.LM82:
+ 1426 0648 E2E0      		ldi r30,lo8(2)
+ 1427 064a F0E0      		ldi r31,hi8(2)
+ 1428 064c CE0E      		add r12,r30
+ 1429 064e DF1E      		adc r13,r31
+ 1430 0650 C601      		movw r24,r12
+ 1431 0652 AA27      		clr r26
+ 1432 0654 BB27      		clr r27
+ 1433 0656 8E0D      		add r24,r14
+ 1434 0658 9F1D      		adc r25,r15
+ 1435 065a A01F      		adc r26,r16
+ 1436 065c B11F      		adc r27,r17
+ 1437               	/* #APP */
+ 1438 065e ABBF      		out 59, r26
+ 1439 0660 FC01      		movw r30, r24
+ 1440 0662 8791      		elpm r24, Z+
+ 1441               		
+ 1442               	/* #NOAPP */
+ 1443               	.LBE25:
+ 1444 0664 F401      		movw r30,r8
+ 1445 0666 8483      		std Z+4,r24
+ 1447               	.LM83:
+ 1448 0668 FC89      		ldd r31,Y+20
+ 1449 066a F150      		subi r31,lo8(-(-1))
+ 1450 066c FC8B      		std Y+20,r31
+ 1451 066e 0894      		sec
+ 1452 0670 C108      		sbc r12,__zero_reg__
+ 1453 0672 D108      		sbc r13,__zero_reg__
+ 1454 0674 6F5F      		subi r22,lo8(-(1))
+ 1455 0676 7F4F      		sbci r23,hi8(-(1))
+ 1456 0678 0894      		sec
+ 1457 067a 811C      		adc r8,__zero_reg__
+ 1458 067c 911C      		adc r9,__zero_reg__
+ 1459 067e F7FF      		sbrs r31,7
+ 1460 0680 CECF      		rjmp .L58
+ 1462               	.LM84:
+ 1463 0682 2D85      		ldd r18,Y+13
+ 1464 0684 2223      		tst r18
+ 1465 0686 A1F0      		breq .L59
+ 1467               	.LM85:
+ 1468 0688 BE01      		movw r22,r28
+ 1469 068a 6F5F      		subi r22,lo8(-(1))
+ 1470 068c 7F4F      		sbci r23,hi8(-(1))
+ 1471 068e CE01      		movw r24,r28
+ 1472 0690 0596      		adiw r24,5
+ 1473 0692 0E94 0000 		call check_proto
+ 1474 0696 8823      		tst r24
+ 1475 0698 09F4      		brne .+2
+ 1476 069a 79C0      		rjmp .L52
+ 1478               	.LM86:
+ 1479 069c F101      		movw r30,r2
+ 1480 069e E20D      		add r30,r2
+ 1481 06a0 F31D      		adc r31,r3
+ 1482 06a2 6D89      		ldd r22,Y+21
+ 1483 06a4 7E89      		ldd r23,Y+22
+ 1484 06a6 E60F      		add r30,r22
+ 1485 06a8 F71F      		adc r31,r23
+ 1486 06aa 6082      		st Z,r6
+ 1487 06ac 7182      		std Z+1,r7
+ 1488 06ae 6FC0      		rjmp .L52
+ 1489               	.L59:
+ 1491               	.LM87:
+ 1492 06b0 8101      		movw r16,r2
+ 1493 06b2 020D      		add r16,r2
+ 1494 06b4 131D      		adc r17,r3
+ 1495 06b6 8D89      		ldd r24,Y+21
+ 1496 06b8 9E89      		ldd r25,Y+22
+ 1497 06ba 080F      		add r16,r24
+ 1498 06bc 191F      		adc r17,r25
+ 1499 06be F501      		movw r30,r10
+ 1500 06c0 8281      		ldd r24,Z+2
+ 1501 06c2 9381      		ldd r25,Z+3
+ 1502 06c4 AA27      		clr r26
+ 1503 06c6 BB27      		clr r27
+ 1504 06c8 880F      		lsl r24
+ 1505 06ca 991F      		rol r25
+ 1506 06cc AA1F      		rol r26
+ 1507 06ce BB1F      		rol r27
+ 1508 06d0 698D      		ldd r22,Y+25
+ 1509 06d2 7A8D      		ldd r23,Y+26
+ 1510 06d4 9B01      		movw r18,r22
+ 1511 06d6 4427      		clr r20
+ 1512 06d8 5527      		clr r21
+ 1513 06da 820F      		add r24,r18
+ 1514 06dc 931F      		adc r25,r19
+ 1515 06de A41F      		adc r26,r20
+ 1516 06e0 B51F      		adc r27,r21
+ 1517 06e2 B695      		lsr r27
+ 1518 06e4 A795      		ror r26
+ 1519 06e6 9795      		ror r25
+ 1520 06e8 8795      		ror r24
+ 1521 06ea F801      		movw r30,r16
+ 1522 06ec 8083      		st Z,r24
+ 1523 06ee 9183      		std Z+1,r25
+ 1524               	.LBE23:
+ 1525               	.LBE21:
+ 1526 06f0 4EC0      		rjmp .L52
+ 1527               	.L81:
+ 1528               	.LBB26:
+ 1530               	.LM88:
+ 1531 06f2 F101      		movw r30,r2
+ 1532 06f4 E20D      		add r30,r2
+ 1533 06f6 F31D      		adc r31,r3
+ 1534 06f8 E40F      		add r30,r20
+ 1535 06fa F51F      		adc r31,r21
+ 1536 06fc CB01      		movw r24,r22
+ 1537 06fe AA27      		clr r26
+ 1538 0700 BB27      		clr r27
+ 1539 0702 880F      		lsl r24
+ 1540 0704 991F      		rol r25
+ 1541 0706 AA1F      		rol r26
+ 1542 0708 BB1F      		rol r27
+ 1543 070a 6F89      		ldd r22,Y+23
+ 1544 070c 788D      		ldd r23,Y+24
+ 1545 070e 9B01      		movw r18,r22
+ 1546 0710 4427      		clr r20
+ 1547 0712 5527      		clr r21
+ 1548 0714 820F      		add r24,r18
+ 1549 0716 931F      		adc r25,r19
+ 1550 0718 A41F      		adc r26,r20
+ 1551 071a B51F      		adc r27,r21
+ 1552 071c B695      		lsr r27
+ 1553 071e A795      		ror r26
+ 1554 0720 9795      		ror r25
+ 1555 0722 8795      		ror r24
+ 1556 0724 8083      		st Z,r24
+ 1557 0726 9183      		std Z+1,r25
+ 1559               	.LM89:
+ 1560 0728 EE24      		clr r14
+ 1561 072a FF24      		clr r15
+ 1562 072c 8701      		movw r16,r14
+ 1563 072e 2B89      		ldd r18,Y+19
+ 1564 0730 4AE0      		ldi r20,lo8(10)
+ 1565 0732 6CE0      		ldi r22,lo8(12)
+ 1566 0734 F501      		movw r30,r10
+ 1567 0736 8481      		ldd r24,Z+4
+ 1568 0738 0E94 0000 		call post_short
+ 1570               	.LM90:
+ 1571 073c 28C0      		rjmp .L52
+ 1572               	.L53:
+ 1573               	.LBE26:
+ 1575               	.LM91:
+ 1576 073e 8F3F      		cpi r24,lo8(-1)
+ 1577 0740 31F5      		brne .L52
+ 1578 0742 FD85      		ldd r31,Y+13
+ 1579 0744 FF23      		tst r31
+ 1580 0746 19F5      		brne .L52
+ 1581               	.LBB27:
+ 1583               	.LM92:
+ 1584 0748 F501      		movw r30,r10
+ 1585 074a 4681      		ldd r20,Z+6
+ 1586 074c 5781      		ldd r21,Z+7
+ 1588               	.LM93:
+ 1589 074e F101      		movw r30,r2
+ 1590 0750 E20D      		add r30,r2
+ 1591 0752 F31D      		adc r31,r3
+ 1592 0754 E40F      		add r30,r20
+ 1593 0756 F51F      		adc r31,r21
+ 1594 0758 0190      		ld __tmp_reg__,Z+
+ 1595 075a F081      		ld r31,Z
+ 1596 075c E02D      		mov r30,__tmp_reg__
+ 1598               	.LM94:
+ 1599 075e 2B85      		ldd r18,Y+11
+ 1600 0760 3C85      		ldd r19,Y+12
+ 1601 0762 2317      		cp r18,r19
+ 1602 0764 A0F4      		brsh .L52
+ 1603 0766 822F      		mov r24,r18
+ 1604 0768 9927      		clr r25
+ 1605 076a A3E0      		ldi r26,3
+ 1606 076c 880F      	1:	lsl r24
+ 1607 076e 991F      		rol r25
+ 1608 0770 AA95      		dec r26
+ 1609 0772 E1F7      		brne 1b
+ 1610 0774 A985      		ldd r26,Y+9
+ 1611 0776 BA85      		ldd r27,Y+10
+ 1612 0778 8A0F      		add r24,r26
+ 1613 077a 9B1F      		adc r25,r27
+ 1614               	.L68:
+ 1616               	.LM95:
+ 1617 077c 8E17      		cp r24,r30
+ 1618 077e 9F07      		cpc r25,r31
+ 1619 0780 09F4      		brne .+2
+ 1620 0782 B7CF      		rjmp .L81
+ 1622               	.LM96:
+ 1623 0784 2F5F      		subi r18,lo8(-(1))
+ 1624 0786 0896      		adiw r24,8
+ 1625 0788 BC85      		ldd r27,Y+12
+ 1626 078a 2B17      		cp r18,r27
+ 1627 078c B8F3      		brlo .L68
+ 1628               	.L52:
+ 1629               	.LBE27:
+ 1630               	.LBE19:
+ 1632               	.LM97:
+ 1633 078e EB89      		ldd r30,Y+19
+ 1634 0790 EF5F      		subi r30,lo8(-(1))
+ 1635 0792 EB8B      		std Y+19,r30
+ 1636 0794 0894      		sec
+ 1637 0796 211C      		adc r2,__zero_reg__
+ 1638 0798 311C      		adc r3,__zero_reg__
+ 1639 079a 2B8D      		ldd r18,Y+27
+ 1640 079c 3C8D      		ldd r19,Y+28
+ 1641 079e 285F      		subi r18,lo8(-(8))
+ 1642 07a0 3F4F      		sbci r19,hi8(-(8))
+ 1643 07a2 2B8F      		std Y+27,r18
+ 1644 07a4 3C8F      		std Y+28,r19
+ 1645 07a6 68E0      		ldi r22,lo8(8)
+ 1646 07a8 70E0      		ldi r23,hi8(8)
+ 1647 07aa 460E      		add r4,r22
+ 1648 07ac 571E      		adc r5,r23
+ 1649 07ae 898D      		ldd r24,Y+25
+ 1650 07b0 9A8D      		ldd r25,Y+26
+ 1651 07b2 860F      		add r24,r22
+ 1652 07b4 971F      		adc r25,r23
+ 1653 07b6 898F      		std Y+25,r24
+ 1654 07b8 9A8F      		std Y+26,r25
+ 1655 07ba AF89      		ldd r26,Y+23
+ 1656 07bc B88D      		ldd r27,Y+24
+ 1657 07be A60F      		add r26,r22
+ 1658 07c0 B71F      		adc r27,r23
+ 1659 07c2 AF8B      		std Y+23,r26
+ 1660 07c4 B88F      		std Y+24,r27
+ 1661 07c6 BA89      		ldd r27,Y+18
+ 1662 07c8 EB17      		cp r30,r27
+ 1663 07ca 08F4      		brsh .+2
+ 1664 07cc D2CE      		rjmp .L69
+ 1665               	.L77:
+ 1667               	.LM98:
+ 1668 07ce F501      		movw r30,r10
+ 1669 07d0 AACE      		rjmp .L82
+ 1670               	.L75:
+ 1671               	.LBE17:
+ 1672               	.LBE16:
+ 1674               	.LM99:
+ 1675 07d2 F889      		ldd r31,Y+16
+ 1676 07d4 FF5F      		subi r31,lo8(-(1))
+ 1677 07d6 F88B      		std Y+16,r31
+ 1678 07d8 F430      		cpi r31,lo8(4)
+ 1679 07da 08F4      		brsh .+2
+ 1680 07dc 9BCE      		rjmp .L71
+ 1681               	/* epilogue: frame size=28 */
+ 1682 07de 6C96      		adiw r28,28
+ 1683 07e0 0FB6      		in __tmp_reg__,__SREG__
+ 1684 07e2 F894      		cli
+ 1685 07e4 DEBF      		out __SP_H__,r29
+ 1686 07e6 0FBE      		out __SREG__,__tmp_reg__
+ 1687 07e8 CDBF      		out __SP_L__,r28
+ 1688 07ea DF91      		pop r29
+ 1689 07ec CF91      		pop r28
+ 1690 07ee 1F91      		pop r17
+ 1691 07f0 0F91      		pop r16
+ 1692 07f2 FF90      		pop r15
+ 1693 07f4 EF90      		pop r14
+ 1694 07f6 DF90      		pop r13
+ 1695 07f8 CF90      		pop r12
+ 1696 07fa BF90      		pop r11
+ 1697 07fc AF90      		pop r10
+ 1698 07fe 9F90      		pop r9
+ 1699 0800 8F90      		pop r8
+ 1700 0802 7F90      		pop r7
+ 1701 0804 6F90      		pop r6
+ 1702 0806 5F90      		pop r5
+ 1703 0808 4F90      		pop r4
+ 1704 080a 3F90      		pop r3
+ 1705 080c 2F90      		pop r2
+ 1706 080e 0895      		ret
+ 1707               	/* epilogue end (size=25) */
+ 1708               	/* function fntable_link_provided_functions size 477 (426) */
+ 1757               	.Lscope7:
+ 1761               	.global	fntable_link
+ 1763               	fntable_link:
+ 1765               	.LM100:
+ 1766               	/* prologue: frame size=0 */
+ 1767 0810 0F93      		push r16
+ 1768 0812 1F93      		push r17
+ 1769               	/* prologue end (size=2) */
+ 1770 0814 8C01      		movw r16,r24
+ 1772               	.LM101:
+ 1773 0816 0E94 0000 		call fntable_link_subscribed_functions
+ 1774               	.LBB28:
+ 1776               	.LM102:
+ 1777 081a F801      		movw r30,r16
+ 1778 081c 8281      		ldd r24,Z+2
+ 1779 081e 9381      		ldd r25,Z+3
+ 1780 0820 AA27      		clr r26
+ 1781 0822 BB27      		clr r27
+ 1782 0824 880F      		lsl r24
+ 1783 0826 991F      		rol r25
+ 1784 0828 AA1F      		rol r26
+ 1785 082a BB1F      		rol r27
+ 1786 082c 0596      		adiw r24,5
+ 1787 082e A11D      		adc r26,__zero_reg__
+ 1788 0830 B11D      		adc r27,__zero_reg__
+ 1789               	/* #APP */
+ 1790 0832 ABBF      		out 59, r26
+ 1791 0834 FC01      		movw r30, r24
+ 1792 0836 4791      		elpm r20, Z+
+ 1793               		
+ 1794               	/* #NOAPP */
+ 1795               	.LBE28:
+ 1796               	.LBB29:
+ 1798               	.LM103:
+ 1799 0838 0197      		sbiw r24,1
+ 1800 083a A109      		sbc r26,__zero_reg__
+ 1801 083c B109      		sbc r27,__zero_reg__
+ 1802               	/* #APP */
+ 1803 083e ABBF      		out 59, r26
+ 1804 0840 FC01      		movw r30, r24
+ 1805 0842 6791      		elpm r22, Z+
+ 1806               		
+ 1807               	/* #NOAPP */
+ 1808 0844 0497      		sbiw r24,4
+ 1809 0846 A109      		sbc r26,__zero_reg__
+ 1810 0848 B109      		sbc r27,__zero_reg__
+ 1811               	.LBE29:
+ 1813               	.LM104:
+ 1814 084a 4423      		tst r20
+ 1815 084c 59F0      		breq .L84
+ 1817               	.LM105:
+ 1818 084e 460F      		add r20,r22
+ 1819 0850 4096      		adiw r24,16
+ 1820 0852 A11D      		adc r26,__zero_reg__
+ 1821 0854 B11D      		adc r27,__zero_reg__
+ 1822 0856 B695      		lsr r27
+ 1823 0858 A795      		ror r26
+ 1824 085a 9795      		ror r25
+ 1825 085c 8795      		ror r24
+ 1826 085e 21E0      		ldi r18,lo8(1)
+ 1827 0860 0E94 0000 		call fntable_link_provided_functions
+ 1828               	.L84:
+ 1830               	.LM106:
+ 1831 0864 80E0      		ldi r24,lo8(0)
+ 1832 0866 90E0      		ldi r25,hi8(0)
+ 1833               	/* epilogue: frame size=0 */
+ 1834 0868 1F91      		pop r17
+ 1835 086a 0F91      		pop r16
+ 1836 086c 0895      		ret
+ 1837               	/* epilogue end (size=3) */
+ 1838               	/* function fntable_link size 57 (52) */
+ 1846               	.Lscope8:
+ 1850               	.global	fntable_remove_all
+ 1852               	fntable_remove_all:
+ 1854               	.LM107:
+ 1855               	/* prologue: frame size=0 */
+ 1856 086e AF92      		push r10
+ 1857 0870 BF92      		push r11
+ 1858 0872 DF92      		push r13
+ 1859 0874 EF92      		push r14
+ 1860 0876 FF92      		push r15
+ 1861 0878 0F93      		push r16
+ 1862 087a 1F93      		push r17
+ 1863 087c CF93      		push r28
+ 1864 087e DF93      		push r29
+ 1865               	/* prologue end (size=9) */
+ 1866 0880 EC01      		movw r28,r24
+ 1868               	.LM108:
+ 1869 0882 EE80      		ldd r14,Y+6
+ 1870 0884 FF80      		ldd r15,Y+7
+ 1871               	.LBB30:
+ 1873               	.LM109:
+ 1874 0886 8A81      		ldd r24,Y+2
+ 1875 0888 9B81      		ldd r25,Y+3
+ 1876 088a AA27      		clr r26
+ 1877 088c BB27      		clr r27
+ 1878 088e 880F      		lsl r24
+ 1879 0890 991F      		rol r25
+ 1880 0892 AA1F      		rol r26
+ 1881 0894 BB1F      		rol r27
+ 1882 0896 0596      		adiw r24,5
+ 1883 0898 A11D      		adc r26,__zero_reg__
+ 1884 089a B11D      		adc r27,__zero_reg__
+ 1885               	/* #APP */
+ 1886 089c ABBF      		out 59, r26
+ 1887 089e FC01      		movw r30, r24
+ 1888 08a0 4791      		elpm r20, Z+
+ 1889               		
+ 1890               	/* #NOAPP */
+ 1891 08a2 0597      		sbiw r24,5
+ 1892 08a4 A109      		sbc r26,__zero_reg__
+ 1893 08a6 B109      		sbc r27,__zero_reg__
+ 1894               	.LBE30:
+ 1896               	.LM110:
+ 1897 08a8 4423      		tst r20
+ 1898 08aa 09F4      		brne .+2
+ 1899 08ac 34C0      		rjmp .L85
+ 1900               	.LBB31:
+ 1902               	.LM111:
+ 1903 08ae 0496      		adiw r24,4
+ 1904 08b0 A11D      		adc r26,__zero_reg__
+ 1905 08b2 B11D      		adc r27,__zero_reg__
+ 1906               	/* #APP */
+ 1907 08b4 ABBF      		out 59, r26
+ 1908 08b6 FC01      		movw r30, r24
+ 1909 08b8 1791      		elpm r17, Z+
+ 1910               		
+ 1911               	/* #NOAPP */
+ 1912               	.LBE31:
+ 1914               	.LM112:
+ 1915 08ba 410F      		add r20,r17
+ 1916 08bc 0C96      		adiw r24,12
+ 1917 08be A11D      		adc r26,__zero_reg__
+ 1918 08c0 B11D      		adc r27,__zero_reg__
+ 1919 08c2 B695      		lsr r27
+ 1920 08c4 A795      		ror r26
+ 1921 08c6 9795      		ror r25
+ 1922 08c8 8795      		ror r24
+ 1923 08ca 20E0      		ldi r18,lo8(0)
+ 1924 08cc 612F      		mov r22,r17
+ 1925 08ce 0E94 0000 		call fntable_link_provided_functions
+ 1927               	.LM113:
+ 1928 08d2 1123      		tst r17
+ 1929 08d4 01F1      		breq .L85
+ 1930 08d6 D12E      		mov r13,r17
+ 1931 08d8 5701      		movw r10,r14
+ 1932               	.L92:
+ 1933               	.LBB32:
+ 1935               	.LM114:
+ 1936 08da F501      		movw r30,r10
+ 1937 08dc 8191      		ld r24,Z+
+ 1938 08de 9191      		ld r25,Z+
+ 1939 08e0 5F01      		movw r10,r30
+ 1940               	.LBB33:
+ 1942               	.LM115:
+ 1943 08e2 AA27      		clr r26
+ 1944 08e4 BB27      		clr r27
+ 1945 08e6 880F      		lsl r24
+ 1946 08e8 991F      		rol r25
+ 1947 08ea AA1F      		rol r26
+ 1948 08ec BB1F      		rol r27
+ 1949 08ee 0696      		adiw r24,6
+ 1950 08f0 A11D      		adc r26,__zero_reg__
+ 1951 08f2 B11D      		adc r27,__zero_reg__
+ 1952               	/* #APP */
+ 1953 08f4 ABBF      		out 59, r26
+ 1954 08f6 FC01      		movw r30, r24
+ 1955 08f8 8791      		elpm r24, Z+
+ 1956               		
+ 1957               	/* #NOAPP */
+ 1958               	.LBE33:
+ 1960               	.LM116:
+ 1961 08fa 2C81      		ldd r18,Y+4
+ 1962 08fc 8217      		cp r24,r18
+ 1963 08fe 49F0      		breq .L89
+ 1964 0900 8F3F      		cpi r24,lo8(-1)
+ 1965 0902 39F0      		breq .L89
+ 1967               	.LM117:
+ 1968 0904 EE24      		clr r14
+ 1969 0906 FF24      		clr r15
+ 1970 0908 8701      		movw r16,r14
+ 1971 090a 4AE0      		ldi r20,lo8(10)
+ 1972 090c 6CE0      		ldi r22,lo8(12)
+ 1973 090e 0E94 0000 		call post_short
+ 1974               	.L89:
+ 1975               	.LBE32:
+ 1977               	.LM118:
+ 1978 0912 DA94      		dec r13
+ 1979 0914 11F7      		brne .L92
+ 1980               	.L85:
+ 1982               	.LM119:
+ 1983 0916 80E0      		ldi r24,lo8(0)
+ 1984 0918 90E0      		ldi r25,hi8(0)
+ 1985               	/* epilogue: frame size=0 */
+ 1986 091a DF91      		pop r29
+ 1987 091c CF91      		pop r28
+ 1988 091e 1F91      		pop r17
+ 1989 0920 0F91      		pop r16
+ 1990 0922 FF90      		pop r15
+ 1991 0924 EF90      		pop r14
+ 1992 0926 DF90      		pop r13
+ 1993 0928 BF90      		pop r11
+ 1994 092a AF90      		pop r10
+ 1995 092c 0895      		ret
+ 1996               	/* epilogue end (size=10) */
+ 1997               	/* function fntable_remove_all size 111 (92) */
+ 2015               	.Lscope9:
+ 2020               	.global	ker_get_func_ptr
+ 2022               	ker_get_func_ptr:
+ 430:/Users/Administrator/sos-2x/kernel/fntable.c **** }
+ 431:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+ 432:/Users/Administrator/sos-2x/kernel/fntable.c **** dummy_func ker_get_func_ptr(func_cb_ptr p, sos_pid_t *prev)
+ 433:/Users/Administrator/sos-2x/kernel/fntable.c **** {
+ 2024               	.LM120:
+ 2025               	/* prologue: frame size=0 */
+ 2026 092e 0F93      		push r16
+ 2027 0930 1F93      		push r17
+ 2028 0932 CF93      		push r28
+ 2029 0934 DF93      		push r29
+ 2030               	/* prologue end (size=4) */
+ 2031 0936 8C01      		movw r16,r24
+ 2032 0938 EB01      		movw r28,r22
+ 434:/Users/Administrator/sos-2x/kernel/fntable.c **** 	if( prev != NULL ) {
+ 2034               	.LM121:
+ 2035 093a 672B      		or r22,r23
+ 2036 093c 81F0      		breq .L96
+ 2037               	.LBB34:
+ 435:/Users/Administrator/sos-2x/kernel/fntable.c **** 		*prev = 
+ 436:/Users/Administrator/sos-2x/kernel/fntable.c **** 			ker_set_current_pid(sos_read_header_byte(p, offsetof(func_cb_t, pid)));
+ 2039               	.LM122:
+ 2040 093e C801      		movw r24,r16
+ 2041 0940 AA27      		clr r26
+ 2042 0942 BB27      		clr r27
+ 2043 0944 880F      		lsl r24
+ 2044 0946 991F      		rol r25
+ 2045 0948 AA1F      		rol r26
+ 2046 094a BB1F      		rol r27
+ 2047 094c 0696      		adiw r24,6
+ 2048 094e A11D      		adc r26,__zero_reg__
+ 2049 0950 B11D      		adc r27,__zero_reg__
+ 2050               	.LBE34:
+ 2051               	/* #APP */
+ 2052 0952 ABBF      		out 59, r26
+ 2053 0954 FC01      		movw r30, r24
+ 2054 0956 8791      		elpm r24, Z+
+ 2055               		
+ 2056               	/* #NOAPP */
+ 2057 0958 0E94 0000 		call ker_set_current_pid
+ 2058 095c 8883      		st Y,r24
+ 2059               	.L96:
+ 2060               	.LBB35:
+ 437:/Users/Administrator/sos-2x/kernel/fntable.c **** 	}
+ 438:/Users/Administrator/sos-2x/kernel/fntable.c **** 	
+ 439:/Users/Administrator/sos-2x/kernel/fntable.c **** 	return (dummy_func)sos_read_header_ptr( p, offsetof(func_cb_t, ptr));
+ 2062               	.LM123:
+ 2063 095e C801      		movw r24,r16
+ 2064 0960 AA27      		clr r26
+ 2065 0962 BB27      		clr r27
+ 2066 0964 880F      		lsl r24
+ 2067 0966 991F      		rol r25
+ 2068 0968 AA1F      		rol r26
+ 2069 096a BB1F      		rol r27
+ 2070               	.LBE35:
+ 440:/Users/Administrator/sos-2x/kernel/fntable.c **** }
+ 2072               	.LM124:
+ 2073               	/* #APP */
+ 2074 096c ABBF      		out 59, r26
+ 2075 096e FC01      		movw r30, r24
+ 2076 0970 8791      		elpm r24, Z+
+ 2077 0972 9691      		elpm r25, Z
+ 2078               		
+ 2079               	/* #NOAPP */
+ 2080               	/* epilogue: frame size=0 */
+ 2081 0974 DF91      		pop r29
+ 2082 0976 CF91      		pop r28
+ 2083 0978 1F91      		pop r17
+ 2084 097a 0F91      		pop r16
+ 2085 097c 0895      		ret
+ 2086               	/* epilogue end (size=5) */
+ 2087               	/* function ker_get_func_ptr size 51 (42) */
+ 2089               	.Lscope10:
+ 2093               	.global	ker_sys_enter_func
+ 2095               	ker_sys_enter_func:
+ 441:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+ 442:/Users/Administrator/sos-2x/kernel/fntable.c **** /**
+ 443:/Users/Administrator/sos-2x/kernel/fntable.c ****  * Call to get the function pointer in the control block
+ 444:/Users/Administrator/sos-2x/kernel/fntable.c ****  * It also sets the current pid to the function destination
+ 445:/Users/Administrator/sos-2x/kernel/fntable.c ****  *
+ 446:/Users/Administrator/sos-2x/kernel/fntable.c ****  */
+ 447:/Users/Administrator/sos-2x/kernel/fntable.c **** dummy_func ker_sys_enter_func( func_cb_ptr p )
+ 448:/Users/Administrator/sos-2x/kernel/fntable.c **** {
+ 2097               	.LM125:
+ 2098               	/* prologue: frame size=0 */
+ 2099 097e FF92      		push r15
+ 2100 0980 0F93      		push r16
+ 2101 0982 1F93      		push r17
+ 2102               	/* prologue end (size=3) */
+ 2103 0984 8C01      		movw r16,r24
+ 449:/Users/Administrator/sos-2x/kernel/fntable.c **** 	HAS_CRITICAL_SECTION;
+ 450:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+ 451:/Users/Administrator/sos-2x/kernel/fntable.c **** 	ENTER_CRITICAL_SECTION();
+ 2105               	.LM126:
+ 2106               	/* #APP */
+ 2107 0986 FFB6      		in r15, __SREG__
+ 2108 0988 F894      		cli
+ 2109               		
+ 2110               	/* #NOAPP */
+ 2111               	.LBB36:
+ 452:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+ 453:/Users/Administrator/sos-2x/kernel/fntable.c **** 	*pid_sp =
+ 454:/Users/Administrator/sos-2x/kernel/fntable.c **** 		ker_set_current_pid(sos_read_header_byte(p, offsetof(func_cb_t, pid)));
+ 2113               	.LM127:
+ 2114 098a C801      		movw r24,r16
+ 2115 098c AA27      		clr r26
+ 2116 098e BB27      		clr r27
+ 2117 0990 880F      		lsl r24
+ 2118 0992 991F      		rol r25
+ 2119 0994 AA1F      		rol r26
+ 2120 0996 BB1F      		rol r27
+ 2121 0998 0696      		adiw r24,6
+ 2122 099a A11D      		adc r26,__zero_reg__
+ 2123 099c B11D      		adc r27,__zero_reg__
+ 2124               	.LBE36:
+ 2125               	/* #APP */
+ 2126 099e ABBF      		out 59, r26
+ 2127 09a0 FC01      		movw r30, r24
+ 2128 09a2 8791      		elpm r24, Z+
+ 2129               		
+ 2130               	/* #NOAPP */
+ 2131 09a4 0E94 0000 		call ker_set_current_pid
+ 2132 09a8 E091 0000 		lds r30,pid_sp
+ 2133 09ac F091 0000 		lds r31,(pid_sp)+1
+ 2134 09b0 8083      		st Z,r24
+ 455:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+ 456:/Users/Administrator/sos-2x/kernel/fntable.c **** 	pid_sp++;
+ 2136               	.LM128:
+ 2137 09b2 8091 0000 		lds r24,pid_sp
+ 2138 09b6 9091 0000 		lds r25,(pid_sp)+1
+ 2139 09ba 0196      		adiw r24,1
+ 2140 09bc 9093 0000 		sts (pid_sp)+1,r25
+ 2141 09c0 8093 0000 		sts pid_sp,r24
+ 457:/Users/Administrator/sos-2x/kernel/fntable.c **** 	LEAVE_CRITICAL_SECTION();
+ 2143               	.LM129:
+ 2144               	/* #APP */
+ 2145 09c4 FFBE      		out __SREG__, r15
+ 2146               		
+ 2147               	/* #NOAPP */
+ 2148               	.LBB37:
+ 458:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+ 459:/Users/Administrator/sos-2x/kernel/fntable.c **** 	return (dummy_func)sos_read_header_ptr( p, offsetof(func_cb_t, ptr));
+ 2150               	.LM130:
+ 2151 09c6 C801      		movw r24,r16
+ 2152 09c8 AA27      		clr r26
+ 2153 09ca BB27      		clr r27
+ 2154 09cc 880F      		lsl r24
+ 2155 09ce 991F      		rol r25
+ 2156 09d0 AA1F      		rol r26
+ 2157 09d2 BB1F      		rol r27
+ 2158               	.LBE37:
+ 460:/Users/Administrator/sos-2x/kernel/fntable.c **** }                                                               
+ 2160               	.LM131:
+ 2161               	/* #APP */
+ 2162 09d4 ABBF      		out 59, r26
+ 2163 09d6 FC01      		movw r30, r24
+ 2164 09d8 8791      		elpm r24, Z+
+ 2165 09da 9691      		elpm r25, Z
+ 2166               		
+ 2167               	/* #NOAPP */
+ 2168               	/* epilogue: frame size=0 */
+ 2169 09dc 1F91      		pop r17
+ 2170 09de 0F91      		pop r16
+ 2171 09e0 FF90      		pop r15
+ 2172 09e2 0895      		ret
+ 2173               	/* epilogue end (size=4) */
+ 2174               	/* function ker_sys_enter_func size 69 (62) */
+ 2179               	.Lscope11:
+ 2182               	.global	ker_sys_leave_func
+ 2184               	ker_sys_leave_func:
+ 461:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+ 462:/Users/Administrator/sos-2x/kernel/fntable.c **** /**                                                             
+ 463:/Users/Administrator/sos-2x/kernel/fntable.c ****  * Pop current_pid from the stack when func has finished execution
+ 464:/Users/Administrator/sos-2x/kernel/fntable.c ****  */                                                             
+ 465:/Users/Administrator/sos-2x/kernel/fntable.c **** void ker_sys_leave_func( void )                                 
+ 466:/Users/Administrator/sos-2x/kernel/fntable.c **** {                                                               
+ 2186               	.LM132:
+ 2187               	/* prologue: frame size=0 */
+ 2188 09e4 1F93      		push r17
+ 2189               	/* prologue end (size=1) */
+ 467:/Users/Administrator/sos-2x/kernel/fntable.c **** 	HAS_CRITICAL_SECTION;                                       
+ 468:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+ 469:/Users/Administrator/sos-2x/kernel/fntable.c **** 	ENTER_CRITICAL_SECTION();                                   
+ 2191               	.LM133:
+ 2192               	/* #APP */
+ 2193 09e6 1FB7      		in r17, __SREG__
+ 2194 09e8 F894      		cli
+ 2195               		
+ 470:/Users/Administrator/sos-2x/kernel/fntable.c **** 	pid_sp--;                                                   
+ 2197               	.LM134:
+ 2198               	/* #NOAPP */
+ 2199 09ea E091 0000 		lds r30,pid_sp
+ 2200 09ee F091 0000 		lds r31,(pid_sp)+1
+ 2201 09f2 3197      		sbiw r30,1
+ 2202 09f4 F093 0000 		sts (pid_sp)+1,r31
+ 2203 09f8 E093 0000 		sts pid_sp,r30
+ 471:/Users/Administrator/sos-2x/kernel/fntable.c **** 	ker_set_current_pid( *pid_sp );                             
+ 2205               	.LM135:
+ 2206 09fc 8081      		ld r24,Z
+ 2207 09fe 0E94 0000 		call ker_set_current_pid
+ 472:/Users/Administrator/sos-2x/kernel/fntable.c **** 	LEAVE_CRITICAL_SECTION();                                   
+ 2209               	.LM136:
+ 2210               	/* #APP */
+ 2211 0a02 1FBF      		out __SREG__, r17
+ 2212               		
+ 2213               	/* #NOAPP */
+ 2214               	/* epilogue: frame size=0 */
+ 2215 0a04 1F91      		pop r17
+ 2216 0a06 0895      		ret
+ 2217               	/* epilogue end (size=2) */
+ 2218               	/* function ker_sys_leave_func size 25 (22) */
+ 2223               	.Lscope12:
+ 2229               	.global	ker_sys_fntable_subscribe
+ 2231               	ker_sys_fntable_subscribe:
+ 473:/Users/Administrator/sos-2x/kernel/fntable.c **** }                    
+ 474:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+ 475:/Users/Administrator/sos-2x/kernel/fntable.c **** int8_t ker_sys_fntable_subscribe( sos_pid_t pub_pid, uint8_t fid, uint8_t table_index ) 
+ 476:/Users/Administrator/sos-2x/kernel/fntable.c **** {
+ 2233               	.LM137:
+ 2234               	/* prologue: frame size=0 */
+ 2235 0a08 FF92      		push r15
+ 2236 0a0a 0F93      		push r16
+ 2237 0a0c 1F93      		push r17
+ 2238               	/* prologue end (size=3) */
+ 2239 0a0e F82E      		mov r15,r24
+ 2240 0a10 062F      		mov r16,r22
+ 2241 0a12 142F      		mov r17,r20
+ 477:/Users/Administrator/sos-2x/kernel/fntable.c **** 	sos_pid_t my_id = ker_get_current_pid();
+ 2243               	.LM138:
+ 2244 0a14 0E94 0000 		call ker_get_current_pid
+ 478:/Users/Administrator/sos-2x/kernel/fntable.c **** 
+ 479:/Users/Administrator/sos-2x/kernel/fntable.c **** 	return ker_fntable_subscribe( my_id, pub_pid, fid, table_index );
+ 2246               	.LM139:
+ 2247 0a18 212F      		mov r18,r17
+ 2248 0a1a 402F      		mov r20,r16
+ 2249 0a1c 6F2D      		mov r22,r15
+ 2250 0a1e 0E94 0000 		call ker_fntable_subscribe
+ 480:/Users/Administrator/sos-2x/kernel/fntable.c **** }
+ 2252               	.LM140:
+ 2253 0a22 9927      		clr r25
+ 2254 0a24 87FD      		sbrc r24,7
+ 2255 0a26 9095      		com r25
+ 2256               	/* epilogue: frame size=0 */
+ 2257 0a28 1F91      		pop r17
+ 2258 0a2a 0F91      		pop r16
+ 2259 0a2c FF90      		pop r15
+ 2260 0a2e 0895      		ret
+ 2261               	/* epilogue end (size=4) */
+ 2262               	/* function ker_sys_fntable_subscribe size 20 (13) */
+ 2264               	.Lscope13:
+ 2266               		.text
+ 2268               	Letext:
+ 2269               	/* File "/Users/Administrator/sos-2x/kernel/fntable.c": code 1456 = 0x05b0 (1242), prologues 102, e
+DEFINED SYMBOLS
+                            *ABS*:00000000 fntable.c
+                            *ABS*:0000003f __SREG__
+                            *ABS*:0000003e __SP_H__
+                            *ABS*:0000003d __SP_L__
+                            *ABS*:00000000 __tmp_reg__
+                            *ABS*:00000001 __zero_reg__
+/var/tmp//ccbry5Jf.s:183    .text:00000000 fntable_init
+/var/tmp//ccbry5Jf.s:205    .text:00000006 fntable_get_prov_cb
+/var/tmp//ccbry5Jf.s:310    .text:00000086 ker_fntable_get_dfunc_addr
+/var/tmp//ccbry5Jf.s:435    .text:00000104 check_proto
+/var/tmp//ccbry5Jf.s:492    .text:0000013e fntable_real_subscribe
+/var/tmp//ccbry5Jf.s:753    .text:00000296 ker_fntable_subscribe
+/var/tmp//ccbry5Jf.s:880    .text:0000033c fntable_link_subscribed_functions
+/var/tmp//ccbry5Jf.s:1139   .text:00000492 fntable_link_provided_functions
+/var/tmp//ccbry5Jf.s:1763   .text:00000810 fntable_link
+/var/tmp//ccbry5Jf.s:1852   .text:0000086e fntable_remove_all
+/var/tmp//ccbry5Jf.s:2022   .text:0000092e ker_get_func_ptr
+/var/tmp//ccbry5Jf.s:2095   .text:0000097e ker_sys_enter_func
+/var/tmp//ccbry5Jf.s:2184   .text:000009e4 ker_sys_leave_func
+/var/tmp//ccbry5Jf.s:2231   .text:00000a08 ker_sys_fntable_subscribe
+/var/tmp//ccbry5Jf.s:2268   .text:00000a30 Letext
+
+UNDEFINED SYMBOLS
+__do_copy_data
+__do_clear_bss
+ker_get_module
+ker_panic
+sched_get_all_module
+post_short
+ker_set_current_pid
+pid_sp
+ker_get_current_pid

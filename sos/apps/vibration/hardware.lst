@@ -1,0 +1,723 @@
+   1               		.file	"hardware.c"
+   2               		.arch atmega128
+   3               	__SREG__ = 0x3f
+   4               	__SP_H__ = 0x3e
+   5               	__SP_L__ = 0x3d
+   6               	__tmp_reg__ = 0
+   7               	__zero_reg__ = 1
+   8               		.global __do_copy_data
+   9               		.global __do_clear_bss
+  12               		.text
+  13               	.Ltext0:
+ 288               	.global	init_IO
+ 290               	init_IO:
+   1:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** /* -*- Mode: C; tab-width:4 -*- */
+   2:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** /* ex: set ts=4: */
+   3:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** /*
+   4:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  * Copyright (c) 2003 The Regents of the University of California.
+   5:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  * All rights reserved.
+   6:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  *
+   7:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  * Redistribution and use in source and binary forms, with or without
+   8:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  * modification, are permitted provided that the following conditions
+   9:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  * are met:
+  10:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  * 1. Redistributions of source code must retain the above copyright
+  11:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  *    notice, this list of conditions and the following disclaimer.
+  12:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  * 2. Redistributions in binary form must reproduce the above
+  13:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  *    copyright notice, this list of conditions and the following
+  14:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  *    disclaimer in the documentation and/or other materials provided
+  15:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  *    with the distribution.
+  16:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  * 3. All advertising materials mentioning features or use of this
+  17:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  *    software must display the following acknowledgement:
+  18:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  *       This product includes software developed by Networked &
+  19:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  *       Embedded Systems Lab at UCLA
+  20:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  * 4. Neither the name of the University nor that of the Laboratory
+  21:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  *    may be used to endorse or promote products derived from this
+  22:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  *    software without specific prior written permission.
+  23:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  *
+  24:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS''
+  25:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+  26:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+  27:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  * PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE REGENTS
+  28:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+  29:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+  30:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+  31:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+  32:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+  33:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+  34:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+  35:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  * SUCH DAMAGE.
+  36:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  *
+  37:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  */
+  38:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** /**
+  39:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  * @brief    hardware related routines
+  40:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  * @author Simon Han (simonhan@ee.ucla.edu)
+  41:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  * @brief    add support with vhal/vmac
+  42:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  * @author hubert wu (hubertwu@cs.ucla.edu)
+  43:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  */
+  44:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** #include "hardware.h"
+  45:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** #include "vmac.h"
+  46:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** 
+  47:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** #include <flash.h>
+  48:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** 
+  49:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** #define LED_DEBUG
+  50:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** #include <led_dbg.h>
+  51:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** 
+  52:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** #ifndef NO_SOS_UART
+  53:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** #include <uart_system.h>
+  54:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** #include <sos_uart.h>
+  55:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** #endif
+  56:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** 
+  57:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** #include <i2c_system.h>
+  58:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** #ifndef NO_SOS_I2C
+  59:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** #include <sos_i2c.h>
+  60:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** #include <sos_i2c_mgr.h>
+  61:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** #endif
+  62:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** 
+  63:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** #ifdef SOS_SFI
+  64:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** #include <sfi_jumptable.h>
+  65:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** #endif
+  66:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** 
+  67:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** //----------------------------------------------------------------------------
+  68:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** //  Typedefs
+  69:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** //----------------------------------------------------------------------------
+  70:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** 
+  71:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** //----------------------------------------------------------------------------
+  72:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** //  Global data declarations
+  73:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** //----------------------------------------------------------------------------
+  74:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** static uint8_t reset_flag NOINIT_VAR;
+  75:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** 
+  76:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** //----------------------------------------------------------------------------
+  77:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** //  Funcation declarations
+  78:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** //----------------------------------------------------------------------------
+  79:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** 
+  80:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** void hardware_init (void){
+  81:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   init_IO();
+  82:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   /**
+  83:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****    * @brief set watchdog timer
+  84:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****    * we use hardware fuse bit to enforce watchdog is always on
+  85:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****    * and ask timer to reset watchdog
+  86:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****    * Set up the longest watchdog here
+  87:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****    */
+  88:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   //! Ram - From the AVR datasheet, the typical watchdog reset interval is 1.9 seconds at 3V Vcc fo
+  89:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   //  __asm__ __volatile__ ("wdr");
+  90:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   //  WDTCR = (1 << WDCE) | (1 << WDE);                             //! Ram - Start the timed seque
+  91:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   //  WDTCR = (1 << WDE) | (1 << WDP2) | (1 << WDP1) | (1 << WDP0); //! Ram - Set the pre-scalar va
+  92:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** 
+  93:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   //! component level init
+  94:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   //! we do led initialization in sos_watchdog_processing
+  95:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   systime_init();
+  96:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   
+  97:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   // SYSTEM TIMER
+  98:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   timer_hardware_init(DEFAULT_INTERVAL, DEFAULT_SCALE);
+  99:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** 
+ 100:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** #ifdef USE_UART1
+ 101:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   SET_FLASH_SELECT_DD_OUT();
+ 102:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   SET_FLASH_OUT_DD_OUT();
+ 103:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   SET_FLASH_CLK_DD_OUT();
+ 104:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   SET_FLASH_SELECT();
+ 105:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** #endif
+ 106:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** 
+ 107:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   // UART
+ 108:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   uart_system_init();
+ 109:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** #ifndef NO_SOS_UART
+ 110:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   //! Initalize uart comm channel
+ 111:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   sos_uart_init();
+ 112:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** #endif
+ 113:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** 
+ 114:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   // I2C
+ 115:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   i2c_system_init();
+ 116:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** #ifndef NO_SOS_I2C
+ 117:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   //! Initalize i2c comm channel
+ 118:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   sos_i2c_init();
+ 119:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   //! Initialize the I2C Comm Manager
+ 120:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   // Ram - Assuming that it is turned on
+ 121:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   // by default with the SOS_I2C component
+ 122:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   sos_i2c_mgr_init(); 
+ 123:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** #endif
+ 124:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** 
+ 125:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** 
+ 126:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   // ADC
+ 127:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   adc_proc_init();
+ 128:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** 
+ 129:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** #ifndef SOS_EMU
+ 130:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** //  radio_init(NON_BEACONED_PAN);
+ 131:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** //hubert:  use mac_init for vmac
+ 132:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** mac_init();
+ 133:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** #endif
+ 134:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** }
+ 135:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** 
+ 136:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** 
+ 137:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** void init_IO(void)
+ 138:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** {
+ 292               	.LM1:
+ 293               	/* prologue: frame size=0 */
+ 294               	/* prologue end (size=0) */
+ 295               	.LBB2:
+ 296               	.LBB3:
+ 297               	.LBB4:
+ 298               	.LBB5:
+ 300               	.Ltext1:
+   1:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** /* -*- Mode: C; tab-width:4 -*- */
+   2:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** /* ex: set ts=4: */
+   3:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+   4:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+   5:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** #ifndef _PIN_DEFS_H_
+   6:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** #define _PIN_DEFS_H_
+   7:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+   8:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** #include <avr/io.h>
+   9:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** /** 
+  10:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * port/pin naming scheme from the atmega128 datasheet.
+  11:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * if using avr-libc all names are declared in iom128.h which is included from io.h
+  12:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  */
+  13:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** /**
+  14:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * Port names
+  15:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  *
+  16:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * PORTx:	Data Register
+  17:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * DDRx:	Data Direction Register
+  18:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * PINx:	Port Input Pins
+  19:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  */
+  20:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+  21:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** /**
+  22:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * Pin names
+  23:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  *
+  24:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * DDxn: 	Data Direction Bit
+  25:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * PORTxn: 	Data Bit
+  26:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * PINxn:	Pin Input Bit
+  27:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  */
+  28:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+  29:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** /**
+  30:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * Global IO controls
+  31:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * 
+  32:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * SLEEP: SLEEP CONTROL
+  33:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * PUD: PULLUP DISABLE
+  34:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * clkI/O: I/O CLOCK
+  35:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  */
+  36:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+  37:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** /**
+  38:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * Port specific controls
+  39:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * 
+  40:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * WDx: WRITE DDRx
+  41:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * RDx: READ DDRx
+  42:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * WPx: WRITE PORTx
+  43:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * RRx: READ PORTx REGISTER
+  44:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * RPx: READ PORTx PIN
+  45:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  */
+  46:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+  47:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** /**
+  48:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * Pin specific controls
+  49:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * 
+  50:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * PUOExn: Pxn PULL-UP OVERRIDE ENABLE
+  51:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * PUOVxn: Pxn PULL-UP OVERRIDE VALUE
+  52:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * DDOExn: Pxn DATA DIRECTION OVERRIDE ENABLE
+  53:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * DDOVxn: Pxn DATA DIRECTION OVERRIDE VALUE
+  54:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * PVOExn: Pxn PORT VALUE OVERRIDE ENABLE
+  55:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * PVOVxn: Pxn PORT VALUE OVERRIDE VALUE
+  56:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * DIxn: DIGITAL INPUT PIN n ON PORTx
+  57:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * AIOxn: ANALOG INPUT/OUTPUT PIN n ON PORTx
+  58:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * DIEOExn: Pxn DIGITAL INPUT-ENABLE OVERRIDE ENABLE
+  59:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * DIEOVxn: Pxn DIGITAL INPUT-ENABLE OVERRIDE VALUE
+  60:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * DIxn: DIGITAL INPUT PIN n ON PORTx
+  61:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * AIOxn: ANALOG INPUT/OUTPUT PIN n ON PORTx
+  62:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  */
+  63:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+  64:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+  65:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** #define DEF_IO_PIN(name, port, pin) \
+  66:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline uint8_t name##_PORT() { return _SFR_ADDR(PORT##port); } \
+  67:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline uint8_t name##_BIT() { return pin; } \
+  68:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	\
+  69:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline int8_t READ_##name() \
+  70:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 		{ return (PIN##port & (1 << pin)) ? 1 : 0; } \
+  71:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline int8_t name##_IS_SET() \
+  72:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 		{ return (PORT##port & (1 << pin)) ? 1 : 0; } \
+  73:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline int8_t name##_IS_CLR() \
+  74:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 		{ return (PORT##port & (1 << pin)) ? 0 : 1; } \
+  75:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	\
+  76:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void SET_##name() { PORT##port |= (1 << pin); } \
+  77:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void CLR_##name() { PORT##port &= (~(1 << pin )); } \
+  78:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void TOGGLE_##name() { PORT##port ^= (1 << pin ); } \
+  79:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	\
+  80:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void SET_##name##_DD_OUT() { DDR##port |= (1 << pin); } \
+  81:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void SET_##name##_DD_IN() { DDR##port &= ~(1 << pin); }
+  82:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+  83:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+  84:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** #define DEF_OUTPUT_PIN(name, port, pin) \
+  85:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline uint8_t name##_PORT() { return _SFR_ADDR(PORT##port); } \
+  86:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline uint8_t name##_BIT() { return pin; } \
+  87:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	\
+  88:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline int8_t name##_IS_SET() \
+  89:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 		{ return (PORT##port & (1 << pin)) ? 1 : 0; } \
+  90:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline int8_t name##_IS_CLR() \
+  91:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 		{ return (PORT##port & (1 << pin)) ? 0 : 1; } \
+  92:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	\
+  93:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void SET_##name() { PORT##port |= (1 << pin); } \
+  94:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void CLR_##name() { PORT##port &= (~(1 << pin )); } \
+  95:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void TOGGLE_##name() { PORT##port ^= (1 << pin ); } \
+  96:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	\
+  97:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void SET_##name##_DD_OUT() { DDR##port |= (1 << pin); } \
+  98:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	\
+  99:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void name##_CS_HIGH() { PORT##port |= (1 << pin); } \
+ 100:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void name##_CS_LOW() { PORT##port &= (~(1 << pin )); }
+ 101:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+ 102:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+ 103:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** #define ALIAS_IO_PIN(alias, pin) \
+ 104:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline uint8_t alias##_PORT() { return pin##_PORT(); } \
+ 105:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline uint8_t alias##_BIT() { return pin##_BIT(); } \
+ 106:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	\
+ 107:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline int8_t READ_##alias() { return READ_##pin(); } \
+ 108:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline int8_t alias##_IS_SET() { return pin##_IS_SET(); } \
+ 109:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline int8_t alias##_IS_CLR() { return pin##_IS_CLR(); } \
+ 110:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	\
+ 111:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void SET_##alias() { SET_##pin(); } \
+ 112:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void CLR_##alias() { CLR_##pin(); } \
+ 113:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void TOGGLE_##alias() { TOGGLE_##pin(); } \
+ 114:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	\
+ 115:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void SET_##alias##_DD_IN() { SET_##pin##_DD_IN(); } \
+ 116:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void SET_##alias##_DD_OUT() { SET_##pin##_DD_OUT(); }
+ 117:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 		
+ 118:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+ 119:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** #define ALIAS_OUTPUT_PIN(alias, pin) \
+ 120:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline uint8_t alias##_PORT() { return pin##_PORT(); } \
+ 121:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline uint8_t alias##_BIT() { return pin##_BIT(); } \
+ 122:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	\
+ 123:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline int8_t alias##_IS_SET() { return pin##_IS_SET(); } \
+ 124:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline int8_t alias##_IS_CLR() { return pin##_IS_CLR(); } \
+ 125:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	\
+ 126:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void SET_##alias() { SET_##pin(); } \
+ 127:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void CLR_##alias() { CLR_##pin(); } \
+ 128:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void TOGGLE_##alias() { TOGGLE_##pin(); } \
+ 129:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	\
+ 130:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void SET_##alias##_DD_OUT() { SET_##pin##_DD_OUT(); } \
+ 131:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	\
+ 132:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void alias##_CS_HIGH() { SET_##pin(); } \
+ 133:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 	static inline void alias##_CS_LOW() { CLR_##pin(); }
+ 134:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+ 135:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+ 136:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** /**
+ 137:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * PORTA:
+ 138:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  */
+ 139:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINA7, A, PA7);
+ 140:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINA6, A, PA6);
+ 141:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINA5, A, PA5);
+ 142:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINA4, A, PA4);
+ 143:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINA3, A, PA3);
+ 144:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINA2, A, PA2);
+ 302               	.LM2:
+ 303 0000 D29A      		sbi 58-0x20,2
+ 304               	.LBE5:
+ 305               	.LBE4:
+ 306               	.LBE3:
+ 307               	.LBE2:
+ 308               	.LBB6:
+ 309               	.LBB7:
+ 310               	.LBB8:
+ 311               	.LBB9:
+ 145:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINA1, A, PA1);
+ 146:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINA0, A, PA0);
+ 313               	.LM3:
+ 314 0002 D09A      		sbi 58-0x20,0
+ 315               	.LBE9:
+ 316               	.LBE8:
+ 317               	.LBE7:
+ 318               	.LBE6:
+ 319               	.LBB10:
+ 320               	.LBB11:
+ 321               	.LBB12:
+ 322               	.LBB13:
+ 324               	.LM4:
+ 325 0004 D19A      		sbi 58-0x20,1
+ 326               	.LBE13:
+ 327               	.LBE12:
+ 328               	.LBE11:
+ 329               	.LBE10:
+ 330               	.LBB14:
+ 331               	.LBB15:
+ 332               	.LBB16:
+ 333               	.LBB17:
+ 147:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+ 148:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** /**
+ 149:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * PORTB:
+ 150:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  */
+ 151:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINB7, B, PB7);
+ 152:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINB6, B, PB6);
+ 153:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINB5, B, PB5);
+ 154:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINB4, B, PB4);
+ 155:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINB3, B, PB3);
+ 156:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINB2, B, PB2);
+ 157:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINB1, B, PB1);
+ 158:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINB0, B, PB0);
+ 159:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+ 160:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** /**
+ 161:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * PORTC:
+ 162:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  */
+ 163:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINC7, C, PC7);
+ 335               	.LM5:
+ 336 0006 A79A      		sbi 52-0x20,7
+ 337               	.LBE17:
+ 338               	.LBE16:
+ 339               	.LBE15:
+ 340               	.LBE14:
+ 341               	.LBB18:
+ 342               	.LBB19:
+ 343               	.LBB20:
+ 344               	.LBB21:
+ 164:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINC6, C, PC6);
+ 346               	.LM6:
+ 347 0008 A69A      		sbi 52-0x20,6
+ 348               	.LBE21:
+ 349               	.LBE20:
+ 350               	.LBE19:
+ 351               	.LBE18:
+ 352               	.LBB22:
+ 353               	.LBB23:
+ 354               	.LBB24:
+ 355               	.LBB25:
+ 165:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINC5, C, PC5);
+ 357               	.LM7:
+ 358 000a A59A      		sbi 52-0x20,5
+ 359               	.LBE25:
+ 360               	.LBE24:
+ 361               	.LBE23:
+ 362               	.LBE22:
+ 363               	.LBB26:
+ 364               	.LBB27:
+ 365               	.LBB28:
+ 366               	.LBB29:
+ 166:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINC4, C, PC4);
+ 368               	.LM8:
+ 369 000c A49A      		sbi 52-0x20,4
+ 370               	.LBE29:
+ 371               	.LBE28:
+ 372               	.LBE27:
+ 373               	.LBE26:
+ 374               	.LBB30:
+ 375               	.LBB31:
+ 376               	.LBB32:
+ 377               	.LBB33:
+ 167:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINC3, C, PC3);
+ 379               	.LM9:
+ 380 000e A39A      		sbi 52-0x20,3
+ 381               	.LBE33:
+ 382               	.LBE32:
+ 383               	.LBE31:
+ 384               	.LBE30:
+ 385               	.LBB34:
+ 386               	.LBB35:
+ 387               	.LBB36:
+ 388               	.LBB37:
+ 168:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINC2, C, PC2);
+ 390               	.LM10:
+ 391 0010 A29A      		sbi 52-0x20,2
+ 392               	.LBE37:
+ 393               	.LBE36:
+ 394               	.LBE35:
+ 395               	.LBE34:
+ 396               	.LBB38:
+ 397               	.LBB39:
+ 398               	.LBB40:
+ 399               	.LBB41:
+ 169:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINC1, C, PC1);
+ 401               	.LM11:
+ 402 0012 A19A      		sbi 52-0x20,1
+ 403               	.LBE41:
+ 404               	.LBE40:
+ 405               	.LBE39:
+ 406               	.LBE38:
+ 407               	.LBB42:
+ 408               	.LBB43:
+ 409               	.LBB44:
+ 410               	.LBB45:
+ 170:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PINC0, C, PC0);
+ 412               	.LM12:
+ 413 0014 A09A      		sbi 52-0x20,0
+ 414               	.LBE45:
+ 415               	.LBE44:
+ 416               	.LBE43:
+ 417               	.LBE42:
+ 418               	.LBB46:
+ 419               	.LBB47:
+ 420               	.LBB48:
+ 421               	.LBB49:
+ 423               	.LM13:
+ 424 0016 D498      		cbi 58-0x20,4
+ 425               	.LBE49:
+ 426               	.LBE48:
+ 427               	.LBE47:
+ 428               	.LBE46:
+ 429               	.LBB50:
+ 430               	.LBB51:
+ 431               	.LBB52:
+ 432               	.LBB53:
+ 433 0018 DC98      		cbi 59-0x20,4
+ 434               	.LBE53:
+ 435               	.LBE52:
+ 436               	.LBE51:
+ 437               	.LBE50:
+ 438               	.LBB54:
+ 439               	.LBB55:
+ 440               	.LBB56:
+ 441               	.LBB57:
+ 443               	.LM14:
+ 444 001a D39A      		sbi 58-0x20,3
+ 445               	.LBE57:
+ 446               	.LBE56:
+ 447               	.LBE55:
+ 448               	.LBE54:
+ 449               	.LBB58:
+ 450               	.LBB59:
+ 451               	.LBB60:
+ 452               	.LBB61:
+ 171:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+ 172:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** 
+ 173:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** /**
+ 174:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  * PORTD:
+ 175:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h ****  */
+ 176:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PIND7, D, PD7);
+ 177:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PIND6, D, PD6);
+ 178:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PIND5, D, PD5);
+ 179:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PIND4, D, PD4);
+ 180:/Users/Administrator/sos-2x/processor/avr/include/pin_defs.h **** DEF_IO_PIN( PIND3, D, PD3);
+ 454               	.LM15:
+ 455 001c 8B9A      		sbi 49-0x20,3
+ 456               	.LBE61:
+ 457               	.LBE60:
+ 458               	.LBE59:
+ 459               	.LBE58:
+ 460               	.LBB62:
+ 461               	.LBB63:
+ 462               	.LBB64:
+ 463               	.LBB65:
+ 465               	.LM16:
+ 466 001e 8D9A      		sbi 49-0x20,5
+ 467               	.LBE65:
+ 468               	.LBE64:
+ 469               	.LBE63:
+ 470               	.LBE62:
+ 471               	.LBB66:
+ 472               	.LBB67:
+ 473               	.LBB68:
+ 474               	.LBB69:
+ 476               	.LM17:
+ 477 0020 DB9A      		sbi 59-0x20,3
+ 478               	.LBE69:
+ 479               	.LBE68:
+ 480               	.LBE67:
+ 481               	.LBE66:
+ 482               	/* epilogue: frame size=0 */
+ 483 0022 0895      		ret
+ 484               	/* epilogue end (size=1) */
+ 485               	/* function init_IO size 18 (17) */
+ 487               	.Lscope0:
+ 490               	.global	hardware_init
+ 492               	hardware_init:
+ 494               	.Ltext2:
+ 496               	.LM18:
+ 497               	/* prologue: frame size=0 */
+ 498               	/* prologue end (size=0) */
+ 500               	.LM19:
+ 501 0024 0E94 0000 		call init_IO
+ 503               	.LM20:
+ 504 0028 0E94 0000 		call systime_init
+ 506               	.LM21:
+ 507 002c 63E0      		ldi r22,lo8(3)
+ 508 002e 80E1      		ldi r24,lo8(16)
+ 509 0030 0E94 0000 		call timer_hardware_init
+ 511               	.LM22:
+ 512 0034 0E94 0000 		call uart_system_init
+ 514               	.LM23:
+ 515 0038 0E94 0000 		call sos_uart_init
+ 517               	.LM24:
+ 518 003c 0E94 0000 		call i2c_system_init
+ 520               	.LM25:
+ 521 0040 0E94 0000 		call adc_proc_init
+ 523               	.LM26:
+ 524 0044 0E94 0000 		call mac_init
+ 525               	/* epilogue: frame size=0 */
+ 526 0048 0895      		ret
+ 527               	/* epilogue end (size=1) */
+ 528               	/* function hardware_init size 19 (18) */
+ 530               	.Lscope1:
+ 532               		.section	.init3,"ax",@progbits
+ 534               	.global	sos_watchdog_processing
+ 536               	sos_watchdog_processing:
+ 139:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   //---------------------------------------
+ 140:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   // CC2420 Radio specific pin-definitions
+ 141:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   // Obtained from the TinyOS 1.1.7
+ 142:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   //---------------------------------------
+ 143:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   SET_RED_LED_DD_OUT();
+ 144:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   SET_YELLOW_LED_DD_OUT();
+ 145:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   SET_GREEN_LED_DD_OUT();
+ 146:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** 
+ 147:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****       
+ 148:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   SET_PW7_DD_OUT();
+ 149:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   SET_PW6_DD_OUT();
+ 150:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   SET_PW5_DD_OUT();
+ 151:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   SET_PW4_DD_OUT();
+ 152:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   SET_PW3_DD_OUT(); 
+ 153:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   SET_PW2_DD_OUT();
+ 154:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   SET_PW1_DD_OUT();
+ 155:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   SET_PW0_DD_OUT();
+ 156:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** 
+ 157:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   SET_SERIAL_ID_DD_IN();
+ 158:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   CLR_SERIAL_ID();  // Prevent sourcing current
+ 159:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** 
+ 160:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   SET_FLASH_SELECT_DD_OUT();
+ 161:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   SET_FLASH_OUT_DD_OUT();
+ 162:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   SET_FLASH_CLK_DD_OUT();
+ 163:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****   SET_FLASH_SELECT();
+ 164:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****     
+ 165:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** }
+ 166:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** 
+ 167:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** /**
+ 168:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  * @brief functions for handling reset
+ 169:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  * 
+ 170:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  * This function will actually run before main() due to 
+ 171:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  * its section assignment.  
+ 172:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****  */
+ 173:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** #if 1
+ 174:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** void sos_watchdog_processing() __attribute__ ((naked)) __attribute__ ((section (".init3")));
+ 175:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** 
+ 176:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** void sos_watchdog_processing()
+ 177:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** {
+ 538               	.LM27:
+ 539               	/* prologue: frame size=0 */
+ 540               	/* prologue: naked */
+ 541               	/* prologue end (size=0) */
+ 178:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****     reset_flag = MCUCSR & 0x1F;
+ 543               	.LM28:
+ 544 0000 94B7      		in r25,84-0x20
+ 545 0002 9F71      		andi r25,lo8(31)
+ 546 0004 9093 0000 		sts reset_flag,r25
+ 179:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****     MCUCSR = 0;
+ 548               	.LM29:
+ 549 0008 14BE      		out 84-0x20,__zero_reg__
+ 180:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** 
+ 181:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** 	// always init need to enable/disable pins
+ 182:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****     led_init();
+ 551               	.LM30:
+ 552 000a 8AB3      		in r24,58-0x20
+ 553 000c 8760      		ori r24,lo8(7)
+ 554 000e 8ABB      		out 58-0x20,r24
+ 555 0010 D99A      		sbi 59-0x20,1
+ 556 0012 DA9A      		sbi 59-0x20,2
+ 557 0014 D89A      		sbi 59-0x20,0
+ 183:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** 
+ 184:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****     if((reset_flag & ((1 << WDRF)))) {
+ 559               	.LM31:
+ 560 0016 93FF      		sbrs r25,3
+ 561 0018 03C0      		rjmp .L38
+ 185:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****         //booting_cond = SOS_BOOT_WDOGED;   
+ 186:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****         LED_DBG(LED_RED_ON);
+ 563               	.LM32:
+ 564 001a 81E0      		ldi r24,lo8(1)
+ 565 001c 0E94 0000 		call ker_led
+ 566               	.L38:
+ 187:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****     }
+ 188:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****     if(reset_flag & (1 << EXTRF)) {
+ 568               	.LM33:
+ 569 0020 8091 0000 		lds r24,reset_flag
+ 570 0024 81FF      		sbrs r24,1
+ 571 0026 03C0      		rjmp .L39
+ 189:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****         LED_DBG(LED_GREEN_ON);
+ 573               	.LM34:
+ 574 0028 82E0      		ldi r24,lo8(2)
+ 575 002a 0E94 0000 		call ker_led
+ 576               	.L39:
+ 190:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****     }
+ 191:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****     if((reset_flag & ((1 << PORF)))) {
+ 578               	.LM35:
+ 579 002e 8091 0000 		lds r24,reset_flag
+ 580 0032 80FF      		sbrs r24,0
+ 581 0034 03C0      		rjmp .L37
+ 192:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****         LED_DBG(LED_GREEN_ON);
+ 583               	.LM36:
+ 584 0036 82E0      		ldi r24,lo8(2)
+ 585 0038 0E94 0000 		call ker_led
+ 586               	.L37:
+ 587               	/* epilogue: frame size=0 */
+ 588               	/* epilogue: naked */
+ 589               	/* epilogue end (size=0) */
+ 590               	/* function sos_watchdog_processing size 30 (30) */
+ 592               	.Lscope2:
+ 594               		.text
+ 596               	.global	main
+ 598               	main:
+ 193:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****     }
+ 194:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****     //MCUCSR = 0;
+ 195:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****     /**
+ 196:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****      * Check for watchdog reset, and resset due to 
+ 197:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****      * illegal addressing (reset_flag == 0)
+ 198:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****      */
+ 199:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** /*
+ 200:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****     if(reset_flag == 0) {
+ 201:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****         //booting_cond = SOS_BOOT_CRASHED;
+ 202:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****     } else {
+ 203:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****         LED_DBG(LED_RED_ON);
+ 204:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****         //booting_cond = SOS_BOOT_NORMAL;
+ 205:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****     }
+ 206:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** */
+ 207:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** /*
+ 208:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****     if(booting_cond != SOS_BOOT_NORMAL) {
+ 209:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****         sched_post_crash_checkup();
+ 210:/Users/Administrator/sos-2x/platform/micaz/hardware.c ****     }
+ 211:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** */
+ 212:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** }
+ 213:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** #endif
+ 214:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** 
+ 215:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** 
+ 216:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** int main(void)
+ 217:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** {
+ 600               	.LM37:
+ 601               	/* prologue: frame size=0 */
+ 602 004a C0E0      		ldi r28,lo8(__stack - 0)
+ 603 004c D0E0      		ldi r29,hi8(__stack - 0)
+ 604 004e DEBF      		out __SP_H__,r29
+ 605 0050 CDBF      		out __SP_L__,r28
+ 606               	/* prologue end (size=4) */
+ 218:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** 	sos_main(SOS_BOOT_NORMAL);
+ 608               	.LM38:
+ 609 0052 80E0      		ldi r24,lo8(0)
+ 610 0054 0E94 0000 		call sos_main
+ 219:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** 	return 0;
+ 220:/Users/Administrator/sos-2x/platform/micaz/hardware.c **** }
+ 612               	.LM39:
+ 613 0058 80E0      		ldi r24,lo8(0)
+ 614 005a 90E0      		ldi r25,hi8(0)
+ 615               	/* epilogue: frame size=0 */
+ 616 005c 0C94 0000 		jmp exit
+ 617               	/* epilogue end (size=2) */
+ 618               	/* function main size 11 (5) */
+ 620               	.Lscope3:
+ 622               		.section	.noinit,"aw",@nobits
+ 625               	reset_flag:
+ 626 0000 00        		.skip 1,0
+ 628               		.text
+ 630               	Letext:
+ 631               	/* File "/Users/Administrator/sos-2x/platform/micaz/hardware.c": code   78 = 0x004e (  70), prologu
+DEFINED SYMBOLS
+                            *ABS*:00000000 hardware.c
+                            *ABS*:0000003f __SREG__
+                            *ABS*:0000003e __SP_H__
+                            *ABS*:0000003d __SP_L__
+                            *ABS*:00000000 __tmp_reg__
+                            *ABS*:00000001 __zero_reg__
+/var/tmp//cc9Xi7RR.s:290    .text:00000000 init_IO
+/var/tmp//cc9Xi7RR.s:492    .text:00000024 hardware_init
+/var/tmp//cc9Xi7RR.s:536    .init3:00000000 sos_watchdog_processing
+/var/tmp//cc9Xi7RR.s:625    .noinit:00000000 reset_flag
+/var/tmp//cc9Xi7RR.s:598    .text:0000004a main
+/var/tmp//cc9Xi7RR.s:630    .text:00000060 Letext
+
+UNDEFINED SYMBOLS
+__do_copy_data
+__do_clear_bss
+systime_init
+timer_hardware_init
+uart_system_init
+sos_uart_init
+i2c_system_init
+adc_proc_init
+mac_init
+ker_led
+__stack
+sos_main
+exit

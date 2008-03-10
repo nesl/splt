@@ -1,0 +1,2459 @@
+   1               		.file	"codemem.c"
+   2               		.arch atmega128
+   3               	__SREG__ = 0x3f
+   4               	__SP_H__ = 0x3e
+   5               	__SP_L__ = 0x3d
+   6               	__tmp_reg__ = 0
+   7               	__zero_reg__ = 1
+   8               		.global __do_copy_data
+   9               		.global __do_clear_bss
+  12               		.text
+  13               	.Ltext0:
+ 318               		.lcomm compiled_modules,32
+ 319               		.lcomm compiled_header_ptr,1
+ 323               	check_codemem_t:
+   1:/Users/Administrator/sos-2x/kernel/codemem.c **** /**
+   2:/Users/Administrator/sos-2x/kernel/codemem.c ****  *  Routines for managing code space
+   3:/Users/Administrator/sos-2x/kernel/codemem.c ****  * 
+   4:/Users/Administrator/sos-2x/kernel/codemem.c ****  *  In most embedded system, code space is different from data space
+   5:/Users/Administrator/sos-2x/kernel/codemem.c ****  *  Code space has to be physically contineous 
+   6:/Users/Administrator/sos-2x/kernel/codemem.c ****  *  Writing to code space is typically constrainted by underlying Flash 
+   7:/Users/Administrator/sos-2x/kernel/codemem.c ****  *  Layout
+   8:/Users/Administrator/sos-2x/kernel/codemem.c ****  *
+   9:/Users/Administrator/sos-2x/kernel/codemem.c ****  *  This component keeps track of the status of underlying code space
+  10:/Users/Administrator/sos-2x/kernel/codemem.c ****  *  It also talks to sos_linker to fix the address
+  11:/Users/Administrator/sos-2x/kernel/codemem.c ****  *  It provides the storage for code
+  12:/Users/Administrator/sos-2x/kernel/codemem.c ****  *  It keeps track of the offset of code
+  13:/Users/Administrator/sos-2x/kernel/codemem.c ****  *  
+  14:/Users/Administrator/sos-2x/kernel/codemem.c ****  *  To use this component, protocol must first request a block
+  15:/Users/Administrator/sos-2x/kernel/codemem.c ****  *  
+  16:/Users/Administrator/sos-2x/kernel/codemem.c ****  */ 
+  17:/Users/Administrator/sos-2x/kernel/codemem.c **** #include <hardware.h>
+  18:/Users/Administrator/sos-2x/kernel/codemem.c **** #include <sos_inttypes.h>
+  19:/Users/Administrator/sos-2x/kernel/codemem.c **** #include <pid.h>
+  20:/Users/Administrator/sos-2x/kernel/codemem.c **** #include <flash.h>
+  21:/Users/Administrator/sos-2x/kernel/codemem.c **** #include <codemem.h>
+  22:/Users/Administrator/sos-2x/kernel/codemem.c **** #include <malloc.h>
+  23:/Users/Administrator/sos-2x/kernel/codemem.c **** #include <fntable.h>
+  24:/Users/Administrator/sos-2x/kernel/codemem.c **** #include <string.h>
+  25:/Users/Administrator/sos-2x/kernel/codemem.c **** #include <sos_sched.h>
+  26:/Users/Administrator/sos-2x/kernel/codemem.c **** #include <random.h>
+  27:/Users/Administrator/sos-2x/kernel/codemem.c **** #include <sos_logging.h>
+  28:/Users/Administrator/sos-2x/kernel/codemem.c **** #ifdef SOS_USE_PREEMPTION
+  29:/Users/Administrator/sos-2x/kernel/codemem.c **** #include <priority.h>
+  30:/Users/Administrator/sos-2x/kernel/codemem.c **** #endif
+  31:/Users/Administrator/sos-2x/kernel/codemem.c **** #ifdef SOS_HAS_EXFLASH
+  32:/Users/Administrator/sos-2x/kernel/codemem.c **** #include <exflash.h>
+  33:/Users/Administrator/sos-2x/kernel/codemem.c **** #endif
+  34:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+  35:/Users/Administrator/sos-2x/kernel/codemem.c **** #ifdef SOS_SIM
+  36:/Users/Administrator/sos-2x/kernel/codemem.c **** #include <sim_interface.h>
+  37:/Users/Administrator/sos-2x/kernel/codemem.c **** #endif
+  38:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+  39:/Users/Administrator/sos-2x/kernel/codemem.c **** #ifndef SOS_DEBUG_CODEMEM
+  40:/Users/Administrator/sos-2x/kernel/codemem.c **** #undef DEBUG
+  41:/Users/Administrator/sos-2x/kernel/codemem.c **** #define DEBUG(...)
+  42:/Users/Administrator/sos-2x/kernel/codemem.c **** #endif
+  43:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+  44:/Users/Administrator/sos-2x/kernel/codemem.c **** #include <melfloader.h>
+  45:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+  46:/Users/Administrator/sos-2x/kernel/codemem.c **** #define CODEMEM_EXECUTABLE_FLAG  0x01
+  47:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+  48:/Users/Administrator/sos-2x/kernel/codemem.c **** /**
+  49:/Users/Administrator/sos-2x/kernel/codemem.c ****  * Internal data structure for opened flash space
+  50:/Users/Administrator/sos-2x/kernel/codemem.c ****  */
+  51:/Users/Administrator/sos-2x/kernel/codemem.c **** typedef struct codemem_hdr_t {
+  52:/Users/Administrator/sos-2x/kernel/codemem.c **** 	uint32_t start_addr;          //!< starting address in the flash
+  53:/Users/Administrator/sos-2x/kernel/codemem.c **** 	uint16_t size;                //!< size of the allocation
+  54:/Users/Administrator/sos-2x/kernel/codemem.c **** 	uint8_t  salt;                //!< salt number to prevent 
+  55:/Users/Administrator/sos-2x/kernel/codemem.c **** 	uint8_t  flag;  
+  56:/Users/Administrator/sos-2x/kernel/codemem.c **** } codemem_hdr_t;
+  57:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+  58:/Users/Administrator/sos-2x/kernel/codemem.c **** //
+  59:/Users/Administrator/sos-2x/kernel/codemem.c **** // flash_start_page_addr is used to compute the address 
+  60:/Users/Administrator/sos-2x/kernel/codemem.c **** //
+  61:/Users/Administrator/sos-2x/kernel/codemem.c **** static uint32_t flash_start_page_addr;
+  62:/Users/Administrator/sos-2x/kernel/codemem.c **** static uint8_t* flash_alloc_bitmap;
+  63:/Users/Administrator/sos-2x/kernel/codemem.c **** static uint8_t  flash_bitmap_length;
+  64:/Users/Administrator/sos-2x/kernel/codemem.c **** static uint16_t flash_num_pages;
+  65:/Users/Administrator/sos-2x/kernel/codemem.c **** static codemem_hdr_t* codemem_handle_list[CODEMEM_MAX_LOADABLE_MODULES];
+  66:/Users/Administrator/sos-2x/kernel/codemem.c **** static uint8_t  codemem_salt;
+  67:/Users/Administrator/sos-2x/kernel/codemem.c **** static mod_header_ptr compiled_modules[NUM_COMPILED_MODULES] = { 0 };
+  68:/Users/Administrator/sos-2x/kernel/codemem.c **** static uint8_t compiled_header_ptr = 0;
+  69:/Users/Administrator/sos-2x/kernel/codemem.c **** //
+  70:/Users/Administrator/sos-2x/kernel/codemem.c **** // Cache to reduce number of flash writes
+  71:/Users/Administrator/sos-2x/kernel/codemem.c **** //
+  72:/Users/Administrator/sos-2x/kernel/codemem.c **** static uint8_t* flash_cache_page;      // A FLASHMEM_PAGE_SIZE worth of data
+  73:/Users/Administrator/sos-2x/kernel/codemem.c **** static uint32_t flash_cache_addr;      // the starting address of the page
+  74:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+  75:/Users/Administrator/sos-2x/kernel/codemem.c **** // ================================================================================
+  76:/Users/Administrator/sos-2x/kernel/codemem.c **** // Internal Helper Routines
+  77:/Users/Administrator/sos-2x/kernel/codemem.c **** //
+  78:/Users/Administrator/sos-2x/kernel/codemem.c **** static bool check_codemem_t( codemem_t cm )
+  79:/Users/Administrator/sos-2x/kernel/codemem.c **** {
+ 325               	.LM1:
+ 326               	/* prologue: frame size=0 */
+ 327               	/* prologue end (size=0) */
+  80:/Users/Administrator/sos-2x/kernel/codemem.c **** 	uint8_t real_h = (uint8_t)( cm & 0x00ff );
+ 329               	.LM2:
+ 330 0000 E82F      		mov r30,r24
+  81:/Users/Administrator/sos-2x/kernel/codemem.c **** 	uint8_t salt   = (uint8_t)( cm >> 8 );
+ 332               	.LM3:
+ 333 0002 892F      		mov r24,r25
+ 334 0004 9927      		clr r25
+ 335 0006 982F      		mov r25,r24
+  82:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+  83:/Users/Administrator/sos-2x/kernel/codemem.c **** 	if( real_h > CODEMEM_MAX_LOADABLE_MODULES ) {
+ 337               	.LM4:
+ 338 0008 E131      		cpi r30,lo8(17)
+ 339 000a 78F4      		brsh .L5
+  84:/Users/Administrator/sos-2x/kernel/codemem.c **** 		DEBUG("check_codemem_t: CODEMEM_MAX_LOADABLE_MODULES\n");
+  85:/Users/Administrator/sos-2x/kernel/codemem.c **** 		return false;
+  86:/Users/Administrator/sos-2x/kernel/codemem.c **** 	}
+  87:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+  88:/Users/Administrator/sos-2x/kernel/codemem.c **** 	if( codemem_handle_list[ real_h ] == NULL ) {
+ 341               	.LM5:
+ 342 000c FF27      		clr r31
+ 343 000e EE0F      		add r30,r30
+ 344 0010 FF1F      		adc r31,r31
+ 345 0012 E050      		subi r30,lo8(-(codemem_handle_list))
+ 346 0014 F040      		sbci r31,hi8(-(codemem_handle_list))
+ 347 0016 0190      		ld __tmp_reg__,Z+
+ 348 0018 F081      		ld r31,Z
+ 349 001a E02D      		mov r30,__tmp_reg__
+ 350 001c 3097      		sbiw r30,0
+ 351 001e 11F4      		brne .L3
+  89:/Users/Administrator/sos-2x/kernel/codemem.c **** 		DEBUG("check_codemem_t: codemem_handle_list[ real_h ] == NULL\n");
+  90:/Users/Administrator/sos-2x/kernel/codemem.c **** 		return false;
+ 353               	.LM6:
+ 354 0020 CF01      		movw r24,r30
+ 355 0022 0895      		ret
+ 356               	.L3:
+  91:/Users/Administrator/sos-2x/kernel/codemem.c **** 	}
+  92:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+  93:/Users/Administrator/sos-2x/kernel/codemem.c **** 	if( (codemem_handle_list[ real_h ]->salt) != salt ) {
+ 358               	.LM7:
+ 359 0024 8681      		ldd r24,Z+6
+ 360 0026 8917      		cp r24,r25
+ 361 0028 19F0      		breq .L4
+ 362               	.L5:
+  94:/Users/Administrator/sos-2x/kernel/codemem.c **** 		DEBUG("codemem_handle_list[ real_h ]->salt) != salt\n");
+  95:/Users/Administrator/sos-2x/kernel/codemem.c **** 		return false;
+ 364               	.LM8:
+ 365 002a 80E0      		ldi r24,lo8(0)
+ 366 002c 90E0      		ldi r25,hi8(0)
+ 367 002e 0895      		ret
+ 368               	.L4:
+  96:/Users/Administrator/sos-2x/kernel/codemem.c **** 	}
+  97:/Users/Administrator/sos-2x/kernel/codemem.c **** 	return true;
+ 370               	.LM9:
+ 371 0030 81E0      		ldi r24,lo8(1)
+ 372 0032 90E0      		ldi r25,hi8(1)
+  98:/Users/Administrator/sos-2x/kernel/codemem.c **** }
+ 374               	.LM10:
+ 375 0034 0895      		ret
+ 376               	/* epilogue: frame size=0 */
+ 377 0036 0895      		ret
+ 378               	/* epilogue end (size=1) */
+ 379               	/* function check_codemem_t size 28 (27) */
+ 385               	.Lscope0:
+ 392               	flash_setbitmap:
+  99:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 100:/Users/Administrator/sos-2x/kernel/codemem.c **** static void codemem_do_killall( codemem_t h )
+ 101:/Users/Administrator/sos-2x/kernel/codemem.c **** {
+ 102:/Users/Administrator/sos-2x/kernel/codemem.c ****   mod_header_ptr p;
+ 103:/Users/Administrator/sos-2x/kernel/codemem.c ****   sos_code_id_t  cid;
+ 104:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+ 105:/Users/Administrator/sos-2x/kernel/codemem.c ****   p = ker_codemem_get_header_address( h );
+ 106:/Users/Administrator/sos-2x/kernel/codemem.c ****   if( p == 0 ) return;
+ 107:/Users/Administrator/sos-2x/kernel/codemem.c ****   cid = sos_read_header_word(p, offsetof(mod_header_t, code_id));
+ 108:/Users/Administrator/sos-2x/kernel/codemem.c ****   cid = entohs(cid);
+ 109:/Users/Administrator/sos-2x/kernel/codemem.c ****   ker_killall(cid);
+ 110:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 111:/Users/Administrator/sos-2x/kernel/codemem.c **** #ifdef SOS_SIM
+ 112:/Users/Administrator/sos-2x/kernel/codemem.c ****   //
+ 113:/Users/Administrator/sos-2x/kernel/codemem.c ****   // Close the file in simulation
+ 114:/Users/Administrator/sos-2x/kernel/codemem.c ****   //
+ 115:/Users/Administrator/sos-2x/kernel/codemem.c ****   delete_module_image( cid );
+ 116:/Users/Administrator/sos-2x/kernel/codemem.c **** #endif
+ 117:/Users/Administrator/sos-2x/kernel/codemem.c **** }
+ 118:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 119:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 120:/Users/Administrator/sos-2x/kernel/codemem.c **** static mod_header_ptr match_cid(uint32_t addr, sos_code_id_t cid)
+ 121:/Users/Administrator/sos-2x/kernel/codemem.c **** {
+ 122:/Users/Administrator/sos-2x/kernel/codemem.c ****   mod_header_ptr modptr;
+ 123:/Users/Administrator/sos-2x/kernel/codemem.c ****   sos_code_id_t  mod_cid;
+ 124:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 125:/Users/Administrator/sos-2x/kernel/codemem.c ****   modptr = (mod_header_ptr)FlashGetProgmem( addr );
+ 126:/Users/Administrator/sos-2x/kernel/codemem.c ****   mod_cid = sos_read_header_word(modptr, offsetof(mod_header_t, code_id));
+ 127:/Users/Administrator/sos-2x/kernel/codemem.c ****   mod_cid = entohs(mod_cid);
+ 128:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 129:/Users/Administrator/sos-2x/kernel/codemem.c ****   if(mod_cid == cid) {
+ 130:/Users/Administrator/sos-2x/kernel/codemem.c ****     return modptr;
+ 131:/Users/Administrator/sos-2x/kernel/codemem.c ****   }
+ 132:/Users/Administrator/sos-2x/kernel/codemem.c ****   return 0;
+ 133:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 134:/Users/Administrator/sos-2x/kernel/codemem.c **** }
+ 135:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 136:/Users/Administrator/sos-2x/kernel/codemem.c **** static void flash_setbitmap(uint16_t start, uint16_t length, bool val)
+ 137:/Users/Administrator/sos-2x/kernel/codemem.c **** {
+ 394               	.LM11:
+ 395               	/* prologue: frame size=0 */
+ 396 0038 CF93      		push r28
+ 397               	/* prologue end (size=1) */
+ 398 003a C42F      		mov r28,r20
+ 138:/Users/Administrator/sos-2x/kernel/codemem.c **** 	uint8_t i;
+ 139:/Users/Administrator/sos-2x/kernel/codemem.c **** 	uint8_t j;
+ 140:/Users/Administrator/sos-2x/kernel/codemem.c **** 	register uint8_t shift = 1;
+ 141:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+ 142:/Users/Administrator/sos-2x/kernel/codemem.c **** 	i = start / 8;
+ 400               	.LM12:
+ 401 003c 9C01      		movw r18,r24
+ 402 003e 43E0      		ldi r20,3
+ 403 0040 3695      	1:	lsr r19
+ 404 0042 2795      		ror r18
+ 405 0044 4A95      		dec r20
+ 406 0046 E1F7      		brne 1b
+ 143:/Users/Administrator/sos-2x/kernel/codemem.c **** 	j = start % 8;
+ 408               	.LM13:
+ 409 0048 582F      		mov r21,r24
+ 410 004a 5770      		andi r21,lo8(7)
+ 144:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+ 145:/Users/Administrator/sos-2x/kernel/codemem.c **** 	shift = 1 << j;
+ 412               	.LM14:
+ 413 004c 81E0      		ldi r24,lo8(1)
+ 414 004e 90E0      		ldi r25,hi8(1)
+ 415 0050 982F      		mov r25,r24
+ 416 0052 052E      		mov r0,r21
+ 417 0054 01C0      		rjmp 2f
+ 418 0056 990F      	1:	lsl r25
+ 419 0058 0A94      	2:	dec r0
+ 420 005a EAF7      		brpl 1b
+ 146:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+ 147:/Users/Administrator/sos-2x/kernel/codemem.c **** 	for( ; j < 8 && length > 0; j++, shift <<= 1, length-- ) {
+ 422               	.LM15:
+ 423 005c 5830      		cpi r21,lo8(8)
+ 424 005e 18F5      		brsh .L8
+ 426               	.LM16:
+ 427 0060 6115      		cp r22,__zero_reg__
+ 428 0062 7105      		cpc r23,__zero_reg__
+ 429 0064 01F1      		breq .L8
+ 430 0066 A22F      		mov r26,r18
+ 431 0068 BB27      		clr r27
+ 432               	.L12:
+ 433 006a E091 0000 		lds r30,flash_alloc_bitmap
+ 434 006e F091 0000 		lds r31,(flash_alloc_bitmap)+1
+ 435 0072 352F      		mov r19,r21
+ 436 0074 3F5F      		subi r19,lo8(-(1))
+ 437 0076 492F      		mov r20,r25
+ 438 0078 440F      		lsl r20
+ 439 007a 6150      		subi r22,lo8(-(-1))
+ 440 007c 7040      		sbci r23,hi8(-(-1))
+ 148:/Users/Administrator/sos-2x/kernel/codemem.c **** 		if( val ) {
+ 442               	.LM17:
+ 443 007e CC23      		tst r28
+ 444 0080 29F0      		breq .L10
+ 149:/Users/Administrator/sos-2x/kernel/codemem.c **** 			flash_alloc_bitmap[i] |= shift;
+ 446               	.LM18:
+ 447 0082 EA0F      		add r30,r26
+ 448 0084 FB1F      		adc r31,r27
+ 449 0086 8081      		ld r24,Z
+ 450 0088 892B      		or r24,r25
+ 451 008a 05C0      		rjmp .L26
+ 452               	.L10:
+ 150:/Users/Administrator/sos-2x/kernel/codemem.c **** 		} else {
+ 151:/Users/Administrator/sos-2x/kernel/codemem.c **** 			flash_alloc_bitmap[i] &= ~shift;
+ 454               	.LM19:
+ 455 008c EA0F      		add r30,r26
+ 456 008e FB1F      		adc r31,r27
+ 457 0090 9095      		com r25
+ 458 0092 8081      		ld r24,Z
+ 459 0094 8923      		and r24,r25
+ 460               	.L26:
+ 461 0096 8083      		st Z,r24
+ 463               	.LM20:
+ 464 0098 532F      		mov r21,r19
+ 465 009a 942F      		mov r25,r20
+ 466 009c 3830      		cpi r19,lo8(8)
+ 467 009e 18F4      		brsh .L8
+ 468 00a0 6115      		cp r22,__zero_reg__
+ 469 00a2 7105      		cpc r23,__zero_reg__
+ 470 00a4 11F7      		brne .L12
+ 471               	.L8:
+ 152:/Users/Administrator/sos-2x/kernel/codemem.c **** 		}
+ 153:/Users/Administrator/sos-2x/kernel/codemem.c **** 	}
+ 154:/Users/Administrator/sos-2x/kernel/codemem.c **** 	i++;
+ 473               	.LM21:
+ 474 00a6 2F5F      		subi r18,lo8(-(1))
+ 155:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+ 156:/Users/Administrator/sos-2x/kernel/codemem.c **** 	for( ; i < flash_bitmap_length && length > 0; i++ ) {
+ 476               	.LM22:
+ 477 00a8 8091 0000 		lds r24,flash_bitmap_length
+ 478 00ac 2817      		cp r18,r24
+ 479 00ae 80F5      		brsh .L14
+ 480 00b0 6115      		cp r22,__zero_reg__
+ 481 00b2 7105      		cpc r23,__zero_reg__
+ 482 00b4 69F1      		breq .L14
+ 483               	.L22:
+ 157:/Users/Administrator/sos-2x/kernel/codemem.c **** 		shift = 1;
+ 485               	.LM23:
+ 486 00b6 91E0      		ldi r25,lo8(1)
+ 158:/Users/Administrator/sos-2x/kernel/codemem.c **** 		for( j = 0; j < 8 && length > 0; j++, shift <<= 1, length-- ) {
+ 488               	.LM24:
+ 489 00b8 50E0      		ldi r21,lo8(0)
+ 490 00ba 6115      		cp r22,__zero_reg__
+ 491 00bc 7105      		cpc r23,__zero_reg__
+ 492 00be 01F1      		breq .L17
+ 493 00c0 A22F      		mov r26,r18
+ 494 00c2 BB27      		clr r27
+ 495               	.L21:
+ 496 00c4 E091 0000 		lds r30,flash_alloc_bitmap
+ 497 00c8 F091 0000 		lds r31,(flash_alloc_bitmap)+1
+ 498 00cc 352F      		mov r19,r21
+ 499 00ce 3F5F      		subi r19,lo8(-(1))
+ 500 00d0 492F      		mov r20,r25
+ 501 00d2 440F      		lsl r20
+ 502 00d4 6150      		subi r22,lo8(-(-1))
+ 503 00d6 7040      		sbci r23,hi8(-(-1))
+ 159:/Users/Administrator/sos-2x/kernel/codemem.c **** 			if( val ) {
+ 505               	.LM25:
+ 506 00d8 CC23      		tst r28
+ 507 00da 29F0      		breq .L19
+ 160:/Users/Administrator/sos-2x/kernel/codemem.c **** 				flash_alloc_bitmap[i] |= shift;
+ 509               	.LM26:
+ 510 00dc EA0F      		add r30,r26
+ 511 00de FB1F      		adc r31,r27
+ 512 00e0 8081      		ld r24,Z
+ 513 00e2 892B      		or r24,r25
+ 514 00e4 05C0      		rjmp .L27
+ 515               	.L19:
+ 161:/Users/Administrator/sos-2x/kernel/codemem.c **** 			} else {
+ 162:/Users/Administrator/sos-2x/kernel/codemem.c **** 				flash_alloc_bitmap[i] &= ~shift;
+ 517               	.LM27:
+ 518 00e6 EA0F      		add r30,r26
+ 519 00e8 FB1F      		adc r31,r27
+ 520 00ea 9095      		com r25
+ 521 00ec 8081      		ld r24,Z
+ 522 00ee 8923      		and r24,r25
+ 523               	.L27:
+ 524 00f0 8083      		st Z,r24
+ 526               	.LM28:
+ 527 00f2 532F      		mov r21,r19
+ 528 00f4 942F      		mov r25,r20
+ 529 00f6 3830      		cpi r19,lo8(8)
+ 530 00f8 18F4      		brsh .L17
+ 531 00fa 6115      		cp r22,__zero_reg__
+ 532 00fc 7105      		cpc r23,__zero_reg__
+ 533 00fe 11F7      		brne .L21
+ 534               	.L17:
+ 536               	.LM29:
+ 537 0100 2F5F      		subi r18,lo8(-(1))
+ 538 0102 8091 0000 		lds r24,flash_bitmap_length
+ 539 0106 2817      		cp r18,r24
+ 540 0108 18F4      		brsh .L14
+ 541 010a 6115      		cp r22,__zero_reg__
+ 542 010c 7105      		cpc r23,__zero_reg__
+ 543 010e 99F6      		brne .L22
+ 544               	.L14:
+ 545               	/* epilogue: frame size=0 */
+ 546 0110 CF91      		pop r28
+ 547 0112 0895      		ret
+ 548               	/* epilogue end (size=2) */
+ 549               	/* function flash_setbitmap size 110 (107) */
+ 556               	.Lscope1:
+ 560               	codemem_cache_alloc:
+ 163:/Users/Administrator/sos-2x/kernel/codemem.c **** 			}
+ 164:/Users/Administrator/sos-2x/kernel/codemem.c **** 		}
+ 165:/Users/Administrator/sos-2x/kernel/codemem.c **** 	}
+ 166:/Users/Administrator/sos-2x/kernel/codemem.c **** }
+ 167:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 168:/Users/Administrator/sos-2x/kernel/codemem.c **** static int8_t codemem_cache_alloc( void )
+ 169:/Users/Administrator/sos-2x/kernel/codemem.c **** {	
+ 562               	.LM30:
+ 563               	/* prologue: frame size=0 */
+ 564               	/* prologue end (size=0) */
+ 170:/Users/Administrator/sos-2x/kernel/codemem.c **** 	if( flash_cache_page == NULL ) {
+ 566               	.LM31:
+ 567 0114 8091 0000 		lds r24,flash_cache_page
+ 568 0118 9091 0000 		lds r25,(flash_cache_page)+1
+ 569 011c 892B      		or r24,r25
+ 570 011e B9F4      		brne .L29
+ 571               	.LBB2:
+ 572               	.LBB3:
+ 574               	.Ltext1:
+   1:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /* -*- Mode: C; tab-width:4 -*- */
+   2:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /* ex: set ts=4: */
+   3:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /*
+   4:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * Copyright (c) 2003 The Regents of the University of California.
+   5:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * All rights reserved.
+   6:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *
+   7:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * Redistribution and use in source and binary forms, with or without
+   8:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * modification, are permitted provided that the following conditions
+   9:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * are met:
+  10:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * 1. Redistributions of source code must retain the above copyright
+  11:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *    notice, this list of conditions and the following disclaimer.
+  12:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * 2. Redistributions in binary form must reproduce the above
+  13:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *    copyright notice, this list of conditions and the following
+  14:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *    disclaimer in the documentation and/or other materials provided
+  15:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *    with the distribution.
+  16:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * 3. All advertising materials mentioning features or use of this
+  17:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *    software must display the following acknowledgement:
+  18:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *       This product includes software developed by Networked &
+  19:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *       Embedded Systems Lab at UCLA
+  20:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * 4. Neither the name of the University nor that of the Laboratory
+  21:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *    may be used to endorse or promote products derived from this
+  22:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *    software without specific prior written permission.
+  23:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *
+  24:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS''
+  25:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+  26:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+  27:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE REGENTS
+  28:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+  29:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+  30:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+  31:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+  32:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+  33:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+  34:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+  35:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * SUCH DAMAGE.
+  36:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  *
+  37:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief    Allocte and free dynamic memory 
+  38:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @author   Roy Shea (roy@cs.ucla.edu) 
+  39:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+  40:/Users/Administrator/sos-2x/kernel/include/malloc.h **** #ifndef _MALLOC_H_
+  41:/Users/Administrator/sos-2x/kernel/include/malloc.h **** #define _MALLOC_H_
+  42:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  43:/Users/Administrator/sos-2x/kernel/include/malloc.h **** #include <sos_types.h>
+  44:/Users/Administrator/sos-2x/kernel/include/malloc.h **** #include <pid.h>
+  45:/Users/Administrator/sos-2x/kernel/include/malloc.h **** #include <malloc_conf.h>
+  46:/Users/Administrator/sos-2x/kernel/include/malloc.h **** #include <sos_module_types.h>
+  47:/Users/Administrator/sos-2x/kernel/include/malloc.h **** #ifdef FAULT_TOLERANT_SOS
+  48:/Users/Administrator/sos-2x/kernel/include/malloc.h **** #include <malloc_domains.h>
+  49:/Users/Administrator/sos-2x/kernel/include/malloc.h **** #endif
+  50:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  51:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+  52:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Init function for memory manager
+  53:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+  54:/Users/Administrator/sos-2x/kernel/include/malloc.h **** extern void mem_init(void);
+  55:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  56:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+  57:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Starting memory module interface
+  58:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+  59:/Users/Administrator/sos-2x/kernel/include/malloc.h **** extern void mem_start(void);
+  60:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  61:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+  62:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Allocate a chunk of blocks from the heap
+  63:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+  64:/Users/Administrator/sos-2x/kernel/include/malloc.h **** extern void *sos_blk_mem_alloc(uint16_t size, sos_pid_t id, bool bCallFromModule);
+  65:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  66:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+  67:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Free a block back into the heap
+  68:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+  69:/Users/Administrator/sos-2x/kernel/include/malloc.h **** extern void sos_blk_mem_free(void* ptr, bool bCallFromModule);
+  70:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  71:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+  72:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Re-allocate a block of memory from the heap
+  73:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+  74:/Users/Administrator/sos-2x/kernel/include/malloc.h **** extern void *sos_blk_mem_realloc(void* pntr, uint16_t newSize, bool bCallFromModule);
+  75:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  76:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+  77:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Change memory ownership of a segment of memory
+  78:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+  79:/Users/Administrator/sos-2x/kernel/include/malloc.h **** extern int8_t sos_blk_mem_change_own(void* ptr, sos_pid_t id, bool bCallFromModule);
+  80:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  81:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+  82:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Allocate a block of memory for long term usage
+  83:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+  84:/Users/Administrator/sos-2x/kernel/include/malloc.h **** extern void *sos_blk_mem_longterm_alloc(uint16_t size, sos_pid_t id, bool bCallFromModule);
+  85:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  86:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  87:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+  88:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Allocate dynamic memory
+  89:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @param size Number of bytes to allocate
+  90:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @param id Node responsible for the memory
+  91:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @return Returns a pointer to the allocated memory.
+  92:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * Will return a NULL pointer if the call to sys_malloc fails.
+  93:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+  94:/Users/Administrator/sos-2x/kernel/include/malloc.h **** static inline void *ker_malloc(uint16_t size, sos_pid_t id)
+  95:/Users/Administrator/sos-2x/kernel/include/malloc.h **** {
+  96:/Users/Administrator/sos-2x/kernel/include/malloc.h ****   return sos_blk_mem_alloc(size, id, false);
+ 576               	.LM32:
+ 577 0120 40E0      		ldi r20,lo8(0)
+ 578 0122 6FE0      		ldi r22,lo8(15)
+ 579 0124 80E0      		ldi r24,lo8(256)
+ 580 0126 91E0      		ldi r25,hi8(256)
+ 581 0128 0E94 0000 		call sos_blk_mem_alloc
+ 582               	.LBE3:
+ 583               	.LBE2:
+ 585               	.LM33:
+ 586 012c 9093 0000 		sts (flash_cache_page)+1,r25
+ 587 0130 8093 0000 		sts flash_cache_page,r24
+ 589               	.Ltext2:
+ 171:/Users/Administrator/sos-2x/kernel/codemem.c **** 		flash_cache_page = ker_malloc( FLASHMEM_PAGE_SIZE, KER_CODEMEM_PID );
+ 172:/Users/Administrator/sos-2x/kernel/codemem.c **** 		if( flash_cache_page == NULL ) {
+ 591               	.LM34:
+ 592 0134 892B      		or r24,r25
+ 593 0136 19F4      		brne .L31
+ 173:/Users/Administrator/sos-2x/kernel/codemem.c **** 			return -ENOMEM;
+ 595               	.LM35:
+ 596 0138 84EF      		ldi r24,lo8(-12)
+ 597 013a 9FEF      		ldi r25,hi8(-12)
+ 598 013c 0895      		ret
+ 599               	.L31:
+ 174:/Users/Administrator/sos-2x/kernel/codemem.c **** 		}
+ 175:/Users/Administrator/sos-2x/kernel/codemem.c **** 		flash_cache_addr = 0;
+ 601               	.LM36:
+ 602 013e 1092 0000 		sts flash_cache_addr,__zero_reg__
+ 603 0142 1092 0000 		sts (flash_cache_addr)+1,__zero_reg__
+ 604 0146 1092 0000 		sts (flash_cache_addr)+2,__zero_reg__
+ 605 014a 1092 0000 		sts (flash_cache_addr)+3,__zero_reg__
+ 606               	.L29:
+ 176:/Users/Administrator/sos-2x/kernel/codemem.c **** 	}
+ 177:/Users/Administrator/sos-2x/kernel/codemem.c **** 	return SOS_OK;
+ 608               	.LM37:
+ 609 014e 80E0      		ldi r24,lo8(0)
+ 610 0150 90E0      		ldi r25,hi8(0)
+ 178:/Users/Administrator/sos-2x/kernel/codemem.c **** }
+ 612               	.LM38:
+ 613 0152 0895      		ret
+ 614               	/* epilogue: frame size=0 */
+ 615 0154 0895      		ret
+ 616               	/* epilogue end (size=1) */
+ 617               	/* function codemem_cache_alloc size 33 (32) */
+ 619               	.Lscope2:
+ 626               	codemem_cache_write:
+ 179:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 180:/Users/Administrator/sos-2x/kernel/codemem.c **** static inline void codemem_cache_flush( )
+ 181:/Users/Administrator/sos-2x/kernel/codemem.c **** {
+ 182:/Users/Administrator/sos-2x/kernel/codemem.c **** 	if( flash_cache_page != NULL ) {
+ 183:/Users/Administrator/sos-2x/kernel/codemem.c **** 		flash_erase( flash_cache_addr, FLASHMEM_PAGE_SIZE );
+ 184:/Users/Administrator/sos-2x/kernel/codemem.c **** 		flash_write( flash_cache_addr, flash_cache_page, FLASHMEM_PAGE_SIZE );
+ 185:/Users/Administrator/sos-2x/kernel/codemem.c **** 		ker_free( flash_cache_page );
+ 186:/Users/Administrator/sos-2x/kernel/codemem.c **** 		flash_cache_page = NULL;
+ 187:/Users/Administrator/sos-2x/kernel/codemem.c **** 		flash_cache_addr = 0;
+ 188:/Users/Administrator/sos-2x/kernel/codemem.c **** 	}
+ 189:/Users/Administrator/sos-2x/kernel/codemem.c **** }
+ 190:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 191:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 192:/Users/Administrator/sos-2x/kernel/codemem.c **** //
+ 193:/Users/Administrator/sos-2x/kernel/codemem.c **** // Get the starting page address.  If the cache does not exist, allocate it.  
+ 194:/Users/Administrator/sos-2x/kernel/codemem.c **** // If the page address is the same as 
+ 195:/Users/Administrator/sos-2x/kernel/codemem.c **** // flash_cache_addr, write to the cache.  If the page address is different 
+ 196:/Users/Administrator/sos-2x/kernel/codemem.c **** // from flash_cache_addr, perform the following.
+ 197:/Users/Administrator/sos-2x/kernel/codemem.c **** // 1. store current page
+ 198:/Users/Administrator/sos-2x/kernel/codemem.c **** // 2. load new page
+ 199:/Users/Administrator/sos-2x/kernel/codemem.c **** // 3. save the content
+ 200:/Users/Administrator/sos-2x/kernel/codemem.c **** // WARNING: this rountine does not handle writes across page boundary.
+ 201:/Users/Administrator/sos-2x/kernel/codemem.c **** // WARNING: this rountine assumes the cache is already allocated.
+ 202:/Users/Administrator/sos-2x/kernel/codemem.c **** //
+ 203:/Users/Administrator/sos-2x/kernel/codemem.c **** static void codemem_cache_write( uint32_t addr, uint8_t* buf, uint16_t nbytes )
+ 204:/Users/Administrator/sos-2x/kernel/codemem.c **** {
+ 628               	.LM39:
+ 629               	/* prologue: frame size=0 */
+ 630 0156 AF92      		push r10
+ 631 0158 BF92      		push r11
+ 632 015a CF92      		push r12
+ 633 015c DF92      		push r13
+ 634 015e EF92      		push r14
+ 635 0160 FF92      		push r15
+ 636 0162 0F93      		push r16
+ 637 0164 1F93      		push r17
+ 638 0166 CF93      		push r28
+ 639 0168 DF93      		push r29
+ 640               	/* prologue end (size=10) */
+ 641 016a DC01      		movw r26,r24
+ 642 016c CB01      		movw r24,r22
+ 643 016e 5A01      		movw r10,r20
+ 644 0170 6901      		movw r12,r18
+ 205:/Users/Administrator/sos-2x/kernel/codemem.c **** 	uint16_t i;
+ 206:/Users/Administrator/sos-2x/kernel/codemem.c **** 	uint32_t start_addr = addr & ~((uint32_t)(FLASHMEM_PAGE_SIZE - 1));
+ 646               	.LM40:
+ 647 0172 E12C      		mov r14,__zero_reg__
+ 648 0174 5FEF      		ldi r21,hi8(-256)
+ 649 0176 F52E      		mov r15,r21
+ 650 0178 5FEF      		ldi r21,hlo8(-256)
+ 651 017a 052F      		mov r16,r21
+ 652 017c 5FEF      		ldi r21,hhi8(-256)
+ 653 017e 152F      		mov r17,r21
+ 654 0180 E822      		and r14,r24
+ 655 0182 F922      		and r15,r25
+ 656 0184 0A23      		and r16,r26
+ 657 0186 1B23      		and r17,r27
+ 207:/Users/Administrator/sos-2x/kernel/codemem.c **** 	uint16_t offset = addr % FLASHMEM_PAGE_SIZE;
+ 659               	.LM41:
+ 660 0188 9070      		andi r25,hi8(255)
+ 661 018a A070      		andi r26,hlo8(255)
+ 662 018c B070      		andi r27,hhi8(255)
+ 663 018e EC01      		movw r28,r24
+ 208:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+ 209:/Users/Administrator/sos-2x/kernel/codemem.c **** 	if( flash_cache_addr != start_addr ) {
+ 665               	.LM42:
+ 666 0190 6091 0000 		lds r22,flash_cache_addr
+ 667 0194 7091 0000 		lds r23,(flash_cache_addr)+1
+ 668 0198 8091 0000 		lds r24,(flash_cache_addr)+2
+ 669 019c 9091 0000 		lds r25,(flash_cache_addr)+3
+ 670 01a0 6E15      		cp r22,r14
+ 671 01a2 7F05      		cpc r23,r15
+ 672 01a4 8007      		cpc r24,r16
+ 673 01a6 9107      		cpc r25,r17
+ 674 01a8 69F1      		breq .L33
+ 210:/Users/Administrator/sos-2x/kernel/codemem.c **** 		if( flash_cache_addr != 0 ) {
+ 676               	.LM43:
+ 677 01aa 6115      		cp r22,__zero_reg__
+ 678 01ac 7105      		cpc r23,__zero_reg__
+ 679 01ae 8105      		cpc r24,__zero_reg__
+ 680 01b0 9105      		cpc r25,__zero_reg__
+ 681 01b2 B1F0      		breq .L34
+ 211:/Users/Administrator/sos-2x/kernel/codemem.c **** 			flash_erase( flash_cache_addr, FLASHMEM_PAGE_SIZE );
+ 683               	.LM44:
+ 684 01b4 40E0      		ldi r20,lo8(256)
+ 685 01b6 51E0      		ldi r21,hi8(256)
+ 686 01b8 0E94 0000 		call flash_erase
+ 212:/Users/Administrator/sos-2x/kernel/codemem.c **** 			flash_write( flash_cache_addr, flash_cache_page, FLASHMEM_PAGE_SIZE );
+ 688               	.LM45:
+ 689 01bc 8091 0000 		lds r24,flash_cache_addr
+ 690 01c0 9091 0000 		lds r25,(flash_cache_addr)+1
+ 691 01c4 A091 0000 		lds r26,(flash_cache_addr)+2
+ 692 01c8 B091 0000 		lds r27,(flash_cache_addr)+3
+ 693 01cc 20E0      		ldi r18,lo8(256)
+ 694 01ce 31E0      		ldi r19,hi8(256)
+ 695 01d0 4091 0000 		lds r20,flash_cache_page
+ 696 01d4 5091 0000 		lds r21,(flash_cache_page)+1
+ 697 01d8 BC01      		movw r22,r24
+ 698 01da CD01      		movw r24,r26
+ 699 01dc 0E94 0000 		call flash_write
+ 700               	.L34:
+ 213:/Users/Administrator/sos-2x/kernel/codemem.c **** 		}
+ 214:/Users/Administrator/sos-2x/kernel/codemem.c **** 		flash_cache_addr = start_addr;
+ 702               	.LM46:
+ 703 01e0 E092 0000 		sts flash_cache_addr,r14
+ 704 01e4 F092 0000 		sts (flash_cache_addr)+1,r15
+ 705 01e8 0093 0000 		sts (flash_cache_addr)+2,r16
+ 706 01ec 1093 0000 		sts (flash_cache_addr)+3,r17
+ 215:/Users/Administrator/sos-2x/kernel/codemem.c **** 		flash_read( start_addr, flash_cache_page, FLASHMEM_PAGE_SIZE );
+ 708               	.LM47:
+ 709 01f0 20E0      		ldi r18,lo8(256)
+ 710 01f2 31E0      		ldi r19,hi8(256)
+ 711 01f4 4091 0000 		lds r20,flash_cache_page
+ 712 01f8 5091 0000 		lds r21,(flash_cache_page)+1
+ 713 01fc C801      		movw r24,r16
+ 714 01fe B701      		movw r22,r14
+ 715 0200 0E94 0000 		call flash_read
+ 716               	.L33:
+ 216:/Users/Administrator/sos-2x/kernel/codemem.c **** 	}
+ 217:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+ 218:/Users/Administrator/sos-2x/kernel/codemem.c **** 	for( i = 0; i < nbytes; i++, offset++ ) {
+ 718               	.LM48:
+ 719 0204 C114      		cp r12,__zero_reg__
+ 720 0206 D104      		cpc r13,__zero_reg__
+ 721 0208 81F0      		breq .L40
+ 722 020a D501      		movw r26,r10
+ 723 020c 9601      		movw r18,r12
+ 724               	.L38:
+ 219:/Users/Administrator/sos-2x/kernel/codemem.c **** 		flash_cache_page[offset] = buf[i];
+ 726               	.LM49:
+ 727 020e E091 0000 		lds r30,flash_cache_page
+ 728 0212 F091 0000 		lds r31,(flash_cache_page)+1
+ 729 0216 EC0F      		add r30,r28
+ 730 0218 FD1F      		adc r31,r29
+ 731 021a 8D91      		ld r24,X+
+ 732 021c 8083      		st Z,r24
+ 734               	.LM50:
+ 735 021e 2150      		subi r18,lo8(-(-1))
+ 736 0220 3040      		sbci r19,hi8(-(-1))
+ 737 0222 2196      		adiw r28,1
+ 738 0224 2115      		cp r18,__zero_reg__
+ 739 0226 3105      		cpc r19,__zero_reg__
+ 740 0228 91F7      		brne .L38
+ 741               	.L40:
+ 742               	/* epilogue: frame size=0 */
+ 743 022a DF91      		pop r29
+ 744 022c CF91      		pop r28
+ 745 022e 1F91      		pop r17
+ 746 0230 0F91      		pop r16
+ 747 0232 FF90      		pop r15
+ 748 0234 EF90      		pop r14
+ 749 0236 DF90      		pop r13
+ 750 0238 CF90      		pop r12
+ 751 023a BF90      		pop r11
+ 752 023c AF90      		pop r10
+ 753 023e 0895      		ret
+ 754               	/* epilogue end (size=11) */
+ 755               	/* function codemem_cache_write size 117 (96) */
+ 762               	.Lscope3:
+ 767               	.global	ker_codemem_alloc
+ 769               	ker_codemem_alloc:
+ 220:/Users/Administrator/sos-2x/kernel/codemem.c **** 	}
+ 221:/Users/Administrator/sos-2x/kernel/codemem.c **** }
+ 222:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 223:/Users/Administrator/sos-2x/kernel/codemem.c **** static void codemem_cache_read( uint32_t addr, uint8_t* buf, uint16_t nbytes )
+ 224:/Users/Administrator/sos-2x/kernel/codemem.c **** {
+ 225:/Users/Administrator/sos-2x/kernel/codemem.c **** 	uint16_t i = 0;
+ 226:/Users/Administrator/sos-2x/kernel/codemem.c **** 	uint32_t start_addr = addr & ~((uint32_t)(FLASHMEM_PAGE_SIZE - 1));
+ 227:/Users/Administrator/sos-2x/kernel/codemem.c **** 	uint16_t offset = addr % FLASHMEM_PAGE_SIZE;
+ 228:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+ 229:/Users/Administrator/sos-2x/kernel/codemem.c **** 	if( flash_cache_addr == start_addr ) {
+ 230:/Users/Administrator/sos-2x/kernel/codemem.c **** 		uint16_t tmp = (FLASHMEM_PAGE_SIZE - offset);
+ 231:/Users/Administrator/sos-2x/kernel/codemem.c **** 		for( i = 0; (i < tmp) && (nbytes != 0); i++, offset++ ) {
+ 232:/Users/Administrator/sos-2x/kernel/codemem.c **** 			*buf = flash_cache_page[offset];
+ 233:/Users/Administrator/sos-2x/kernel/codemem.c **** 			buf++;
+ 234:/Users/Administrator/sos-2x/kernel/codemem.c **** 			nbytes--;
+ 235:/Users/Administrator/sos-2x/kernel/codemem.c **** 			addr++;
+ 236:/Users/Administrator/sos-2x/kernel/codemem.c **** 		}
+ 237:/Users/Administrator/sos-2x/kernel/codemem.c **** 	}
+ 238:/Users/Administrator/sos-2x/kernel/codemem.c **** 	if( nbytes == 0 ) {
+ 239:/Users/Administrator/sos-2x/kernel/codemem.c **** 		return;
+ 240:/Users/Administrator/sos-2x/kernel/codemem.c **** 	}
+ 241:/Users/Administrator/sos-2x/kernel/codemem.c **** 	flash_read( addr, buf, nbytes );
+ 242:/Users/Administrator/sos-2x/kernel/codemem.c **** 	return;
+ 243:/Users/Administrator/sos-2x/kernel/codemem.c **** }
+ 244:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 245:/Users/Administrator/sos-2x/kernel/codemem.c **** //
+ 246:/Users/Administrator/sos-2x/kernel/codemem.c **** // Allocate flash memory according to the size
+ 247:/Users/Administrator/sos-2x/kernel/codemem.c **** // \return the address to the flash
+ 248:/Users/Administrator/sos-2x/kernel/codemem.c **** // \return zero for failure
+ 249:/Users/Administrator/sos-2x/kernel/codemem.c **** //
+ 250:/Users/Administrator/sos-2x/kernel/codemem.c **** static uint32_t flash_alloc( uint16_t size )
+ 251:/Users/Administrator/sos-2x/kernel/codemem.c **** {
+ 252:/Users/Administrator/sos-2x/kernel/codemem.c **** 	uint8_t i, j;
+ 253:/Users/Administrator/sos-2x/kernel/codemem.c **** 	uint8_t num_blocks;
+ 254:/Users/Administrator/sos-2x/kernel/codemem.c **** 	uint8_t free_blocks = 0; 
+ 255:/Users/Administrator/sos-2x/kernel/codemem.c **** 	uint32_t addr;
+ 256:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+ 257:/Users/Administrator/sos-2x/kernel/codemem.c **** 	if( codemem_cache_alloc() != SOS_OK ) {
+ 258:/Users/Administrator/sos-2x/kernel/codemem.c **** 		return -ENOMEM;
+ 259:/Users/Administrator/sos-2x/kernel/codemem.c **** 	}
+ 260:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+ 261:/Users/Administrator/sos-2x/kernel/codemem.c **** 	num_blocks = (uint8_t)((size + (FLASHMEM_PAGE_SIZE - 1)) / FLASHMEM_PAGE_SIZE);
+ 262:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+ 263:/Users/Administrator/sos-2x/kernel/codemem.c **** 	//
+ 264:/Users/Administrator/sos-2x/kernel/codemem.c **** 	// Address-ordered first fit
+ 265:/Users/Administrator/sos-2x/kernel/codemem.c **** 	// Search from the beginning and find 
+ 266:/Users/Administrator/sos-2x/kernel/codemem.c **** 	//
+ 267:/Users/Administrator/sos-2x/kernel/codemem.c **** 	for( i = 0; i < flash_bitmap_length; i++ ) {
+ 268:/Users/Administrator/sos-2x/kernel/codemem.c **** 		register uint8_t shift = 1;
+ 269:/Users/Administrator/sos-2x/kernel/codemem.c **** 		register uint8_t tmp = flash_alloc_bitmap[i];
+ 270:/Users/Administrator/sos-2x/kernel/codemem.c **** 		for( j = 0; j < 8; j++, shift <<= 1 ) {
+ 271:/Users/Administrator/sos-2x/kernel/codemem.c **** 			if( tmp & shift ) {
+ 272:/Users/Administrator/sos-2x/kernel/codemem.c **** 				free_blocks = 0;
+ 273:/Users/Administrator/sos-2x/kernel/codemem.c **** 			} else {
+ 274:/Users/Administrator/sos-2x/kernel/codemem.c **** 				free_blocks++;
+ 275:/Users/Administrator/sos-2x/kernel/codemem.c **** 			}
+ 276:/Users/Administrator/sos-2x/kernel/codemem.c **** 			if( free_blocks == num_blocks ) {
+ 277:/Users/Administrator/sos-2x/kernel/codemem.c **** 				//
+ 278:/Users/Administrator/sos-2x/kernel/codemem.c **** 				// set the bit map
+ 279:/Users/Administrator/sos-2x/kernel/codemem.c **** 				//
+ 280:/Users/Administrator/sos-2x/kernel/codemem.c **** 				flash_setbitmap(i*8 + j + 1 - num_blocks, num_blocks, true);
+ 281:/Users/Administrator/sos-2x/kernel/codemem.c **** 				addr = flash_start_page_addr + ((i*8 + j + 1 - num_blocks) * FLASHMEM_PAGE_SIZE);
+ 282:/Users/Administrator/sos-2x/kernel/codemem.c **** 				return addr;
+ 283:/Users/Administrator/sos-2x/kernel/codemem.c **** 			}
+ 284:/Users/Administrator/sos-2x/kernel/codemem.c **** 		}
+ 285:/Users/Administrator/sos-2x/kernel/codemem.c **** 	}
+ 286:/Users/Administrator/sos-2x/kernel/codemem.c **** 	return 0;
+ 287:/Users/Administrator/sos-2x/kernel/codemem.c **** }
+ 288:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 289:/Users/Administrator/sos-2x/kernel/codemem.c **** static void flash_free( uint32_t addr, uint16_t size )
+ 290:/Users/Administrator/sos-2x/kernel/codemem.c **** {
+ 291:/Users/Administrator/sos-2x/kernel/codemem.c **** 	uint16_t b = (addr - flash_start_page_addr) / FLASHMEM_PAGE_SIZE;
+ 292:/Users/Administrator/sos-2x/kernel/codemem.c **** 	uint8_t num_blocks = (uint8_t)((size + FLASHMEM_PAGE_SIZE - 1) / FLASHMEM_PAGE_SIZE);
+ 293:/Users/Administrator/sos-2x/kernel/codemem.c **** 	 
+ 294:/Users/Administrator/sos-2x/kernel/codemem.c **** 	//
+ 295:/Users/Administrator/sos-2x/kernel/codemem.c **** 	// Unset the bit map
+ 296:/Users/Administrator/sos-2x/kernel/codemem.c **** 	//
+ 297:/Users/Administrator/sos-2x/kernel/codemem.c **** 	flash_setbitmap(b, num_blocks, false);
+ 298:/Users/Administrator/sos-2x/kernel/codemem.c **** 	flash_erase( addr, size );
+ 299:/Users/Administrator/sos-2x/kernel/codemem.c **** }
+ 300:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 301:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 302:/Users/Administrator/sos-2x/kernel/codemem.c **** // ================================================================================
+ 303:/Users/Administrator/sos-2x/kernel/codemem.c **** // Public Routines
+ 304:/Users/Administrator/sos-2x/kernel/codemem.c **** //
+ 305:/Users/Administrator/sos-2x/kernel/codemem.c **** codemem_t ker_codemem_alloc(uint16_t size, codemem_type_t type)
+ 306:/Users/Administrator/sos-2x/kernel/codemem.c **** {
+ 771               	.LM51:
+ 772               	/* prologue: frame size=0 */
+ 773 0240 DF92      		push r13
+ 774 0242 EF92      		push r14
+ 775 0244 FF92      		push r15
+ 776 0246 0F93      		push r16
+ 777 0248 1F93      		push r17
+ 778 024a CF93      		push r28
+ 779 024c DF93      		push r29
+ 780               	/* prologue end (size=7) */
+ 781 024e 7C01      		movw r14,r24
+ 307:/Users/Administrator/sos-2x/kernel/codemem.c **** 	uint8_t i;
+ 308:/Users/Administrator/sos-2x/kernel/codemem.c **** 	codemem_hdr_t *hdr;
+ 309:/Users/Administrator/sos-2x/kernel/codemem.c **** 	codemem_t      ret;
+ 310:/Users/Administrator/sos-2x/kernel/codemem.c **** 	//
+ 311:/Users/Administrator/sos-2x/kernel/codemem.c **** 	// Allocate meta data  
+ 312:/Users/Administrator/sos-2x/kernel/codemem.c **** 	//
+ 313:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+ 314:/Users/Administrator/sos-2x/kernel/codemem.c **** 	for( i = 0; i < CODEMEM_MAX_LOADABLE_MODULES; i++ ) {
+ 783               	.LM52:
+ 784 0250 DD24      		clr r13
+ 785 0252 E0E0      		ldi r30,lo8(codemem_handle_list)
+ 786 0254 F0E0      		ldi r31,hi8(codemem_handle_list)
+ 787               	.L46:
+ 315:/Users/Administrator/sos-2x/kernel/codemem.c **** 		if( codemem_handle_list[i] == NULL ) {
+ 789               	.LM53:
+ 790 0256 8191      		ld r24,Z+
+ 791 0258 9191      		ld r25,Z+
+ 792 025a 892B      		or r24,r25
+ 793 025c 21F0      		breq .L43
+ 795               	.LM54:
+ 796 025e D394      		inc r13
+ 797 0260 8FE0      		ldi r24,lo8(15)
+ 798 0262 8D15      		cp r24,r13
+ 799 0264 C0F7      		brsh .L46
+ 800               	.L43:
+ 316:/Users/Administrator/sos-2x/kernel/codemem.c **** 			break;
+ 317:/Users/Administrator/sos-2x/kernel/codemem.c **** 		}
+ 318:/Users/Administrator/sos-2x/kernel/codemem.c **** 	}
+ 319:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+ 320:/Users/Administrator/sos-2x/kernel/codemem.c **** 	if( i == CODEMEM_MAX_LOADABLE_MODULES ) {
+ 802               	.LM55:
+ 803 0266 80E1      		ldi r24,lo8(16)
+ 804 0268 D816      		cp r13,r24
+ 805 026a 09F4      		brne .+2
+ 806 026c 7BC0      		rjmp .L71
+ 807               	.LBB4:
+ 808               	.LBB5:
+ 810               	.Ltext3:
+  97:/Users/Administrator/sos-2x/kernel/include/malloc.h **** }
+  98:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+  99:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+ 100:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Reallocate dynamic memory
+ 101:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @param pntr Pointer to the currently held block of memory
+ 102:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @param newSize Number of bytes to be allocated
+ 103:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @return Returns the pointer to the reallocated memory.
+ 104:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * Returns a NULL if unable to reallocate but the original pointer is still valid.
+ 105:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+ 106:/Users/Administrator/sos-2x/kernel/include/malloc.h **** static inline void* ker_realloc(void* pntr, uint16_t newSize)
+ 107:/Users/Administrator/sos-2x/kernel/include/malloc.h **** {
+ 108:/Users/Administrator/sos-2x/kernel/include/malloc.h ****   return sos_blk_mem_realloc(pntr, newSize, false);
+ 109:/Users/Administrator/sos-2x/kernel/include/malloc.h **** }
+ 110:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+ 111:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+ 112:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Free memory pointed to by ptr
+ 113:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @param ptr Pointer to the memory that should be released
+ 114:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @return void
+ 115:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+ 116:/Users/Administrator/sos-2x/kernel/include/malloc.h **** static inline void ker_free(void* ptr)
+ 117:/Users/Administrator/sos-2x/kernel/include/malloc.h **** {
+ 118:/Users/Administrator/sos-2x/kernel/include/malloc.h ****   sos_blk_mem_free(ptr, false);
+ 119:/Users/Administrator/sos-2x/kernel/include/malloc.h ****   return;
+ 120:/Users/Administrator/sos-2x/kernel/include/malloc.h **** }
+ 121:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+ 122:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+ 123:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Change the ownership of memory
+ 124:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @param ptr Pointer to the memory whose ownership is being transferred
+ 125:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @param id New owner of the memeory
+ 126:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @return SOS_OK or error code upon fail
+ 127:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * Add check to prevent a change of ownership to the 'null' user.
+ 128:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+ 129:/Users/Administrator/sos-2x/kernel/include/malloc.h **** static inline int8_t ker_change_own(void* ptr, sos_pid_t id)
+ 130:/Users/Administrator/sos-2x/kernel/include/malloc.h **** {
+ 131:/Users/Administrator/sos-2x/kernel/include/malloc.h ****   return sos_blk_mem_change_own(ptr, id, false);
+ 132:/Users/Administrator/sos-2x/kernel/include/malloc.h **** }
+ 133:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+ 134:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+ 135:/Users/Administrator/sos-2x/kernel/include/malloc.h **** extern sos_pid_t mem_check_memory();
+ 136:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+ 137:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+ 138:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief Free up all memory held by id 
+ 139:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @param id Process that is having its memory returned
+ 140:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+ 141:/Users/Administrator/sos-2x/kernel/include/malloc.h **** extern int8_t mem_remove_all(sos_pid_t id);
+ 142:/Users/Administrator/sos-2x/kernel/include/malloc.h **** 
+ 143:/Users/Administrator/sos-2x/kernel/include/malloc.h **** /**
+ 144:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @brief malloc for long term usage
+ 145:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  * @warning this is used to allocate the memory for long time usage
+ 146:/Users/Administrator/sos-2x/kernel/include/malloc.h ****  */
+ 147:/Users/Administrator/sos-2x/kernel/include/malloc.h **** static inline void* malloc_longterm(uint16_t size, sos_pid_t id)
+ 148:/Users/Administrator/sos-2x/kernel/include/malloc.h **** {
+ 149:/Users/Administrator/sos-2x/kernel/include/malloc.h ****   return sos_blk_mem_longterm_alloc(size, id, true);
+ 812               	.LM56:
+ 813 026e 41E0      		ldi r20,lo8(1)
+ 814 0270 6FE0      		ldi r22,lo8(15)
+ 815 0272 88E0      		ldi r24,lo8(8)
+ 816 0274 90E0      		ldi r25,hi8(8)
+ 817 0276 0E94 0000 		call sos_blk_mem_longterm_alloc
+ 818 027a EC01      		movw r28,r24
+ 819               	.LBE5:
+ 820               	.LBE4:
+ 822               	.Ltext4:
+ 321:/Users/Administrator/sos-2x/kernel/codemem.c **** 		//
+ 322:/Users/Administrator/sos-2x/kernel/codemem.c **** 		// Maximum file reached...
+ 323:/Users/Administrator/sos-2x/kernel/codemem.c **** 		//
+ 324:/Users/Administrator/sos-2x/kernel/codemem.c **** 		return CODEMEM_INVALID;
+ 325:/Users/Administrator/sos-2x/kernel/codemem.c **** 	}
+ 326:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+ 327:/Users/Administrator/sos-2x/kernel/codemem.c **** 	hdr = malloc_longterm( sizeof(codemem_hdr_t), KER_CODEMEM_PID );
+ 328:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+ 329:/Users/Administrator/sos-2x/kernel/codemem.c **** 	if( hdr == NULL ) {
+ 824               	.LM57:
+ 825 027c 892B      		or r24,r25
+ 826 027e 09F4      		brne .+2
+ 827 0280 71C0      		rjmp .L71
+ 828               	.LBB6:
+ 829               	.LBB7:
+ 831               	.LM58:
+ 832 0282 00E0      		ldi r16,lo8(0)
+ 834               	.LM59:
+ 835 0284 0E94 0000 		call codemem_cache_alloc
+ 836 0288 8823      		tst r24
+ 837 028a 71F1      		breq .L50
+ 839               	.LM60:
+ 840 028c 24EF      		ldi r18,lo8(-12)
+ 841 028e 3FEF      		ldi r19,hi8(-12)
+ 842 0290 4FEF      		ldi r20,hlo8(-12)
+ 843 0292 5FEF      		ldi r21,hhi8(-12)
+ 844 0294 5AC0      		rjmp .L51
+ 845               	.L70:
+ 846               	.LBB8:
+ 848               	.LM61:
+ 849 0296 802F      		mov r24,r16
+ 850 0298 9927      		clr r25
+ 851 029a 8901      		movw r16,r18
+ 852 029c F3E0      		ldi r31,3
+ 853 029e 000F      	1:	lsl r16
+ 854 02a0 111F      		rol r17
+ 855 02a2 FA95      		dec r31
+ 856 02a4 E1F7      		brne 1b
+ 857 02a6 040F      		add r16,r20
+ 858 02a8 111D      		adc r17,__zero_reg__
+ 859 02aa 081B      		sub r16,r24
+ 860 02ac 190B      		sbc r17,r25
+ 861 02ae 0F5F      		subi r16,lo8(-(1))
+ 862 02b0 1F4F      		sbci r17,hi8(-(1))
+ 863 02b2 41E0      		ldi r20,lo8(1)
+ 864 02b4 BC01      		movw r22,r24
+ 865 02b6 C801      		movw r24,r16
+ 866 02b8 0E94 0000 		call flash_setbitmap
+ 868               	.LM62:
+ 869 02bc C801      		movw r24,r16
+ 870 02be AA27      		clr r26
+ 871 02c0 97FD      		sbrc r25,7
+ 872 02c2 A095      		com r26
+ 873 02c4 BA2F      		mov r27,r26
+ 874 02c6 BA2F      		mov r27,r26
+ 875 02c8 A92F      		mov r26,r25
+ 876 02ca 982F      		mov r25,r24
+ 877 02cc 8827      		clr r24
+ 878 02ce 2091 0000 		lds r18,flash_start_page_addr
+ 879 02d2 3091 0000 		lds r19,(flash_start_page_addr)+1
+ 880 02d6 4091 0000 		lds r20,(flash_start_page_addr)+2
+ 881 02da 5091 0000 		lds r21,(flash_start_page_addr)+3
+ 882 02de 280F      		add r18,r24
+ 883 02e0 391F      		adc r19,r25
+ 884 02e2 4A1F      		adc r20,r26
+ 885 02e4 5B1F      		adc r21,r27
+ 886 02e6 31C0      		rjmp .L51
+ 887               	.L50:
+ 888               	.LBE8:
+ 890               	.LM63:
+ 891 02e8 C701      		movw r24,r14
+ 892 02ea AA27      		clr r26
+ 893 02ec BB27      		clr r27
+ 894 02ee 8150      		subi r24,lo8(-(255))
+ 895 02f0 9F4F      		sbci r25,hi8(-(255))
+ 896 02f2 AF4F      		sbci r26,hlo8(-(255))
+ 897 02f4 BF4F      		sbci r27,hhi8(-(255))
+ 898 02f6 892F      		mov r24,r25
+ 899 02f8 9A2F      		mov r25,r26
+ 900 02fa AB2F      		mov r26,r27
+ 901 02fc BB27      		clr r27
+ 902 02fe 982F      		mov r25,r24
+ 904               	.LM64:
+ 905 0300 502F      		mov r21,r16
+ 906 0302 7091 0000 		lds r23,flash_bitmap_length
+ 907 0306 0717      		cp r16,r23
+ 908 0308 E0F4      		brsh .L67
+ 909 030a A091 0000 		lds r26,flash_alloc_bitmap
+ 910 030e B091 0000 		lds r27,(flash_alloc_bitmap)+1
+ 911               	.L62:
+ 912               	.LBB9:
+ 914               	.LM65:
+ 915 0312 61E0      		ldi r22,lo8(1)
+ 917               	.LM66:
+ 918 0314 252F      		mov r18,r21
+ 919 0316 3327      		clr r19
+ 920 0318 FD01      		movw r30,r26
+ 921 031a E20F      		add r30,r18
+ 922 031c F31F      		adc r31,r19
+ 923 031e E081      		ld r30,Z
+ 925               	.LM67:
+ 926 0320 40E0      		ldi r20,lo8(0)
+ 927               	.L61:
+ 929               	.LM68:
+ 930 0322 8E2F      		mov r24,r30
+ 931 0324 8623      		and r24,r22
+ 932 0326 11F0      		breq .L58
+ 934               	.LM69:
+ 935 0328 00E0      		ldi r16,lo8(0)
+ 936 032a 01C0      		rjmp .L59
+ 937               	.L58:
+ 939               	.LM70:
+ 940 032c 0F5F      		subi r16,lo8(-(1))
+ 941               	.L59:
+ 943               	.LM71:
+ 944 032e 0917      		cp r16,r25
+ 945 0330 09F4      		brne .+2
+ 946 0332 B1CF      		rjmp .L70
+ 948               	.LM72:
+ 949 0334 4F5F      		subi r20,lo8(-(1))
+ 950 0336 660F      		lsl r22
+ 951 0338 4830      		cpi r20,lo8(8)
+ 952 033a 98F3      		brlo .L61
+ 953               	.LBE9:
+ 955               	.LM73:
+ 956 033c 5F5F      		subi r21,lo8(-(1))
+ 957 033e 5717      		cp r21,r23
+ 958 0340 40F3      		brlo .L62
+ 959               	.L67:
+ 961               	.LM74:
+ 962 0342 20E0      		ldi r18,lo8(0)
+ 963 0344 30E0      		ldi r19,hi8(0)
+ 964 0346 40E0      		ldi r20,hlo8(0)
+ 965 0348 50E0      		ldi r21,hhi8(0)
+ 966               	.L51:
+ 967               	.LBE7:
+ 968               	.LBE6:
+ 970               	.LM75:
+ 971 034a 2883      		st Y,r18
+ 972 034c 3983      		std Y+1,r19
+ 973 034e 4A83      		std Y+2,r20
+ 974 0350 5B83      		std Y+3,r21
+ 330:/Users/Administrator/sos-2x/kernel/codemem.c **** 		return CODEMEM_INVALID;
+ 331:/Users/Administrator/sos-2x/kernel/codemem.c **** 	}
+ 332:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+ 333:/Users/Administrator/sos-2x/kernel/codemem.c **** 	hdr->start_addr = flash_alloc( size );
+ 334:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 335:/Users/Administrator/sos-2x/kernel/codemem.c **** 	//post_uart(KER_CODEMEM_PID, KER_CODEMEM_PID, 100, 4, &(hdr->start_addr), 0, BCAST_ADDRESS);
+ 336:/Users/Administrator/sos-2x/kernel/codemem.c **** 	if( hdr->start_addr == 0 ) {
+ 976               	.LM76:
+ 977 0352 2115      		cp r18,__zero_reg__
+ 978 0354 3105      		cpc r19,__zero_reg__
+ 979 0356 4105      		cpc r20,__zero_reg__
+ 980 0358 5105      		cpc r21,__zero_reg__
+ 981 035a 39F4      		brne .L63
+ 982               	.LBB10:
+ 983               	.LBB11:
+ 985               	.Ltext5:
+ 987               	.LM77:
+ 988 035c 60E0      		ldi r22,lo8(0)
+ 989 035e CE01      		movw r24,r28
+ 990 0360 0E94 0000 		call sos_blk_mem_free
+ 991               	.L71:
+ 992               	.LBE11:
+ 993               	.LBE10:
+ 995               	.Ltext6:
+ 337:/Users/Administrator/sos-2x/kernel/codemem.c **** 		ker_free( hdr );
+ 338:/Users/Administrator/sos-2x/kernel/codemem.c **** 		return CODEMEM_INVALID;
+ 997               	.LM78:
+ 998 0364 8FEF      		ldi r24,lo8(-1)
+ 999 0366 9FEF      		ldi r25,hi8(-1)
+ 1000 0368 19C0      		rjmp .L41
+ 1001               	.L63:
+ 339:/Users/Administrator/sos-2x/kernel/codemem.c **** 	}
+ 340:/Users/Administrator/sos-2x/kernel/codemem.c **** 	hdr->size = size;
+ 1003               	.LM79:
+ 1004 036a EC82      		std Y+4,r14
+ 1005 036c FD82      		std Y+5,r15
+ 341:/Users/Administrator/sos-2x/kernel/codemem.c **** 	codemem_handle_list[i] = hdr;
+ 1007               	.LM80:
+ 1008 036e 2D2D      		mov r18,r13
+ 1009 0370 3327      		clr r19
+ 1010 0372 F901      		movw r30,r18
+ 1011 0374 E20F      		add r30,r18
+ 1012 0376 F31F      		adc r31,r19
+ 1013 0378 E050      		subi r30,lo8(-(codemem_handle_list))
+ 1014 037a F040      		sbci r31,hi8(-(codemem_handle_list))
+ 1015 037c C083      		st Z,r28
+ 1016 037e D183      		std Z+1,r29
+ 342:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+ 343:/Users/Administrator/sos-2x/kernel/codemem.c **** 	codemem_salt++;
+ 1018               	.LM81:
+ 1019 0380 8091 0000 		lds r24,codemem_salt
+ 1020 0384 8F5F      		subi r24,lo8(-(1))
+ 1021 0386 8093 0000 		sts codemem_salt,r24
+ 344:/Users/Administrator/sos-2x/kernel/codemem.c **** 	hdr->salt = codemem_salt;
+ 1023               	.LM82:
+ 1024 038a 8E83      		std Y+6,r24
+ 345:/Users/Administrator/sos-2x/kernel/codemem.c **** 	hdr->flag = 0;
+ 1026               	.LM83:
+ 1027 038c 1F82      		std Y+7,__zero_reg__
+ 346:/Users/Administrator/sos-2x/kernel/codemem.c **** 	ret = ((uint16_t)i) | (((uint16_t)codemem_salt) << 8);
+ 1029               	.LM84:
+ 1030 038e 8091 0000 		lds r24,codemem_salt
+ 1031 0392 9927      		clr r25
+ 1032 0394 982F      		mov r25,r24
+ 1033 0396 8827      		clr r24
+ 1034 0398 822B      		or r24,r18
+ 1035 039a 932B      		or r25,r19
+ 1036               	.L41:
+ 1037               	/* epilogue: frame size=0 */
+ 1038 039c DF91      		pop r29
+ 1039 039e CF91      		pop r28
+ 1040 03a0 1F91      		pop r17
+ 1041 03a2 0F91      		pop r16
+ 1042 03a4 FF90      		pop r15
+ 1043 03a6 EF90      		pop r14
+ 1044 03a8 DF90      		pop r13
+ 1045 03aa 0895      		ret
+ 1046               	/* epilogue end (size=8) */
+ 1047               	/* function ker_codemem_alloc size 183 (168) */
+ 1067               	.Lscope4:
+ 1075               	.global	ker_codemem_direct_write
+ 1077               	ker_codemem_direct_write:
+ 347:/Users/Administrator/sos-2x/kernel/codemem.c **** 	//flash_erase( hdr->start_addr , size );
+ 348:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 349:/Users/Administrator/sos-2x/kernel/codemem.c **** 	ker_log( SOS_LOG_CMEM_ALLOC, ker_get_current_pid(), size );	
+ 350:/Users/Administrator/sos-2x/kernel/codemem.c **** 	return ret;
+ 351:/Users/Administrator/sos-2x/kernel/codemem.c **** }
+ 352:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 353:/Users/Administrator/sos-2x/kernel/codemem.c **** int8_t ker_codemem_write(codemem_t h, sos_pid_t pid, void *buf, uint16_t nbytes, uint16_t offset)
+ 354:/Users/Administrator/sos-2x/kernel/codemem.c **** {
+ 355:/Users/Administrator/sos-2x/kernel/codemem.c **** 	uint8_t cmt = (uint8_t)(h & 0x00ff);
+ 356:/Users/Administrator/sos-2x/kernel/codemem.c **** 	codemem_hdr_t *hdr;
+ 357:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+ 358:/Users/Administrator/sos-2x/kernel/codemem.c **** 	DEBUG("ker_codemem_write: h = 0x%x nbytes = %d, offset = %d\n", h, nbytes, offset);
+ 359:/Users/Administrator/sos-2x/kernel/codemem.c **** 	if( check_codemem_t( h ) == false ) {
+ 360:/Users/Administrator/sos-2x/kernel/codemem.c **** 		return -ENOENT;
+ 361:/Users/Administrator/sos-2x/kernel/codemem.c **** 	}
+ 362:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+ 363:/Users/Administrator/sos-2x/kernel/codemem.c **** 	hdr = codemem_handle_list[cmt];
+ 364:/Users/Administrator/sos-2x/kernel/codemem.c **** 	DEBUG("ker_codemem_write: hdr = 0x%p \n", hdr);
+ 365:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 366:/Users/Administrator/sos-2x/kernel/codemem.c **** 	return ker_codemem_direct_write(hdr->start_addr, pid, buf, nbytes, offset);
+ 367:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 368:/Users/Administrator/sos-2x/kernel/codemem.c **** }	
+ 369:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 370:/Users/Administrator/sos-2x/kernel/codemem.c **** int8_t ker_codemem_direct_write(uint32_t start_addr, sos_pid_t pid, void *buf, uint16_t nbytes, uin
+ 371:/Users/Administrator/sos-2x/kernel/codemem.c **** {
+ 1079               	.LM85:
+ 1080               	/* prologue: frame size=0 */
+ 1081 03ac 8F92      		push r8
+ 1082 03ae 9F92      		push r9
+ 1083 03b0 AF92      		push r10
+ 1084 03b2 BF92      		push r11
+ 1085 03b4 CF92      		push r12
+ 1086 03b6 DF92      		push r13
+ 1087 03b8 EF92      		push r14
+ 1088 03ba FF92      		push r15
+ 1089 03bc 0F93      		push r16
+ 1090 03be 1F93      		push r17
+ 1091 03c0 CF93      		push r28
+ 1092 03c2 DF93      		push r29
+ 1093               	/* prologue end (size=12) */
+ 1094 03c4 5B01      		movw r10,r22
+ 1095 03c6 6C01      		movw r12,r24
+ 1096 03c8 4801      		movw r8,r16
+ 372:/Users/Administrator/sos-2x/kernel/codemem.c **** 	uint8_t *b = buf;
+ 1098               	.LM86:
+ 1099 03ca E901      		movw r28,r18
+ 373:/Users/Administrator/sos-2x/kernel/codemem.c **** 	uint16_t size_written;
+ 374:/Users/Administrator/sos-2x/kernel/codemem.c **** 	uint16_t remaining_size;
+ 375:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+ 376:/Users/Administrator/sos-2x/kernel/codemem.c **** 	if( codemem_cache_alloc() != SOS_OK ) {
+ 1101               	.LM87:
+ 1102 03cc 0E94 0000 		call codemem_cache_alloc
+ 1103 03d0 8823      		tst r24
+ 1104 03d2 19F0      		breq .L73
+ 377:/Users/Administrator/sos-2x/kernel/codemem.c **** 		return -ENOMEM;
+ 1106               	.LM88:
+ 1107 03d4 84EF      		ldi r24,lo8(-12)
+ 1108 03d6 9FEF      		ldi r25,hi8(-12)
+ 1109 03d8 4FC0      		rjmp .L72
+ 1110               	.L73:
+ 378:/Users/Administrator/sos-2x/kernel/codemem.c **** 	}
+ 379:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+ 380:/Users/Administrator/sos-2x/kernel/codemem.c **** 	DEBUG("ker_codemem_write: start_addr = 0x%x nbytes = %d, offset = %d\n", start_addr, nbytes, offse
+ 381:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 382:/Users/Administrator/sos-2x/kernel/codemem.c **** 	start_addr += offset;
+ 1112               	.LM89:
+ 1113 03da C701      		movw r24,r14
+ 1114 03dc AA27      		clr r26
+ 1115 03de BB27      		clr r27
+ 1116 03e0 A80E      		add r10,r24
+ 1117 03e2 B91E      		adc r11,r25
+ 1118 03e4 CA1E      		adc r12,r26
+ 1119 03e6 DB1E      		adc r13,r27
+ 383:/Users/Administrator/sos-2x/kernel/codemem.c **** 	size_written = 0;
+ 1121               	.LM90:
+ 1122 03e8 EE24      		clr r14
+ 1123 03ea FF24      		clr r15
+ 384:/Users/Administrator/sos-2x/kernel/codemem.c **** 	//
+ 385:/Users/Administrator/sos-2x/kernel/codemem.c **** 	// Remaining size in the page
+ 386:/Users/Administrator/sos-2x/kernel/codemem.c **** 	// FLASHMEM_PAGE_SIZE - (start_addr % FLASHMEM_PAGE_SIZE) 
+ 387:/Users/Administrator/sos-2x/kernel/codemem.c **** 	//
+ 388:/Users/Administrator/sos-2x/kernel/codemem.c **** 	remaining_size = FLASHMEM_PAGE_SIZE - (start_addr % FLASHMEM_PAGE_SIZE);
+ 1125               	.LM91:
+ 1126 03ec D601      		movw r26,r12
+ 1127 03ee C501      		movw r24,r10
+ 1128 03f0 9070      		andi r25,hi8(255)
+ 1129 03f2 A070      		andi r26,hlo8(255)
+ 1130 03f4 B070      		andi r27,hhi8(255)
+ 1131 03f6 00E0      		ldi r16,lo8(256)
+ 1132 03f8 11E0      		ldi r17,hi8(256)
+ 1133 03fa 081B      		sub r16,r24
+ 1134 03fc 190B      		sbc r17,r25
+ 389:/Users/Administrator/sos-2x/kernel/codemem.c **** 	if( remaining_size < nbytes ) {
+ 1136               	.LM92:
+ 1137 03fe 0815      		cp r16,r8
+ 1138 0400 1905      		cpc r17,r9
+ 1139 0402 80F4      		brsh .L74
+ 390:/Users/Administrator/sos-2x/kernel/codemem.c **** 		codemem_cache_write( start_addr, b, remaining_size );
+ 1141               	.LM93:
+ 1142 0404 9801      		movw r18,r16
+ 1143 0406 AE01      		movw r20,r28
+ 1144 0408 C601      		movw r24,r12
+ 1145 040a B501      		movw r22,r10
+ 1146 040c 0E94 0000 		call codemem_cache_write
+ 391:/Users/Administrator/sos-2x/kernel/codemem.c **** 		size_written = remaining_size;
+ 1148               	.LM94:
+ 1149 0410 7801      		movw r14,r16
+ 392:/Users/Administrator/sos-2x/kernel/codemem.c **** 		start_addr += remaining_size;
+ 1151               	.LM95:
+ 1152 0412 C801      		movw r24,r16
+ 1153 0414 AA27      		clr r26
+ 1154 0416 BB27      		clr r27
+ 1155 0418 A80E      		add r10,r24
+ 1156 041a B91E      		adc r11,r25
+ 1157 041c CA1E      		adc r12,r26
+ 1158 041e DB1E      		adc r13,r27
+ 393:/Users/Administrator/sos-2x/kernel/codemem.c **** 		b += remaining_size;
+ 1160               	.LM96:
+ 1161 0420 C00F      		add r28,r16
+ 1162 0422 D11F      		adc r29,r17
+ 1163               	.L74:
+ 1164 0424 8401      		movw r16,r8
+ 1165 0426 0E19      		sub r16,r14
+ 1166 0428 1F09      		sbc r17,r15
+ 1167               	.L75:
+ 394:/Users/Administrator/sos-2x/kernel/codemem.c **** 	}  
+ 395:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+ 396:/Users/Administrator/sos-2x/kernel/codemem.c **** 	while( 1 ) {
+ 397:/Users/Administrator/sos-2x/kernel/codemem.c **** 		if( (nbytes - size_written) > FLASHMEM_PAGE_SIZE ) {
+ 1169               	.LM97:
+ 1170 042a 81E0      		ldi r24,hi8(257)
+ 1171 042c 0130      		cpi r16,lo8(257)
+ 1172 042e 1807      		cpc r17,r24
+ 1173 0430 C0F0      		brlo .L77
+ 398:/Users/Administrator/sos-2x/kernel/codemem.c **** 			codemem_cache_write( start_addr, b, FLASHMEM_PAGE_SIZE );
+ 1175               	.LM98:
+ 1176 0432 20E0      		ldi r18,lo8(256)
+ 1177 0434 31E0      		ldi r19,hi8(256)
+ 1178 0436 AE01      		movw r20,r28
+ 1179 0438 C601      		movw r24,r12
+ 1180 043a B501      		movw r22,r10
+ 1181 043c 0E94 0000 		call codemem_cache_write
+ 399:/Users/Administrator/sos-2x/kernel/codemem.c **** 			size_written +=  FLASHMEM_PAGE_SIZE;
+ 1183               	.LM99:
+ 1184 0440 A0E0      		ldi r26,lo8(256)
+ 1185 0442 B1E0      		ldi r27,hi8(256)
+ 1186 0444 EA0E      		add r14,r26
+ 1187 0446 FB1E      		adc r15,r27
+ 1188 0448 0050      		subi r16,lo8(-(-256))
+ 1189 044a 1140      		sbci r17,hi8(-(-256))
+ 400:/Users/Administrator/sos-2x/kernel/codemem.c **** 			start_addr += FLASHMEM_PAGE_SIZE;
+ 1191               	.LM100:
+ 1192 044c 80E0      		ldi r24,lo8(256)
+ 1193 044e 91E0      		ldi r25,hi8(256)
+ 1194 0450 A0E0      		ldi r26,hlo8(256)
+ 1195 0452 B0E0      		ldi r27,hhi8(256)
+ 1196 0454 A80E      		add r10,r24
+ 1197 0456 B91E      		adc r11,r25
+ 1198 0458 CA1E      		adc r12,r26
+ 1199 045a DB1E      		adc r13,r27
+ 401:/Users/Administrator/sos-2x/kernel/codemem.c **** 			b += FLASHMEM_PAGE_SIZE;
+ 1201               	.LM101:
+ 1202 045c C050      		subi r28,lo8(-(256))
+ 1203 045e DF4F      		sbci r29,hi8(-(256))
+ 1204 0460 E4CF      		rjmp .L75
+ 1205               	.L77:
+ 402:/Users/Administrator/sos-2x/kernel/codemem.c **** 		} else {
+ 403:/Users/Administrator/sos-2x/kernel/codemem.c **** 			if( (nbytes - size_written) != 0 ) {
+ 1207               	.LM102:
+ 1208 0462 8E14      		cp r8,r14
+ 1209 0464 9F04      		cpc r9,r15
+ 1210 0466 31F0      		breq .L76
+ 404:/Users/Administrator/sos-2x/kernel/codemem.c **** 				codemem_cache_write( start_addr, b, nbytes - size_written );
+ 1212               	.LM103:
+ 1213 0468 9801      		movw r18,r16
+ 1214 046a AE01      		movw r20,r28
+ 1215 046c C601      		movw r24,r12
+ 1216 046e B501      		movw r22,r10
+ 1217 0470 0E94 0000 		call codemem_cache_write
+ 1218               	.L76:
+ 405:/Users/Administrator/sos-2x/kernel/codemem.c **** 			}
+ 406:/Users/Administrator/sos-2x/kernel/codemem.c **** 			break;
+ 407:/Users/Administrator/sos-2x/kernel/codemem.c **** 		}
+ 408:/Users/Administrator/sos-2x/kernel/codemem.c **** 	}
+ 409:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 410:/Users/Administrator/sos-2x/kernel/codemem.c **** 	ker_log( SOS_LOG_CMEM_WRITE, pid, nbytes );	
+ 411:/Users/Administrator/sos-2x/kernel/codemem.c **** 	return SOS_OK;
+ 1220               	.LM104:
+ 1221 0474 80E0      		ldi r24,lo8(0)
+ 1222 0476 90E0      		ldi r25,hi8(0)
+ 1223               	.L72:
+ 1224               	/* epilogue: frame size=0 */
+ 1225 0478 DF91      		pop r29
+ 1226 047a CF91      		pop r28
+ 1227 047c 1F91      		pop r17
+ 1228 047e 0F91      		pop r16
+ 1229 0480 FF90      		pop r15
+ 1230 0482 EF90      		pop r14
+ 1231 0484 DF90      		pop r13
+ 1232 0486 CF90      		pop r12
+ 1233 0488 BF90      		pop r11
+ 1234 048a AF90      		pop r10
+ 1235 048c 9F90      		pop r9
+ 1236 048e 8F90      		pop r8
+ 1237 0490 0895      		ret
+ 1238               	/* epilogue end (size=13) */
+ 1239               	/* function ker_codemem_direct_write size 115 (90) */
+ 1246               	.Lscope5:
+ 1254               	.global	ker_codemem_write
+ 1256               	ker_codemem_write:
+ 1258               	.LM105:
+ 1259               	/* prologue: frame size=0 */
+ 1260 0492 BF92      		push r11
+ 1261 0494 CF92      		push r12
+ 1262 0496 DF92      		push r13
+ 1263 0498 EF92      		push r14
+ 1264 049a FF92      		push r15
+ 1265 049c 0F93      		push r16
+ 1266 049e 1F93      		push r17
+ 1267 04a0 CF93      		push r28
+ 1268 04a2 DF93      		push r29
+ 1269               	/* prologue end (size=9) */
+ 1270 04a4 B62E      		mov r11,r22
+ 1271 04a6 6A01      		movw r12,r20
+ 1272 04a8 E901      		movw r28,r18
+ 1273 04aa 7801      		movw r14,r16
+ 1275               	.LM106:
+ 1276 04ac 182F      		mov r17,r24
+ 1278               	.LM107:
+ 1279 04ae 0E94 0000 		call check_codemem_t
+ 1280 04b2 8823      		tst r24
+ 1281 04b4 19F4      		brne .L81
+ 1283               	.LM108:
+ 1284 04b6 8EEF      		ldi r24,lo8(-2)
+ 1285 04b8 9FEF      		ldi r25,hi8(-2)
+ 1286 04ba 15C0      		rjmp .L80
+ 1287               	.L81:
+ 1289               	.LM109:
+ 1290 04bc E12F      		mov r30,r17
+ 1291 04be FF27      		clr r31
+ 1292 04c0 EE0F      		add r30,r30
+ 1293 04c2 FF1F      		adc r31,r31
+ 1294 04c4 E050      		subi r30,lo8(-(codemem_handle_list))
+ 1295 04c6 F040      		sbci r31,hi8(-(codemem_handle_list))
+ 1296 04c8 0190      		ld __tmp_reg__,Z+
+ 1297 04ca F081      		ld r31,Z
+ 1298 04cc E02D      		mov r30,__tmp_reg__
+ 1300               	.LM110:
+ 1301 04ce 8E01      		movw r16,r28
+ 1302 04d0 9601      		movw r18,r12
+ 1303 04d2 4B2D      		mov r20,r11
+ 1304 04d4 6081      		ld r22,Z
+ 1305 04d6 7181      		ldd r23,Z+1
+ 1306 04d8 8281      		ldd r24,Z+2
+ 1307 04da 9381      		ldd r25,Z+3
+ 1308 04dc 0E94 0000 		call ker_codemem_direct_write
+ 1309 04e0 9927      		clr r25
+ 1310 04e2 87FD      		sbrc r24,7
+ 1311 04e4 9095      		com r25
+ 1312               	.L80:
+ 1313               	/* epilogue: frame size=0 */
+ 1314 04e6 DF91      		pop r29
+ 1315 04e8 CF91      		pop r28
+ 1316 04ea 1F91      		pop r17
+ 1317 04ec 0F91      		pop r16
+ 1318 04ee FF90      		pop r15
+ 1319 04f0 EF90      		pop r14
+ 1320 04f2 DF90      		pop r13
+ 1321 04f4 CF90      		pop r12
+ 1322 04f6 BF90      		pop r11
+ 1323 04f8 0895      		ret
+ 1324               	/* epilogue end (size=10) */
+ 1325               	/* function ker_codemem_write size 52 (33) */
+ 1331               	.Lscope6:
+ 1339               	.global	ker_codemem_direct_read
+ 1341               	ker_codemem_direct_read:
+ 412:/Users/Administrator/sos-2x/kernel/codemem.c **** }	
+ 413:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 414:/Users/Administrator/sos-2x/kernel/codemem.c **** int8_t ker_codemem_read(codemem_t h, sos_pid_t pid, void *buf, uint16_t nbytes, uint16_t offset) {
+ 415:/Users/Administrator/sos-2x/kernel/codemem.c **** 	uint8_t cmt = (uint8_t)(h & 0x00ff);
+ 416:/Users/Administrator/sos-2x/kernel/codemem.c **** 	codemem_hdr_t *hdr; 
+ 417:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 418:/Users/Administrator/sos-2x/kernel/codemem.c **** 	if( check_codemem_t( h ) == false ) {
+ 419:/Users/Administrator/sos-2x/kernel/codemem.c **** 			return -ENOENT;
+ 420:/Users/Administrator/sos-2x/kernel/codemem.c **** 	}
+ 421:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 422:/Users/Administrator/sos-2x/kernel/codemem.c **** 	hdr = codemem_handle_list[cmt];
+ 423:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 424:/Users/Administrator/sos-2x/kernel/codemem.c **** 	return ker_codemem_direct_read(hdr->start_addr, pid, buf, nbytes, offset);
+ 425:/Users/Administrator/sos-2x/kernel/codemem.c **** }
+ 426:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 427:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 428:/Users/Administrator/sos-2x/kernel/codemem.c **** int8_t ker_codemem_direct_read(uint32_t start_addr, sos_pid_t pid, void *buf, uint16_t nbytes, uint
+ 429:/Users/Administrator/sos-2x/kernel/codemem.c **** {
+ 1343               	.LM111:
+ 1344               	/* prologue: frame size=0 */
+ 1345 04fa AF92      		push r10
+ 1346 04fc BF92      		push r11
+ 1347 04fe CF92      		push r12
+ 1348 0500 DF92      		push r13
+ 1349 0502 EF92      		push r14
+ 1350 0504 FF92      		push r15
+ 1351 0506 0F93      		push r16
+ 1352 0508 1F93      		push r17
+ 1353 050a CF93      		push r28
+ 1354 050c DF93      		push r29
+ 1355               	/* prologue end (size=10) */
+ 1356 050e 5B01      		movw r10,r22
+ 1357 0510 6C01      		movw r12,r24
+ 1358 0512 C701      		movw r24,r14
+ 1359               	.LBB12:
+ 1361               	.LM112:
+ 1362 0514 AA27      		clr r26
+ 1363 0516 BB27      		clr r27
+ 1364 0518 A80E      		add r10,r24
+ 1365 051a B91E      		adc r11,r25
+ 1366 051c CA1E      		adc r12,r26
+ 1367 051e DB1E      		adc r13,r27
+ 1368 0520 E901      		movw r28,r18
+ 1369 0522 B801      		movw r22,r16
+ 1370               	.LBB13:
+ 1372               	.LM113:
+ 1373 0524 EE24      		clr r14
+ 1374 0526 FF24      		clr r15
+ 1376               	.LM114:
+ 1377 0528 A601      		movw r20,r12
+ 1378 052a 9501      		movw r18,r10
+ 1379 052c 2070      		andi r18,lo8(-256)
+ 1381               	.LM115:
+ 1382 052e D601      		movw r26,r12
+ 1383 0530 C501      		movw r24,r10
+ 1384 0532 9070      		andi r25,hi8(255)
+ 1385 0534 A070      		andi r26,hlo8(255)
+ 1386 0536 B070      		andi r27,hhi8(255)
+ 1387 0538 8C01      		movw r16,r24
+ 1389               	.LM116:
+ 1390 053a 8091 0000 		lds r24,flash_cache_addr
+ 1391 053e 9091 0000 		lds r25,(flash_cache_addr)+1
+ 1392 0542 A091 0000 		lds r26,(flash_cache_addr)+2
+ 1393 0546 B091 0000 		lds r27,(flash_cache_addr)+3
+ 1394 054a 8217      		cp r24,r18
+ 1395 054c 9307      		cpc r25,r19
+ 1396 054e A407      		cpc r26,r20
+ 1397 0550 B507      		cpc r27,r21
+ 1398 0552 F9F4      		brne .L83
+ 1399               	.LBB14:
+ 1401               	.LM117:
+ 1402 0554 20E0      		ldi r18,lo8(256)
+ 1403 0556 31E0      		ldi r19,hi8(256)
+ 1404 0558 201B      		sub r18,r16
+ 1405 055a 310B      		sbc r19,r17
+ 1406 055c 17C0      		rjmp .L92
+ 1407               	.L91:
+ 1409               	.LM118:
+ 1410 055e 6115      		cp r22,__zero_reg__
+ 1411 0560 7105      		cpc r23,__zero_reg__
+ 1412 0562 B9F0      		breq .L83
+ 1414               	.LM119:
+ 1415 0564 E091 0000 		lds r30,flash_cache_page
+ 1416 0568 F091 0000 		lds r31,(flash_cache_page)+1
+ 1417 056c E00F      		add r30,r16
+ 1418 056e F11F      		adc r31,r17
+ 1419 0570 8081      		ld r24,Z
+ 1420 0572 8993      		st Y+,r24
+ 1422               	.LM120:
+ 1423 0574 6150      		subi r22,lo8(-(-1))
+ 1424 0576 7040      		sbci r23,hi8(-(-1))
+ 1426               	.LM121:
+ 1427 0578 0894      		sec
+ 1428 057a A11C      		adc r10,__zero_reg__
+ 1429 057c B11C      		adc r11,__zero_reg__
+ 1430 057e C11C      		adc r12,__zero_reg__
+ 1431 0580 D11C      		adc r13,__zero_reg__
+ 1433               	.LM122:
+ 1434 0582 0894      		sec
+ 1435 0584 E11C      		adc r14,__zero_reg__
+ 1436 0586 F11C      		adc r15,__zero_reg__
+ 1437 0588 0F5F      		subi r16,lo8(-(1))
+ 1438 058a 1F4F      		sbci r17,hi8(-(1))
+ 1439               	.L92:
+ 1440 058c E216      		cp r14,r18
+ 1441 058e F306      		cpc r15,r19
+ 1442 0590 30F3      		brlo .L91
+ 1443               	.L83:
+ 1444               	.LBE14:
+ 1446               	.LM123:
+ 1447 0592 6115      		cp r22,__zero_reg__
+ 1448 0594 7105      		cpc r23,__zero_reg__
+ 1449 0596 31F0      		breq .L89
+ 1451               	.LM124:
+ 1452 0598 9B01      		movw r18,r22
+ 1453 059a AE01      		movw r20,r28
+ 1454 059c C601      		movw r24,r12
+ 1455 059e B501      		movw r22,r10
+ 1456 05a0 0E94 0000 		call flash_read
+ 1457               	.L89:
+ 1458               	.LBE13:
+ 1459               	.LBE12:
+ 430:/Users/Administrator/sos-2x/kernel/codemem.c **** 	codemem_cache_read( start_addr + offset, buf, nbytes );
+ 431:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 432:/Users/Administrator/sos-2x/kernel/codemem.c **** 	ker_log( SOS_LOG_CMEM_READ, pid, nbytes );	
+ 433:/Users/Administrator/sos-2x/kernel/codemem.c **** 	return SOS_OK;
+ 434:/Users/Administrator/sos-2x/kernel/codemem.c **** }
+ 1461               	.LM125:
+ 1462 05a4 80E0      		ldi r24,lo8(0)
+ 1463 05a6 90E0      		ldi r25,hi8(0)
+ 1464               	/* epilogue: frame size=0 */
+ 1465 05a8 DF91      		pop r29
+ 1466 05aa CF91      		pop r28
+ 1467 05ac 1F91      		pop r17
+ 1468 05ae 0F91      		pop r16
+ 1469 05b0 FF90      		pop r15
+ 1470 05b2 EF90      		pop r14
+ 1471 05b4 DF90      		pop r13
+ 1472 05b6 CF90      		pop r12
+ 1473 05b8 BF90      		pop r11
+ 1474 05ba AF90      		pop r10
+ 1475 05bc 0895      		ret
+ 1476               	/* epilogue end (size=11) */
+ 1477               	/* function ker_codemem_direct_read size 98 (77) */
+ 1492               	.Lscope7:
+ 1500               	.global	ker_codemem_read
+ 1502               	ker_codemem_read:
+ 1504               	.LM126:
+ 1505               	/* prologue: frame size=0 */
+ 1506 05be BF92      		push r11
+ 1507 05c0 CF92      		push r12
+ 1508 05c2 DF92      		push r13
+ 1509 05c4 EF92      		push r14
+ 1510 05c6 FF92      		push r15
+ 1511 05c8 0F93      		push r16
+ 1512 05ca 1F93      		push r17
+ 1513 05cc CF93      		push r28
+ 1514 05ce DF93      		push r29
+ 1515               	/* prologue end (size=9) */
+ 1516 05d0 B62E      		mov r11,r22
+ 1517 05d2 6A01      		movw r12,r20
+ 1518 05d4 E901      		movw r28,r18
+ 1519 05d6 7801      		movw r14,r16
+ 1521               	.LM127:
+ 1522 05d8 182F      		mov r17,r24
+ 1524               	.LM128:
+ 1525 05da 0E94 0000 		call check_codemem_t
+ 1526 05de 8823      		tst r24
+ 1527 05e0 19F4      		brne .L94
+ 1529               	.LM129:
+ 1530 05e2 8EEF      		ldi r24,lo8(-2)
+ 1531 05e4 9FEF      		ldi r25,hi8(-2)
+ 1532 05e6 15C0      		rjmp .L93
+ 1533               	.L94:
+ 1535               	.LM130:
+ 1536 05e8 E12F      		mov r30,r17
+ 1537 05ea FF27      		clr r31
+ 1538 05ec EE0F      		add r30,r30
+ 1539 05ee FF1F      		adc r31,r31
+ 1540 05f0 E050      		subi r30,lo8(-(codemem_handle_list))
+ 1541 05f2 F040      		sbci r31,hi8(-(codemem_handle_list))
+ 1542 05f4 0190      		ld __tmp_reg__,Z+
+ 1543 05f6 F081      		ld r31,Z
+ 1544 05f8 E02D      		mov r30,__tmp_reg__
+ 1546               	.LM131:
+ 1547 05fa 8E01      		movw r16,r28
+ 1548 05fc 9601      		movw r18,r12
+ 1549 05fe 4B2D      		mov r20,r11
+ 1550 0600 6081      		ld r22,Z
+ 1551 0602 7181      		ldd r23,Z+1
+ 1552 0604 8281      		ldd r24,Z+2
+ 1553 0606 9381      		ldd r25,Z+3
+ 1554 0608 0E94 0000 		call ker_codemem_direct_read
+ 1555 060c 9927      		clr r25
+ 1556 060e 87FD      		sbrc r24,7
+ 1557 0610 9095      		com r25
+ 1558               	.L93:
+ 1559               	/* epilogue: frame size=0 */
+ 1560 0612 DF91      		pop r29
+ 1561 0614 CF91      		pop r28
+ 1562 0616 1F91      		pop r17
+ 1563 0618 0F91      		pop r16
+ 1564 061a FF90      		pop r15
+ 1565 061c EF90      		pop r14
+ 1566 061e DF90      		pop r13
+ 1567 0620 CF90      		pop r12
+ 1568 0622 BF90      		pop r11
+ 1569 0624 0895      		ret
+ 1570               	/* epilogue end (size=10) */
+ 1571               	/* function ker_codemem_read size 52 (33) */
+ 1577               	.Lscope8:
+ 1582               	.global	ker_codemem_flush
+ 1584               	ker_codemem_flush:
+ 435:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 436:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 437:/Users/Administrator/sos-2x/kernel/codemem.c **** int8_t ker_codemem_free(codemem_t h)
+ 438:/Users/Administrator/sos-2x/kernel/codemem.c **** {
+ 439:/Users/Administrator/sos-2x/kernel/codemem.c **** 	uint8_t cmt = (uint8_t)(h & 0x00ff);
+ 440:/Users/Administrator/sos-2x/kernel/codemem.c **** 	codemem_hdr_t *hdr;
+ 441:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+ 442:/Users/Administrator/sos-2x/kernel/codemem.c **** 	if( check_codemem_t( h ) == false ) {
+ 443:/Users/Administrator/sos-2x/kernel/codemem.c **** 		return -ENOENT;
+ 444:/Users/Administrator/sos-2x/kernel/codemem.c **** 	}
+ 445:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+ 446:/Users/Administrator/sos-2x/kernel/codemem.c **** 	hdr = codemem_handle_list[cmt];
+ 447:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+ 448:/Users/Administrator/sos-2x/kernel/codemem.c **** 	if( hdr->flag & CODEMEM_EXECUTABLE_FLAG ) {
+ 449:/Users/Administrator/sos-2x/kernel/codemem.c **** 		codemem_do_killall(h);
+ 450:/Users/Administrator/sos-2x/kernel/codemem.c **** 	}
+ 451:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+ 452:/Users/Administrator/sos-2x/kernel/codemem.c **** 	flash_free( hdr->start_addr, hdr->size );
+ 453:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+ 454:/Users/Administrator/sos-2x/kernel/codemem.c **** 	codemem_handle_list[cmt] = NULL;
+ 455:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+ 456:/Users/Administrator/sos-2x/kernel/codemem.c **** 	ker_log( SOS_LOG_CMEM_FREE, ker_get_current_pid(), hdr->size );	
+ 457:/Users/Administrator/sos-2x/kernel/codemem.c **** 	ker_free( hdr );
+ 458:/Users/Administrator/sos-2x/kernel/codemem.c **** 	return SOS_OK;
+ 459:/Users/Administrator/sos-2x/kernel/codemem.c **** }
+ 460:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 461:/Users/Administrator/sos-2x/kernel/codemem.c **** //
+ 462:/Users/Administrator/sos-2x/kernel/codemem.c **** // 
+ 463:/Users/Administrator/sos-2x/kernel/codemem.c **** //
+ 464:/Users/Administrator/sos-2x/kernel/codemem.c **** int8_t ker_codemem_flush(codemem_t h, sos_pid_t pid)
+ 465:/Users/Administrator/sos-2x/kernel/codemem.c **** {
+ 1586               	.LM132:
+ 1587               	/* prologue: frame size=0 */
+ 1588               	/* prologue end (size=0) */
+ 1589               	.LBB15:
+ 1590               	.LBB16:
+ 1592               	.LM133:
+ 1593 0626 8091 0000 		lds r24,flash_cache_page
+ 1594 062a 9091 0000 		lds r25,(flash_cache_page)+1
+ 1595 062e 892B      		or r24,r25
+ 1596 0630 99F1      		breq .L98
+ 1598               	.LM134:
+ 1599 0632 8091 0000 		lds r24,flash_cache_addr
+ 1600 0636 9091 0000 		lds r25,(flash_cache_addr)+1
+ 1601 063a A091 0000 		lds r26,(flash_cache_addr)+2
+ 1602 063e B091 0000 		lds r27,(flash_cache_addr)+3
+ 1603 0642 40E0      		ldi r20,lo8(256)
+ 1604 0644 51E0      		ldi r21,hi8(256)
+ 1605 0646 BC01      		movw r22,r24
+ 1606 0648 CD01      		movw r24,r26
+ 1607 064a 0E94 0000 		call flash_erase
+ 1609               	.LM135:
+ 1610 064e 8091 0000 		lds r24,flash_cache_addr
+ 1611 0652 9091 0000 		lds r25,(flash_cache_addr)+1
+ 1612 0656 A091 0000 		lds r26,(flash_cache_addr)+2
+ 1613 065a B091 0000 		lds r27,(flash_cache_addr)+3
+ 1614 065e 20E0      		ldi r18,lo8(256)
+ 1615 0660 31E0      		ldi r19,hi8(256)
+ 1616 0662 4091 0000 		lds r20,flash_cache_page
+ 1617 0666 5091 0000 		lds r21,(flash_cache_page)+1
+ 1618 066a BC01      		movw r22,r24
+ 1619 066c CD01      		movw r24,r26
+ 1620 066e 0E94 0000 		call flash_write
+ 1621               	.LBB17:
+ 1622               	.LBB18:
+ 1624               	.Ltext7:
+ 1626               	.LM136:
+ 1627 0672 60E0      		ldi r22,lo8(0)
+ 1628 0674 8091 0000 		lds r24,flash_cache_page
+ 1629 0678 9091 0000 		lds r25,(flash_cache_page)+1
+ 1630 067c 0E94 0000 		call sos_blk_mem_free
+ 1631               	.LBE18:
+ 1632               	.LBE17:
+ 1634               	.Ltext8:
+ 1636               	.LM137:
+ 1637 0680 1092 0000 		sts (flash_cache_page)+1,__zero_reg__
+ 1638 0684 1092 0000 		sts flash_cache_page,__zero_reg__
+ 1640               	.LM138:
+ 1641 0688 1092 0000 		sts flash_cache_addr,__zero_reg__
+ 1642 068c 1092 0000 		sts (flash_cache_addr)+1,__zero_reg__
+ 1643 0690 1092 0000 		sts (flash_cache_addr)+2,__zero_reg__
+ 1644 0694 1092 0000 		sts (flash_cache_addr)+3,__zero_reg__
+ 1645               	.L98:
+ 1646               	.LBE16:
+ 1647               	.LBE15:
+ 466:/Users/Administrator/sos-2x/kernel/codemem.c **** 	codemem_cache_flush();
+ 467:/Users/Administrator/sos-2x/kernel/codemem.c **** 	return SOS_OK;
+ 468:/Users/Administrator/sos-2x/kernel/codemem.c **** }
+ 1649               	.LM139:
+ 1650 0698 80E0      		ldi r24,lo8(0)
+ 1651 069a 90E0      		ldi r25,hi8(0)
+ 1652               	/* epilogue: frame size=0 */
+ 1653 069c 0895      		ret
+ 1654               	/* epilogue end (size=1) */
+ 1655               	/* function ker_codemem_flush size 60 (59) */
+ 1657               	.Lscope9:
+ 1661               	.global	codemem_register_module
+ 1663               	codemem_register_module:
+ 469:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 470:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 471:/Users/Administrator/sos-2x/kernel/codemem.c **** int8_t codemem_register_module( mod_header_ptr h )
+ 472:/Users/Administrator/sos-2x/kernel/codemem.c **** {
+ 1665               	.LM140:
+ 1666               	/* prologue: frame size=0 */
+ 1667               	/* prologue end (size=0) */
+ 473:/Users/Administrator/sos-2x/kernel/codemem.c ****   if (compiled_header_ptr >= NUM_COMPILED_MODULES) return -EINVAL;
+ 1669               	.LM141:
+ 1670 069e 2091 0000 		lds r18,compiled_header_ptr
+ 1671 06a2 2031      		cpi r18,lo8(16)
+ 1672 06a4 18F0      		brlo .L100
+ 1674               	.LM142:
+ 1675 06a6 8AEE      		ldi r24,lo8(-22)
+ 1676 06a8 9FEF      		ldi r25,hi8(-22)
+ 1677 06aa 0895      		ret
+ 1678               	.L100:
+ 474:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 475:/Users/Administrator/sos-2x/kernel/codemem.c ****   compiled_modules[compiled_header_ptr++] = h;
+ 1680               	.LM143:
+ 1681 06ac E22F      		mov r30,r18
+ 1682 06ae FF27      		clr r31
+ 1683 06b0 EE0F      		add r30,r30
+ 1684 06b2 FF1F      		adc r31,r31
+ 1685 06b4 E050      		subi r30,lo8(-(compiled_modules))
+ 1686 06b6 F040      		sbci r31,hi8(-(compiled_modules))
+ 1687 06b8 8083      		st Z,r24
+ 1688 06ba 9183      		std Z+1,r25
+ 1689 06bc 2F5F      		subi r18,lo8(-(1))
+ 1690 06be 2093 0000 		sts compiled_header_ptr,r18
+ 476:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 477:/Users/Administrator/sos-2x/kernel/codemem.c ****   return SOS_OK;
+ 1692               	.LM144:
+ 1693 06c2 80E0      		ldi r24,lo8(0)
+ 1694 06c4 90E0      		ldi r25,hi8(0)
+ 478:/Users/Administrator/sos-2x/kernel/codemem.c **** }
+ 1696               	.LM145:
+ 1697 06c6 0895      		ret
+ 1698               	/* epilogue: frame size=0 */
+ 1699 06c8 0895      		ret
+ 1700               	/* epilogue end (size=1) */
+ 1701               	/* function codemem_register_module size 22 (21) */
+ 1703               	.Lscope10:
+ 1707               	.global	ker_codemem_get_header_from_code_id
+ 1709               	ker_codemem_get_header_from_code_id:
+ 479:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 480:/Users/Administrator/sos-2x/kernel/codemem.c **** mod_header_ptr ker_codemem_get_header_from_code_id( sos_code_id_t cid )
+ 481:/Users/Administrator/sos-2x/kernel/codemem.c **** {
+ 1711               	.LM146:
+ 1712               	/* prologue: frame size=0 */
+ 1713 06ca 0F93      		push r16
+ 1714 06cc 1F93      		push r17
+ 1715 06ce CF93      		push r28
+ 1716 06d0 DF93      		push r29
+ 1717               	/* prologue end (size=4) */
+ 1718 06d2 8C01      		movw r16,r24
+ 482:/Users/Administrator/sos-2x/kernel/codemem.c ****   uint8_t i;
+ 483:/Users/Administrator/sos-2x/kernel/codemem.c ****   mod_header_ptr ret;
+ 484:/Users/Administrator/sos-2x/kernel/codemem.c ****   
+ 485:/Users/Administrator/sos-2x/kernel/codemem.c ****   for( i = 0; i < CODEMEM_MAX_LOADABLE_MODULES; i++ ) {
+ 1720               	.LM147:
+ 1721 06d4 60E0      		ldi r22,lo8(0)
+ 1722 06d6 C0E0      		ldi r28,lo8(codemem_handle_list)
+ 1723 06d8 D0E0      		ldi r29,hi8(codemem_handle_list)
+ 1724               	.L109:
+ 486:/Users/Administrator/sos-2x/kernel/codemem.c **** 	if( (codemem_handle_list[i] != NULL) && 
+ 1726               	.LM148:
+ 1727 06da E991      		ld r30,Y+
+ 1728 06dc F991      		ld r31,Y+
+ 1729 06de 3097      		sbiw r30,0
+ 1730 06e0 19F1      		breq .L104
+ 1731 06e2 8781      		ldd r24,Z+7
+ 1732 06e4 80FF      		sbrs r24,0
+ 1733 06e6 20C0      		rjmp .L104
+ 1734               	.LBB19:
+ 1736               	.LM149:
+ 1737 06e8 2081      		ld r18,Z
+ 1738 06ea 3181      		ldd r19,Z+1
+ 1739 06ec 4281      		ldd r20,Z+2
+ 1740 06ee 5381      		ldd r21,Z+3
+ 1741               	.LBB20:
+ 1743               	.LM150:
+ 1744 06f0 5695      		lsr r21
+ 1745 06f2 4795      		ror r20
+ 1746 06f4 3795      		ror r19
+ 1747 06f6 2795      		ror r18
+ 1748 06f8 C901      		movw r24,r18
+ 1749               	.LBB21:
+ 1751               	.LM151:
+ 1752 06fa AA27      		clr r26
+ 1753 06fc BB27      		clr r27
+ 1754 06fe 880F      		lsl r24
+ 1755 0700 991F      		rol r25
+ 1756 0702 AA1F      		rol r26
+ 1757 0704 BB1F      		rol r27
+ 1758 0706 0896      		adiw r24,8
+ 1759 0708 A11D      		adc r26,__zero_reg__
+ 1760 070a B11D      		adc r27,__zero_reg__
+ 1761               	/* #APP */
+ 1762 070c ABBF      		out 59, r26
+ 1763 070e FC01      		movw r30, r24
+ 1764 0710 8791      		elpm r24, Z+
+ 1765 0712 9691      		elpm r25, Z
+ 1766               		
+ 1767               	/* #NOAPP */
+ 1768               	.LBE21:
+ 1770               	.LM152:
+ 1771 0714 8017      		cp r24,r16
+ 1772 0716 9107      		cpc r25,r17
+ 1773 0718 11F4      		brne .L106
+ 1775               	.LM153:
+ 1776 071a C901      		movw r24,r18
+ 1777 071c 02C0      		rjmp .L107
+ 1778               	.L106:
+ 1780               	.LM154:
+ 1781 071e 80E0      		ldi r24,lo8(0)
+ 1782 0720 90E0      		ldi r25,hi8(0)
+ 1783               	.L107:
+ 1784               	.LBE20:
+ 1785               	.LBE19:
+ 1787               	.LM155:
+ 1788 0722 9C01      		movw r18,r24
+ 487:/Users/Administrator/sos-2x/kernel/codemem.c **** 		(codemem_handle_list[i]->flag & CODEMEM_EXECUTABLE_FLAG) ) {
+ 488:/Users/Administrator/sos-2x/kernel/codemem.c **** 		ret = match_cid( codemem_handle_list[i]->start_addr, cid ); 
+ 489:/Users/Administrator/sos-2x/kernel/codemem.c **** 		if( ret != 0 ) {
+ 1790               	.LM156:
+ 1791 0724 892B      		or r24,r25
+ 1792 0726 E9F4      		brne .L119
+ 1793               	.L104:
+ 1795               	.LM157:
+ 1796 0728 6F5F      		subi r22,lo8(-(1))
+ 1797 072a 6031      		cpi r22,lo8(16)
+ 1798 072c B0F2      		brlo .L109
+ 1799 072e 60E0      		ldi r22,lo8(0)
+ 490:/Users/Administrator/sos-2x/kernel/codemem.c **** #ifndef SOS_SIM
+ 491:/Users/Administrator/sos-2x/kernel/codemem.c **** 			return ret;
+ 492:/Users/Administrator/sos-2x/kernel/codemem.c **** #else
+ 493:/Users/Administrator/sos-2x/kernel/codemem.c **** 			return get_header_from_sim( cid );
+ 494:/Users/Administrator/sos-2x/kernel/codemem.c **** #endif
+ 495:/Users/Administrator/sos-2x/kernel/codemem.c ****       }
+ 496:/Users/Administrator/sos-2x/kernel/codemem.c **** 	}
+ 497:/Users/Administrator/sos-2x/kernel/codemem.c ****   }
+ 498:/Users/Administrator/sos-2x/kernel/codemem.c ****   	
+ 499:/Users/Administrator/sos-2x/kernel/codemem.c ****   for (i = 0; i < compiled_header_ptr; i++) {
+ 1801               	.LM158:
+ 1802 0730 4091 0000 		lds r20,compiled_header_ptr
+ 1803 0734 6417      		cp r22,r20
+ 1804 0736 D0F4      		brsh .L118
+ 1805 0738 C0E0      		ldi r28,lo8(compiled_modules)
+ 1806 073a D0E0      		ldi r29,hi8(compiled_modules)
+ 1807               	.L114:
+ 1808               	.LBB22:
+ 500:/Users/Administrator/sos-2x/kernel/codemem.c ****     sos_code_id_t code_id;
+ 501:/Users/Administrator/sos-2x/kernel/codemem.c ****     ret = compiled_modules[i];
+ 1810               	.LM159:
+ 1811 073c 2991      		ld r18,Y+
+ 1812 073e 3991      		ld r19,Y+
+ 1813               	.LBB23:
+ 502:/Users/Administrator/sos-2x/kernel/codemem.c ****     code_id = sos_read_header_word(ret, offsetof(mod_header_t, code_id));
+ 1815               	.LM160:
+ 1816 0740 C901      		movw r24,r18
+ 1817 0742 AA27      		clr r26
+ 1818 0744 BB27      		clr r27
+ 1819 0746 880F      		lsl r24
+ 1820 0748 991F      		rol r25
+ 1821 074a AA1F      		rol r26
+ 1822 074c BB1F      		rol r27
+ 1823 074e 0896      		adiw r24,8
+ 1824 0750 A11D      		adc r26,__zero_reg__
+ 1825 0752 B11D      		adc r27,__zero_reg__
+ 1826               	/* #APP */
+ 1827 0754 ABBF      		out 59, r26
+ 1828 0756 FC01      		movw r30, r24
+ 1829 0758 8791      		elpm r24, Z+
+ 1830 075a 9691      		elpm r25, Z
+ 1831               		
+ 1832               	/* #NOAPP */
+ 1833               	.LBE23:
+ 503:/Users/Administrator/sos-2x/kernel/codemem.c ****     code_id = entohs( code_id );
+ 504:/Users/Administrator/sos-2x/kernel/codemem.c ****     if(cid == code_id){
+ 1835               	.LM161:
+ 1836 075c 0817      		cp r16,r24
+ 1837 075e 1907      		cpc r17,r25
+ 1838 0760 11F4      		brne .L112
+ 1839               	.L119:
+ 505:/Users/Administrator/sos-2x/kernel/codemem.c ****       return ret;
+ 1841               	.LM162:
+ 1842 0762 C901      		movw r24,r18
+ 1843 0764 05C0      		rjmp .L101
+ 1844               	.L112:
+ 1845               	.LBE22:
+ 1847               	.LM163:
+ 1848 0766 6F5F      		subi r22,lo8(-(1))
+ 1849 0768 6417      		cp r22,r20
+ 1850 076a 40F3      		brlo .L114
+ 1851               	.L118:
+ 506:/Users/Administrator/sos-2x/kernel/codemem.c ****     }
+ 507:/Users/Administrator/sos-2x/kernel/codemem.c ****   }
+ 508:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+ 509:/Users/Administrator/sos-2x/kernel/codemem.c ****   return 0;
+ 1853               	.LM164:
+ 1854 076c 80E0      		ldi r24,lo8(0)
+ 1855 076e 90E0      		ldi r25,hi8(0)
+ 1856               	.L101:
+ 1857               	/* epilogue: frame size=0 */
+ 1858 0770 DF91      		pop r29
+ 1859 0772 CF91      		pop r28
+ 1860 0774 1F91      		pop r17
+ 1861 0776 0F91      		pop r16
+ 1862 0778 0895      		ret
+ 1863               	/* epilogue end (size=5) */
+ 1864               	/* function ker_codemem_get_header_from_code_id size 100 (91) */
+ 1879               	.Lscope11:
+ 1883               	.global	ker_codemem_mark_executable
+ 1885               	ker_codemem_mark_executable:
+ 510:/Users/Administrator/sos-2x/kernel/codemem.c **** }
+ 511:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 512:/Users/Administrator/sos-2x/kernel/codemem.c **** int8_t ker_codemem_mark_executable(codemem_t h)
+ 513:/Users/Administrator/sos-2x/kernel/codemem.c **** {
+ 1887               	.LM165:
+ 1888               	/* prologue: frame size=0 */
+ 1889 077a CF93      		push r28
+ 1890               	/* prologue end (size=1) */
+ 514:/Users/Administrator/sos-2x/kernel/codemem.c **** 	uint8_t cmt = (uint8_t)(h & 0x00ff);
+ 1892               	.LM166:
+ 1893 077c C82F      		mov r28,r24
+ 515:/Users/Administrator/sos-2x/kernel/codemem.c **** 	codemem_hdr_t *hdr;
+ 516:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+ 517:/Users/Administrator/sos-2x/kernel/codemem.c **** 	if( check_codemem_t( h ) == false ) {
+ 1895               	.LM167:
+ 1896 077e 0E94 0000 		call check_codemem_t
+ 1897 0782 8823      		tst r24
+ 1898 0784 19F4      		brne .L121
+ 518:/Users/Administrator/sos-2x/kernel/codemem.c **** 		return -ENOENT;
+ 1900               	.LM168:
+ 1901 0786 8EEF      		ldi r24,lo8(-2)
+ 1902 0788 9FEF      		ldi r25,hi8(-2)
+ 1903 078a 0EC0      		rjmp .L120
+ 1904               	.L121:
+ 519:/Users/Administrator/sos-2x/kernel/codemem.c **** 	}
+ 520:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+ 521:/Users/Administrator/sos-2x/kernel/codemem.c **** 	hdr = codemem_handle_list[cmt];
+ 1906               	.LM169:
+ 1907 078c EC2F      		mov r30,r28
+ 1908 078e FF27      		clr r31
+ 1909 0790 EE0F      		add r30,r30
+ 1910 0792 FF1F      		adc r31,r31
+ 1911 0794 E050      		subi r30,lo8(-(codemem_handle_list))
+ 1912 0796 F040      		sbci r31,hi8(-(codemem_handle_list))
+ 1913 0798 0190      		ld __tmp_reg__,Z+
+ 1914 079a F081      		ld r31,Z
+ 1915 079c E02D      		mov r30,__tmp_reg__
+ 522:/Users/Administrator/sos-2x/kernel/codemem.c **** 	hdr->flag |= CODEMEM_EXECUTABLE_FLAG;
+ 1917               	.LM170:
+ 1918 079e 8781      		ldd r24,Z+7
+ 1919 07a0 8160      		ori r24,lo8(1)
+ 1920 07a2 8783      		std Z+7,r24
+ 523:/Users/Administrator/sos-2x/kernel/codemem.c **** 	return SOS_OK;
+ 1922               	.LM171:
+ 1923 07a4 80E0      		ldi r24,lo8(0)
+ 1924 07a6 90E0      		ldi r25,hi8(0)
+ 1925               	.L120:
+ 1926               	/* epilogue: frame size=0 */
+ 1927 07a8 CF91      		pop r28
+ 1928 07aa 0895      		ret
+ 1929               	/* epilogue end (size=2) */
+ 1930               	/* function ker_codemem_mark_executable size 25 (22) */
+ 1936               	.Lscope12:
+ 1940               	.global	ker_codemem_get_start_address
+ 1942               	ker_codemem_get_start_address:
+ 524:/Users/Administrator/sos-2x/kernel/codemem.c **** }
+ 525:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 526:/Users/Administrator/sos-2x/kernel/codemem.c **** uint32_t ker_codemem_get_start_address( codemem_t h )
+ 527:/Users/Administrator/sos-2x/kernel/codemem.c **** {
+ 1944               	.LM172:
+ 1945               	/* prologue: frame size=0 */
+ 1946 07ac CF93      		push r28
+ 1947               	/* prologue end (size=1) */
+ 528:/Users/Administrator/sos-2x/kernel/codemem.c **** 	uint8_t cmt = (uint8_t)(h & 0x00ff);
+ 1949               	.LM173:
+ 1950 07ae C82F      		mov r28,r24
+ 529:/Users/Administrator/sos-2x/kernel/codemem.c **** 	codemem_hdr_t *hdr;
+ 530:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+ 531:/Users/Administrator/sos-2x/kernel/codemem.c **** 	if( check_codemem_t( h ) == false ) {
+ 1952               	.LM174:
+ 1953 07b0 0E94 0000 		call check_codemem_t
+ 1954 07b4 8823      		tst r24
+ 1955 07b6 29F4      		brne .L123
+ 532:/Users/Administrator/sos-2x/kernel/codemem.c **** 		return (uint32_t)0;
+ 1957               	.LM175:
+ 1958 07b8 60E0      		ldi r22,lo8(0)
+ 1959 07ba 70E0      		ldi r23,hi8(0)
+ 1960 07bc 80E0      		ldi r24,hlo8(0)
+ 1961 07be 90E0      		ldi r25,hhi8(0)
+ 1962 07c0 0DC0      		rjmp .L122
+ 1963               	.L123:
+ 533:/Users/Administrator/sos-2x/kernel/codemem.c **** 	}
+ 534:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 535:/Users/Administrator/sos-2x/kernel/codemem.c **** 	hdr = codemem_handle_list[cmt];
+ 1965               	.LM176:
+ 1966 07c2 EC2F      		mov r30,r28
+ 1967 07c4 FF27      		clr r31
+ 1968 07c6 EE0F      		add r30,r30
+ 1969 07c8 FF1F      		adc r31,r31
+ 1970 07ca E050      		subi r30,lo8(-(codemem_handle_list))
+ 1971 07cc F040      		sbci r31,hi8(-(codemem_handle_list))
+ 1972 07ce 0190      		ld __tmp_reg__,Z+
+ 1973 07d0 F081      		ld r31,Z
+ 1974 07d2 E02D      		mov r30,__tmp_reg__
+ 536:/Users/Administrator/sos-2x/kernel/codemem.c **** 	return hdr->start_addr;	
+ 1976               	.LM177:
+ 1977 07d4 6081      		ld r22,Z
+ 1978 07d6 7181      		ldd r23,Z+1
+ 1979 07d8 8281      		ldd r24,Z+2
+ 1980 07da 9381      		ldd r25,Z+3
+ 1981               	.L122:
+ 1982               	/* epilogue: frame size=0 */
+ 1983 07dc CF91      		pop r28
+ 1984 07de 0895      		ret
+ 1985               	/* epilogue end (size=2) */
+ 1986               	/* function ker_codemem_get_start_address size 26 (23) */
+ 1992               	.Lscope13:
+ 1996               	.global	ker_codemem_get_header_address
+ 1998               	ker_codemem_get_header_address:
+ 537:/Users/Administrator/sos-2x/kernel/codemem.c **** }
+ 538:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 539:/Users/Administrator/sos-2x/kernel/codemem.c **** mod_header_ptr ker_codemem_get_header_address( codemem_t h)
+ 540:/Users/Administrator/sos-2x/kernel/codemem.c **** {
+ 2000               	.LM178:
+ 2001               	/* prologue: frame size=0 */
+ 2002               	/* prologue end (size=0) */
+ 541:/Users/Administrator/sos-2x/kernel/codemem.c **** #ifndef SOS_SIM
+ 542:/Users/Administrator/sos-2x/kernel/codemem.c **** 	return melf_get_header_address( h );
+ 2004               	.LM179:
+ 2005 07e0 0E94 0000 		call melf_get_header_address
+ 2006               	/* epilogue: frame size=0 */
+ 2007 07e4 0895      		ret
+ 2008               	/* epilogue end (size=1) */
+ 2009               	/* function ker_codemem_get_header_address size 3 (2) */
+ 2011               	.Lscope14:
+ 2015               	.global	ker_codemem_free
+ 2017               	ker_codemem_free:
+ 2019               	.LM180:
+ 2020               	/* prologue: frame size=0 */
+ 2021 07e6 8F92      		push r8
+ 2022 07e8 9F92      		push r9
+ 2023 07ea AF92      		push r10
+ 2024 07ec BF92      		push r11
+ 2025 07ee CF92      		push r12
+ 2026 07f0 DF92      		push r13
+ 2027 07f2 EF92      		push r14
+ 2028 07f4 FF92      		push r15
+ 2029 07f6 0F93      		push r16
+ 2030 07f8 1F93      		push r17
+ 2031 07fa CF93      		push r28
+ 2032 07fc DF93      		push r29
+ 2033               	/* prologue end (size=12) */
+ 2034 07fe 8C01      		movw r16,r24
+ 2036               	.LM181:
+ 2037 0800 C82F      		mov r28,r24
+ 2039               	.LM182:
+ 2040 0802 0E94 0000 		call check_codemem_t
+ 2041 0806 8823      		tst r24
+ 2042 0808 19F4      		brne .L126
+ 2044               	.LM183:
+ 2045 080a 8EEF      		ldi r24,lo8(-2)
+ 2046 080c 9FEF      		ldi r25,hi8(-2)
+ 2047 080e 5BC0      		rjmp .L125
+ 2048               	.L126:
+ 2050               	.LM184:
+ 2051 0810 DD27      		clr r29
+ 2052 0812 FE01      		movw r30,r28
+ 2053 0814 EC0F      		add r30,r28
+ 2054 0816 FD1F      		adc r31,r29
+ 2055 0818 E050      		subi r30,lo8(-(codemem_handle_list))
+ 2056 081a F040      		sbci r31,hi8(-(codemem_handle_list))
+ 2057 081c 8080      		ld r8,Z
+ 2058 081e 9180      		ldd r9,Z+1
+ 2060               	.LM185:
+ 2061 0820 F401      		movw r30,r8
+ 2062 0822 8781      		ldd r24,Z+7
+ 2063 0824 80FF      		sbrs r24,0
+ 2064 0826 14C0      		rjmp .L127
+ 2065               	.LBB24:
+ 2066               	.LBB25:
+ 2068               	.LM186:
+ 2069 0828 C801      		movw r24,r16
+ 2070 082a 0E94 0000 		call ker_codemem_get_header_address
+ 2072               	.LM187:
+ 2073 082e 0097      		sbiw r24,0
+ 2074 0830 79F0      		breq .L127
+ 2075               	.LBB26:
+ 2077               	.LM188:
+ 2078 0832 AA27      		clr r26
+ 2079 0834 BB27      		clr r27
+ 2080 0836 880F      		lsl r24
+ 2081 0838 991F      		rol r25
+ 2082 083a AA1F      		rol r26
+ 2083 083c BB1F      		rol r27
+ 2084 083e 0896      		adiw r24,8
+ 2085 0840 A11D      		adc r26,__zero_reg__
+ 2086 0842 B11D      		adc r27,__zero_reg__
+ 2087               	.LBE26:
+ 2089               	.LM189:
+ 2090               	/* #APP */
+ 2091 0844 ABBF      		out 59, r26
+ 2092 0846 FC01      		movw r30, r24
+ 2093 0848 8791      		elpm r24, Z+
+ 2094 084a 9691      		elpm r25, Z
+ 2095               		
+ 2096               	/* #NOAPP */
+ 2097 084c 0E94 0000 		call ker_killall
+ 2098               	.L127:
+ 2099               	.LBE25:
+ 2100               	.LBE24:
+ 2101               	.LBB27:
+ 2103               	.LM190:
+ 2104 0850 F401      		movw r30,r8
+ 2105 0852 C080      		ld r12,Z
+ 2106 0854 D180      		ldd r13,Z+1
+ 2107 0856 E280      		ldd r14,Z+2
+ 2108 0858 F380      		ldd r15,Z+3
+ 2109 085a A480      		ldd r10,Z+4
+ 2110 085c B580      		ldd r11,Z+5
+ 2111               	.LBB28:
+ 2113               	.LM191:
+ 2114 085e 8091 0000 		lds r24,flash_start_page_addr
+ 2115 0862 9091 0000 		lds r25,(flash_start_page_addr)+1
+ 2116 0866 A091 0000 		lds r26,(flash_start_page_addr)+2
+ 2117 086a B091 0000 		lds r27,(flash_start_page_addr)+3
+ 2118 086e A701      		movw r20,r14
+ 2119 0870 9601      		movw r18,r12
+ 2120 0872 281B      		sub r18,r24
+ 2121 0874 390B      		sbc r19,r25
+ 2122 0876 4A0B      		sbc r20,r26
+ 2123 0878 5B0B      		sbc r21,r27
+ 2124 087a 032F      		mov r16,r19
+ 2125 087c 142F      		mov r17,r20
+ 2126 087e 252F      		mov r18,r21
+ 2127 0880 3327      		clr r19
+ 2129               	.LM192:
+ 2130 0882 C501      		movw r24,r10
+ 2131 0884 AA27      		clr r26
+ 2132 0886 BB27      		clr r27
+ 2133 0888 8150      		subi r24,lo8(-(255))
+ 2134 088a 9F4F      		sbci r25,hi8(-(255))
+ 2135 088c AF4F      		sbci r26,hlo8(-(255))
+ 2136 088e BF4F      		sbci r27,hhi8(-(255))
+ 2137 0890 892F      		mov r24,r25
+ 2138 0892 9A2F      		mov r25,r26
+ 2139 0894 AB2F      		mov r26,r27
+ 2140 0896 BB27      		clr r27
+ 2142               	.LM193:
+ 2143 0898 9927      		clr r25
+ 2144 089a 40E0      		ldi r20,lo8(0)
+ 2145 089c BC01      		movw r22,r24
+ 2146 089e C801      		movw r24,r16
+ 2147 08a0 0E94 0000 		call flash_setbitmap
+ 2149               	.LM194:
+ 2150 08a4 A501      		movw r20,r10
+ 2151 08a6 C701      		movw r24,r14
+ 2152 08a8 B601      		movw r22,r12
+ 2153 08aa 0E94 0000 		call flash_erase
+ 2154               	.LBE28:
+ 2155               	.LBE27:
+ 2157               	.LM195:
+ 2158 08ae CC0F      		add r28,r28
+ 2159 08b0 DD1F      		adc r29,r29
+ 2160 08b2 C050      		subi r28,lo8(-(codemem_handle_list))
+ 2161 08b4 D040      		sbci r29,hi8(-(codemem_handle_list))
+ 2162 08b6 1882      		st Y,__zero_reg__
+ 2163 08b8 1982      		std Y+1,__zero_reg__
+ 2164               	.LBB29:
+ 2165               	.LBB30:
+ 2167               	.Ltext9:
+ 2169               	.LM196:
+ 2170 08ba 60E0      		ldi r22,lo8(0)
+ 2171 08bc C401      		movw r24,r8
+ 2172 08be 0E94 0000 		call sos_blk_mem_free
+ 2173               	.LBE30:
+ 2174               	.LBE29:
+ 2176               	.Ltext10:
+ 2178               	.LM197:
+ 2179 08c2 80E0      		ldi r24,lo8(0)
+ 2180 08c4 90E0      		ldi r25,hi8(0)
+ 2181               	.L125:
+ 2182               	/* epilogue: frame size=0 */
+ 2183 08c6 DF91      		pop r29
+ 2184 08c8 CF91      		pop r28
+ 2185 08ca 1F91      		pop r17
+ 2186 08cc 0F91      		pop r16
+ 2187 08ce FF90      		pop r15
+ 2188 08d0 EF90      		pop r14
+ 2189 08d2 DF90      		pop r13
+ 2190 08d4 CF90      		pop r12
+ 2191 08d6 BF90      		pop r11
+ 2192 08d8 AF90      		pop r10
+ 2193 08da 9F90      		pop r9
+ 2194 08dc 8F90      		pop r8
+ 2195 08de 0895      		ret
+ 2196               	/* epilogue end (size=13) */
+ 2197               	/* function ker_codemem_free size 131 (106) */
+ 2213               	.Lscope15:
+ 2216               	.global	codemem_init
+ 2218               	codemem_init:
+ 543:/Users/Administrator/sos-2x/kernel/codemem.c **** #else
+ 544:/Users/Administrator/sos-2x/kernel/codemem.c **** 	mod_header_ptr p = melf_get_header_address( h );
+ 545:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 546:/Users/Administrator/sos-2x/kernel/codemem.c **** 	sos_code_id_t cid =                                         
+ 547:/Users/Administrator/sos-2x/kernel/codemem.c **** 		      sos_read_header_word( p, offsetof(mod_header_t, code_id) );
+ 548:/Users/Administrator/sos-2x/kernel/codemem.c **** 	cid = entohs(cid);                                          
+ 549:/Users/Administrator/sos-2x/kernel/codemem.c **** 	return get_header_from_sim( cid );        
+ 550:/Users/Administrator/sos-2x/kernel/codemem.c **** #endif
+ 551:/Users/Administrator/sos-2x/kernel/codemem.c **** }
+ 552:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 553:/Users/Administrator/sos-2x/kernel/codemem.c **** void codemem_init(void)
+ 554:/Users/Administrator/sos-2x/kernel/codemem.c **** {
+ 2220               	.LM198:
+ 2221               	/* prologue: frame size=0 */
+ 2222               	/* prologue end (size=0) */
+ 555:/Users/Administrator/sos-2x/kernel/codemem.c **** 	uint8_t i;
+ 556:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+ 557:/Users/Administrator/sos-2x/kernel/codemem.c **** 	//
+ 558:/Users/Administrator/sos-2x/kernel/codemem.c **** 	// Compute the starting page for programming
+ 559:/Users/Administrator/sos-2x/kernel/codemem.c **** 	//
+ 560:/Users/Administrator/sos-2x/kernel/codemem.c **** 	flash_start_page_addr = flash_init();
+ 2224               	.LM199:
+ 2225 08e0 0E94 0000 		call flash_init
+ 2226 08e4 9B01      		movw r18,r22
+ 2227 08e6 AC01      		movw r20,r24
+ 2228 08e8 6093 0000 		sts flash_start_page_addr,r22
+ 2229 08ec 7093 0000 		sts (flash_start_page_addr)+1,r23
+ 2230 08f0 8093 0000 		sts (flash_start_page_addr)+2,r24
+ 2231 08f4 9093 0000 		sts (flash_start_page_addr)+3,r25
+ 561:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 562:/Users/Administrator/sos-2x/kernel/codemem.c **** #ifndef PC_PLATFORM
+ 563:/Users/Administrator/sos-2x/kernel/codemem.c **** 	flash_num_pages = (FLASHMEM_SIZE - flash_start_page_addr) / FLASHMEM_PAGE_SIZE;
+ 2233               	.LM200:
+ 2234 08f8 80E0      		ldi r24,lo8(122880)
+ 2235 08fa 90EE      		ldi r25,hi8(122880)
+ 2236 08fc A1E0      		ldi r26,hlo8(122880)
+ 2237 08fe B0E0      		ldi r27,hhi8(122880)
+ 2238 0900 821B      		sub r24,r18
+ 2239 0902 930B      		sbc r25,r19
+ 2240 0904 A40B      		sbc r26,r20
+ 2241 0906 B50B      		sbc r27,r21
+ 2242 0908 892F      		mov r24,r25
+ 2243 090a 9A2F      		mov r25,r26
+ 2244 090c AB2F      		mov r26,r27
+ 2245 090e BB27      		clr r27
+ 2246 0910 9093 0000 		sts (flash_num_pages)+1,r25
+ 2247 0914 8093 0000 		sts flash_num_pages,r24
+ 564:/Users/Administrator/sos-2x/kernel/codemem.c **** #else
+ 565:/Users/Administrator/sos-2x/kernel/codemem.c **** 	flash_num_pages = FLASHMEM_SIZE / FLASHMEM_PAGE_SIZE;
+ 566:/Users/Administrator/sos-2x/kernel/codemem.c **** #endif
+ 567:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 568:/Users/Administrator/sos-2x/kernel/codemem.c **** 	flash_bitmap_length = (uint8_t)((flash_num_pages + 7) / 8);
+ 2249               	.LM201:
+ 2250 0918 0796      		adiw r24,7
+ 2251 091a 23E0      		ldi r18,3
+ 2252 091c 9695      	1:	lsr r25
+ 2253 091e 8795      		ror r24
+ 2254 0920 2A95      		dec r18
+ 2255 0922 E1F7      		brne 1b
+ 2256 0924 8093 0000 		sts flash_bitmap_length,r24
+ 2257               	.LBB31:
+ 2258               	.LBB32:
+ 2260               	.Ltext11:
+ 2262               	.LM202:
+ 2263 0928 41E0      		ldi r20,lo8(1)
+ 2264 092a 6FE0      		ldi r22,lo8(15)
+ 2265 092c 9927      		clr r25
+ 2266 092e 0E94 0000 		call sos_blk_mem_longterm_alloc
+ 2267               	.LBE32:
+ 2268               	.LBE31:
+ 2270               	.LM203:
+ 2271 0932 9093 0000 		sts (flash_alloc_bitmap)+1,r25
+ 2272 0936 8093 0000 		sts flash_alloc_bitmap,r24
+ 2274               	.Ltext12:
+ 569:/Users/Administrator/sos-2x/kernel/codemem.c **** 	//
+ 570:/Users/Administrator/sos-2x/kernel/codemem.c **** 	// Allocate memory for bitmap
+ 571:/Users/Administrator/sos-2x/kernel/codemem.c **** 	//
+ 572:/Users/Administrator/sos-2x/kernel/codemem.c **** 	flash_alloc_bitmap = malloc_longterm( flash_bitmap_length, KER_CODEMEM_PID );
+ 573:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+ 574:/Users/Administrator/sos-2x/kernel/codemem.c **** 	//
+ 575:/Users/Administrator/sos-2x/kernel/codemem.c **** 	// Initialize bitmap
+ 576:/Users/Administrator/sos-2x/kernel/codemem.c **** 	//
+ 577:/Users/Administrator/sos-2x/kernel/codemem.c **** 	for( i = 0; i < flash_bitmap_length; i++ ) {
+ 2276               	.LM204:
+ 2277 093a 90E0      		ldi r25,lo8(0)
+ 2278               	.L146:
+ 2280               	.LM205:
+ 2281 093c 8091 0000 		lds r24,flash_bitmap_length
+ 2282 0940 9817      		cp r25,r24
+ 2283 0942 48F4      		brsh .L143
+ 578:/Users/Administrator/sos-2x/kernel/codemem.c **** 		flash_alloc_bitmap[i] = 0;
+ 2285               	.LM206:
+ 2286 0944 E091 0000 		lds r30,flash_alloc_bitmap
+ 2287 0948 F091 0000 		lds r31,(flash_alloc_bitmap)+1
+ 2288 094c E90F      		add r30,r25
+ 2289 094e F11D      		adc r31,__zero_reg__
+ 2290 0950 1082      		st Z,__zero_reg__
+ 2292               	.LM207:
+ 2293 0952 9F5F      		subi r25,lo8(-(1))
+ 2294 0954 F3CF      		rjmp .L146
+ 2295               	.L143:
+ 2296 0956 9FE0      		ldi r25,lo8(15)
+ 2297 0958 E0E0      		ldi r30,lo8(codemem_handle_list)
+ 2298 095a F0E0      		ldi r31,hi8(codemem_handle_list)
+ 2299               	.L141:
+ 579:/Users/Administrator/sos-2x/kernel/codemem.c **** 	}
+ 580:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+ 581:/Users/Administrator/sos-2x/kernel/codemem.c **** 	for( i = 0; i < CODEMEM_MAX_LOADABLE_MODULES; i++ ) {
+ 582:/Users/Administrator/sos-2x/kernel/codemem.c **** 		codemem_handle_list[i] = NULL;
+ 2301               	.LM208:
+ 2302 095c 1192      		st Z+,__zero_reg__
+ 2303 095e 1192      		st Z+,__zero_reg__
+ 2305               	.LM209:
+ 2306 0960 9150      		subi r25,lo8(-(-1))
+ 2307 0962 97FF      		sbrs r25,7
+ 2308 0964 FBCF      		rjmp .L141
+ 583:/Users/Administrator/sos-2x/kernel/codemem.c **** 	}
+ 584:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+ 585:/Users/Administrator/sos-2x/kernel/codemem.c **** 	codemem_salt = 0;
+ 2310               	.LM210:
+ 2311 0966 1092 0000 		sts codemem_salt,__zero_reg__
+ 586:/Users/Administrator/sos-2x/kernel/codemem.c **** 	
+ 587:/Users/Administrator/sos-2x/kernel/codemem.c **** 	flash_cache_page = NULL;
+ 2313               	.LM211:
+ 2314 096a 1092 0000 		sts (flash_cache_page)+1,__zero_reg__
+ 2315 096e 1092 0000 		sts flash_cache_page,__zero_reg__
+ 588:/Users/Administrator/sos-2x/kernel/codemem.c **** 	flash_cache_addr = 0;
+ 2317               	.LM212:
+ 2318 0972 1092 0000 		sts flash_cache_addr,__zero_reg__
+ 2319 0976 1092 0000 		sts (flash_cache_addr)+1,__zero_reg__
+ 2320 097a 1092 0000 		sts (flash_cache_addr)+2,__zero_reg__
+ 2321 097e 1092 0000 		sts (flash_cache_addr)+3,__zero_reg__
+ 2322               	/* epilogue: frame size=0 */
+ 2323 0982 0895      		ret
+ 2324               	/* epilogue end (size=1) */
+ 2325               	/* function codemem_init size 82 (81) */
+ 2330               	.Lscope16:
+ 2337               	.global	ker_sys_codemem_read
+ 2339               	ker_sys_codemem_read:
+ 589:/Users/Administrator/sos-2x/kernel/codemem.c **** }
+ 590:/Users/Administrator/sos-2x/kernel/codemem.c **** 
+ 591:/Users/Administrator/sos-2x/kernel/codemem.c **** #ifdef SOS_USE_PREEMPTION
+ 592:/Users/Administrator/sos-2x/kernel/codemem.c **** int8_t ker_sys_codemem_read(codemem_t h, void *buf, uint16_t nbytes, uint16_t offset)
+ 593:/Users/Administrator/sos-2x/kernel/codemem.c **** {
+ 594:/Users/Administrator/sos-2x/kernel/codemem.c ****   HAS_ATOMIC_PREEMPTION_SECTION;
+ 595:/Users/Administrator/sos-2x/kernel/codemem.c ****   sos_pid_t my_pid = ker_get_current_pid();
+ 596:/Users/Administrator/sos-2x/kernel/codemem.c ****   int8_t ret;
+ 597:/Users/Administrator/sos-2x/kernel/codemem.c ****   ATOMIC_DISABLE_PREEMPTION();
+ 598:/Users/Administrator/sos-2x/kernel/codemem.c ****   ret = ker_codemem_read(h, my_pid, buf, nbytes, offset);
+ 599:/Users/Administrator/sos-2x/kernel/codemem.c ****   ATOMIC_ENABLE_PREEMPTION();
+ 600:/Users/Administrator/sos-2x/kernel/codemem.c **** return ret;
+ 601:/Users/Administrator/sos-2x/kernel/codemem.c **** }
+ 602:/Users/Administrator/sos-2x/kernel/codemem.c **** #else
+ 603:/Users/Administrator/sos-2x/kernel/codemem.c **** int8_t ker_sys_codemem_read(codemem_t h, void *buf, uint16_t nbytes, uint16_t offset)
+ 604:/Users/Administrator/sos-2x/kernel/codemem.c **** {
+ 2341               	.LM213:
+ 2342               	/* prologue: frame size=0 */
+ 2343 0984 AF92      		push r10
+ 2344 0986 BF92      		push r11
+ 2345 0988 CF92      		push r12
+ 2346 098a DF92      		push r13
+ 2347 098c EF92      		push r14
+ 2348 098e FF92      		push r15
+ 2349 0990 0F93      		push r16
+ 2350 0992 1F93      		push r17
+ 2351               	/* prologue end (size=8) */
+ 2352 0994 5C01      		movw r10,r24
+ 2353 0996 6B01      		movw r12,r22
+ 2354 0998 7A01      		movw r14,r20
+ 2355 099a 8901      		movw r16,r18
+ 605:/Users/Administrator/sos-2x/kernel/codemem.c ****   sos_pid_t my_pid = ker_get_current_pid();
+ 2357               	.LM214:
+ 2358 099c 0E94 0000 		call ker_get_current_pid
+ 606:/Users/Administrator/sos-2x/kernel/codemem.c ****   return ker_codemem_read(h, my_pid, buf, nbytes, offset);
+ 2360               	.LM215:
+ 2361 09a0 9701      		movw r18,r14
+ 2362 09a2 A601      		movw r20,r12
+ 2363 09a4 682F      		mov r22,r24
+ 2364 09a6 C501      		movw r24,r10
+ 2365 09a8 0E94 0000 		call ker_codemem_read
+ 607:/Users/Administrator/sos-2x/kernel/codemem.c **** }
+ 2367               	.LM216:
+ 2368 09ac 9927      		clr r25
+ 2369 09ae 87FD      		sbrc r24,7
+ 2370 09b0 9095      		com r25
+ 2371               	/* epilogue: frame size=0 */
+ 2372 09b2 1F91      		pop r17
+ 2373 09b4 0F91      		pop r16
+ 2374 09b6 FF90      		pop r15
+ 2375 09b8 EF90      		pop r14
+ 2376 09ba DF90      		pop r13
+ 2377 09bc CF90      		pop r12
+ 2378 09be BF90      		pop r11
+ 2379 09c0 AF90      		pop r10
+ 2380 09c2 0895      		ret
+ 2381               	/* epilogue end (size=9) */
+ 2382               	/* function ker_sys_codemem_read size 32 (15) */
+ 2387               	.Lscope17:
+ 2389               		.lcomm flash_start_page_addr,4
+ 2390               		.lcomm flash_alloc_bitmap,2
+ 2391               		.lcomm flash_bitmap_length,1
+ 2392               		.lcomm flash_num_pages,2
+ 2393               		.lcomm codemem_handle_list,32
+ 2394               		.lcomm codemem_salt,1
+ 2395               		.lcomm flash_cache_page,2
+ 2396               		.lcomm flash_cache_addr,4
+ 2407               		.text
+ 2409               	Letext:
+ 2410               	/* File "/Users/Administrator/sos-2x/kernel/codemem.c": code 1269 = 0x04f5 (1083), prologues  84, e
+DEFINED SYMBOLS
+                            *ABS*:00000000 codemem.c
+                            *ABS*:0000003f __SREG__
+                            *ABS*:0000003e __SP_H__
+                            *ABS*:0000003d __SP_L__
+                            *ABS*:00000000 __tmp_reg__
+                            *ABS*:00000001 __zero_reg__
+                             .bss:00000000 compiled_modules
+/var/tmp//ccHtEl8W.s:318    .bss:00000020 compiled_header_ptr
+/var/tmp//ccHtEl8W.s:323    .text:00000000 check_codemem_t
+/var/tmp//ccHtEl8W.s:2392   .bss:0000002a codemem_handle_list
+/var/tmp//ccHtEl8W.s:392    .text:00000038 flash_setbitmap
+/var/tmp//ccHtEl8W.s:2389   .bss:00000025 flash_alloc_bitmap
+/var/tmp//ccHtEl8W.s:2390   .bss:00000027 flash_bitmap_length
+/var/tmp//ccHtEl8W.s:560    .text:00000114 codemem_cache_alloc
+/var/tmp//ccHtEl8W.s:2394   .bss:0000004b flash_cache_page
+/var/tmp//ccHtEl8W.s:2395   .bss:0000004d flash_cache_addr
+/var/tmp//ccHtEl8W.s:626    .text:00000156 codemem_cache_write
+/var/tmp//ccHtEl8W.s:769    .text:00000240 ker_codemem_alloc
+/var/tmp//ccHtEl8W.s:319    .bss:00000021 flash_start_page_addr
+/var/tmp//ccHtEl8W.s:2393   .bss:0000004a codemem_salt
+/var/tmp//ccHtEl8W.s:1077   .text:000003ac ker_codemem_direct_write
+/var/tmp//ccHtEl8W.s:1256   .text:00000492 ker_codemem_write
+/var/tmp//ccHtEl8W.s:1341   .text:000004fa ker_codemem_direct_read
+/var/tmp//ccHtEl8W.s:1502   .text:000005be ker_codemem_read
+/var/tmp//ccHtEl8W.s:1584   .text:00000626 ker_codemem_flush
+/var/tmp//ccHtEl8W.s:1663   .text:0000069e codemem_register_module
+/var/tmp//ccHtEl8W.s:1709   .text:000006ca ker_codemem_get_header_from_code_id
+/var/tmp//ccHtEl8W.s:1885   .text:0000077a ker_codemem_mark_executable
+/var/tmp//ccHtEl8W.s:1942   .text:000007ac ker_codemem_get_start_address
+/var/tmp//ccHtEl8W.s:1998   .text:000007e0 ker_codemem_get_header_address
+/var/tmp//ccHtEl8W.s:2017   .text:000007e6 ker_codemem_free
+/var/tmp//ccHtEl8W.s:2218   .text:000008e0 codemem_init
+/var/tmp//ccHtEl8W.s:2391   .bss:00000028 flash_num_pages
+/var/tmp//ccHtEl8W.s:2339   .text:00000984 ker_sys_codemem_read
+/var/tmp//ccHtEl8W.s:2409   .text:000009c4 Letext
+
+UNDEFINED SYMBOLS
+__do_copy_data
+__do_clear_bss
+sos_blk_mem_alloc
+flash_erase
+flash_write
+flash_read
+sos_blk_mem_longterm_alloc
+sos_blk_mem_free
+melf_get_header_address
+ker_killall
+flash_init
+ker_get_current_pid

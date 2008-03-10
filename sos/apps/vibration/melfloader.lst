@@ -1,0 +1,877 @@
+   1               		.file	"melfloader.c"
+   2               		.arch atmega128
+   3               	__SREG__ = 0x3f
+   4               	__SP_H__ = 0x3e
+   5               	__SP_L__ = 0x3d
+   6               	__tmp_reg__ = 0
+   7               	__zero_reg__ = 1
+   8               		.global __do_copy_data
+   9               		.global __do_clear_bss
+  12               		.text
+  13               	.Ltext0:
+ 206               	.global	melf_begin
+ 208               	melf_begin:
+   1:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** /**
+   2:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****  * \file melfloader.c
+   3:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****  * \brief Mini-ELF loader for SOS
+   4:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****  * \author Ram Kumar {ram@ee.ucla.edu}
+   5:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****  */
+   6:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** #include <string.h>
+   7:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** #include <codemem.h>
+   8:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** #include <minielf.h>
+   9:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** #include <melfloader.h>
+  10:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** #include <minielfendian.h>
+  11:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** #include <flash.h>
+  12:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** 
+  13:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** 
+  14:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** //----------------------------------------------------------
+  15:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** // STATIC FUNCTIONS
+  16:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** //----------------------------------------------------------
+  17:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** static int8_t melf_read_shdr_ndx(melf_desc_t* mdesc, Melf_Shdr* shdr, Melf_Half shndx);
+  18:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** //static int8_t melf_read_shdr_id(melf_desc_t* mdesc, Melf_Shdr* shdr, Melf_Half shid);
+  19:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** static int8_t melf_read_symtab_shdr(melf_desc_t* mdesc, Melf_Shdr* symshdr);
+  20:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** //static int8_t melf_read_relatab_shdr(melf_desc_t* mdesc, Melf_Shdr* relashdr);
+  21:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** static int8_t melf_read_symbol(melf_desc_t* mdesc, Melf_Shdr* symshdr, 
+  22:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** 			       Melf_Word symndx, Melf_Sym* sym);
+  23:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** static int8_t melf_read_rela(melf_desc_t* mdesc, Melf_Shdr* relashdr, 
+  24:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** 			     Melf_Word relandx, Melf_Rela* rela);
+  25:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** static int8_t melf_relocate(melf_desc_t* mdesc, Melf_Shdr* relashdr, 
+  26:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** 			    Melf_Shdr* progshdr, Melf_Shdr* symshdr);
+  27:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** 
+  28:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** 
+  29:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** 
+  30:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** 
+  31:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** //----------------------------------------------------------
+  32:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** int8_t melf_load_module(codemem_t h)
+  33:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** {
+  34:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   melf_desc_t mdesc;
+  35:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   Melf_Shdr symshdr, relashdr, progshdr;
+  36:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   Melf_Half i;
+  37:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** 
+  38:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   // First, get the Mini-ELF Descriptor
+  39:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   if (melf_begin(&mdesc, h) != SOS_OK)
+  40:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     return -EFAULT;
+  41:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** 
+  42:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   // Read the Section Headers
+  43:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   for (i = 0; i < mdesc.mhdr.m_shnum; i++){
+  44:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     Melf_Shdr shdr;
+  45:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     if (melf_read_shdr_ndx(&mdesc, &shdr, i) != SOS_OK){
+  46:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****       return -EFAULT;
+  47:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     }
+  48:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     if (SHT_SYMTAB == shdr.sh_type){
+  49:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****       memcpy(&symshdr, &shdr, sizeof(Melf_Shdr));
+  50:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     }
+  51:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     if (SHT_PROGBITS == shdr.sh_type){
+  52:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****       memcpy(&progshdr, &shdr, sizeof(Melf_Shdr));
+  53:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     }
+  54:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     if (SHT_RELA == shdr.sh_type){
+  55:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****       memcpy(&relashdr, &shdr, sizeof(Melf_Shdr));
+  56:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     }    
+  57:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   }
+  58:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** 
+  59:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   // Relocate sections
+  60:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   melf_relocate(&mdesc, &relashdr, &progshdr, &symshdr);
+  61:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   return SOS_OK;
+  62:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** }
+  63:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** //----------------------------------------------------------
+  64:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** mod_header_ptr melf_get_header_address(codemem_t h)
+  65:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** {
+  66:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   melf_desc_t mdesc;
+  67:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   Melf_Shdr symshdr, progshdr;
+  68:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   Melf_Sym modhdrsym;
+  69:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   uint32_t header_byte_addr;
+  70:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** 
+  71:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   // First, get the Mini-ELF Descriptor
+  72:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   if (melf_begin(&mdesc, h) != SOS_OK)
+  73:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     return 0;
+  74:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   // Read Prog Bits section header
+  75:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   if (melf_read_progbits_shdr(&mdesc, &progshdr) != SOS_OK)
+  76:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     return 0;
+  77:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   // Read symbol table section header
+  78:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   if (melf_read_symtab_shdr(&mdesc, &symshdr) != SOS_OK)
+  79:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     return 0;
+  80:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   // Read the mod_header symbol
+  81:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   if (melf_read_symbol(&mdesc, &symshdr, mdesc.mhdr.m_modhdrndx, &modhdrsym) != SOS_OK) 
+  82:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     return 0;
+  83:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   header_byte_addr = mdesc.base_addr + progshdr.sh_offset + modhdrsym.st_value;
+  84:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   return (mod_header_ptr)(FlashGetProgmem(header_byte_addr));
+  85:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** }
+  86:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** //----------------------------------------------------------
+  87:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** int8_t melf_begin(melf_desc_t* mdesc, codemem_t h)
+  88:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** {
+ 210               	.LM1:
+ 211               	/* prologue: frame size=0 */
+ 212 0000 CF92      		push r12
+ 213 0002 DF92      		push r13
+ 214 0004 EF92      		push r14
+ 215 0006 FF92      		push r15
+ 216 0008 0F93      		push r16
+ 217 000a 1F93      		push r17
+ 218 000c CF93      		push r28
+ 219 000e DF93      		push r29
+ 220               	/* prologue end (size=8) */
+ 221 0010 7C01      		movw r14,r24
+ 222 0012 EB01      		movw r28,r22
+  89:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   if (ker_codemem_read(h, KER_DFT_LOADER_PID, (void*)&(mdesc->mhdr), sizeof(Melf_Mhdr), 0) != SOS_O
+ 224               	.LM2:
+ 225 0014 82E0      		ldi r24,lo8(2)
+ 226 0016 C82E      		mov r12,r24
+ 227 0018 D12C      		mov r13,__zero_reg__
+ 228 001a CE0C      		add r12,r14
+ 229 001c DF1C      		adc r13,r15
+ 230 001e 00E0      		ldi r16,lo8(0)
+ 231 0020 10E0      		ldi r17,hi8(0)
+ 232 0022 24E0      		ldi r18,lo8(4)
+ 233 0024 30E0      		ldi r19,hi8(4)
+ 234 0026 A601      		movw r20,r12
+ 235 0028 61E1      		ldi r22,lo8(17)
+ 236 002a CE01      		movw r24,r28
+ 237 002c 0E94 0000 		call ker_codemem_read
+ 238 0030 8823      		tst r24
+ 239 0032 19F0      		breq .L2
+  90:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     return -EFAULT;
+ 241               	.LM3:
+ 242 0034 82EF      		ldi r24,lo8(-14)
+ 243 0036 9FEF      		ldi r25,hi8(-14)
+ 244 0038 12C0      		rjmp .L1
+ 245               	.L2:
+  91:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   }
+  92:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   entoh_Mhdr(&(mdesc->mhdr));
+ 247               	.LM4:
+ 248 003a C601      		movw r24,r12
+ 249 003c 0E94 0000 		call entoh_Mhdr
+  93:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   mdesc->cmhdl = h;
+ 251               	.LM5:
+ 252 0040 F701      		movw r30,r14
+ 253 0042 C083      		st Z,r28
+ 254 0044 D183      		std Z+1,r29
+  94:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   // Get the base word address of the Mini-ELF module
+  95:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   mdesc->base_addr = ker_codemem_get_start_address(mdesc->cmhdl);
+ 256               	.LM6:
+ 257 0046 CE01      		movw r24,r28
+ 258 0048 0E94 0000 		call ker_codemem_get_start_address
+ 259 004c DC01      		movw r26,r24
+ 260 004e CB01      		movw r24,r22
+ 261 0050 F701      		movw r30,r14
+ 262 0052 8683      		std Z+6,r24
+ 263 0054 9783      		std Z+7,r25
+ 264 0056 A087      		std Z+8,r26
+ 265 0058 B187      		std Z+9,r27
+  96:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   return SOS_OK;
+ 267               	.LM7:
+ 268 005a 80E0      		ldi r24,lo8(0)
+ 269 005c 90E0      		ldi r25,hi8(0)
+ 270               	.L1:
+ 271               	/* epilogue: frame size=0 */
+ 272 005e DF91      		pop r29
+ 273 0060 CF91      		pop r28
+ 274 0062 1F91      		pop r17
+ 275 0064 0F91      		pop r16
+ 276 0066 FF90      		pop r15
+ 277 0068 EF90      		pop r14
+ 278 006a DF90      		pop r13
+ 279 006c CF90      		pop r12
+ 280 006e 0895      		ret
+ 281               	/* epilogue end (size=9) */
+ 282               	/* function melf_begin size 56 (39) */
+ 284               	.Lscope0:
+ 291               	melf_read_shdr_ndx:
+  97:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** }
+  98:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** //----------------------------------------------------------
+  99:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** int8_t melf_read_progbits_shdr(melf_desc_t* mdesc, Melf_Shdr* progshdr)
+ 100:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** {
+ 101:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   Melf_Half i;
+ 102:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   for (i = 0; i < mdesc->mhdr.m_shnum; i++){
+ 103:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     if (melf_read_shdr_ndx(mdesc, progshdr, i) != SOS_OK){
+ 104:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****       return -EFAULT;
+ 105:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     }
+ 106:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     if (SHT_PROGBITS == progshdr->sh_type){
+ 107:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****       return SOS_OK;
+ 108:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     }
+ 109:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   }
+ 110:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   return -EFAULT;
+ 111:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** }
+ 112:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** //----------------------------------------------------------
+ 113:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** // STATIC FUNCTIONS
+ 114:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** //----------------------------------------------------------
+ 115:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** static int8_t melf_read_shdr_ndx(melf_desc_t* mdesc, Melf_Shdr* shdr, Melf_Half shndx)
+ 116:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** {
+ 293               	.LM8:
+ 294               	/* prologue: frame size=0 */
+ 295 0070 0F93      		push r16
+ 296 0072 1F93      		push r17
+ 297 0074 CF93      		push r28
+ 298 0076 DF93      		push r29
+ 299               	/* prologue end (size=4) */
+ 300 0078 FC01      		movw r30,r24
+ 301 007a EB01      		movw r28,r22
+ 117:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   if (shndx >= mdesc->mhdr.m_shnum){
+ 303               	.LM9:
+ 304 007c 8481      		ldd r24,Z+4
+ 305 007e 4817      		cp r20,r24
+ 306 0080 18F0      		brlo .L4
+ 118:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     return -EINVAL;
+ 308               	.LM10:
+ 309 0082 8AEE      		ldi r24,lo8(-22)
+ 310 0084 9FEF      		ldi r25,hi8(-22)
+ 311 0086 1BC0      		rjmp .L3
+ 312               	.L4:
+ 119:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   }
+ 120:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   if (ker_codemem_read(mdesc->cmhdl, KER_DFT_LOADER_PID, (void*)shdr, sizeof(Melf_Shdr), 
+ 314               	.LM11:
+ 315 0088 842F      		mov r24,r20
+ 316 008a 9927      		clr r25
+ 317 008c 23E0      		ldi r18,3
+ 318 008e 880F      	1:	lsl r24
+ 319 0090 991F      		rol r25
+ 320 0092 2A95      		dec r18
+ 321 0094 E1F7      		brne 1b
+ 322 0096 0496      		adiw r24,4
+ 323 0098 8C01      		movw r16,r24
+ 324 009a 28E0      		ldi r18,lo8(8)
+ 325 009c 30E0      		ldi r19,hi8(8)
+ 326 009e AB01      		movw r20,r22
+ 327 00a0 61E1      		ldi r22,lo8(17)
+ 328 00a2 8081      		ld r24,Z
+ 329 00a4 9181      		ldd r25,Z+1
+ 330 00a6 0E94 0000 		call ker_codemem_read
+ 331 00aa 8823      		tst r24
+ 332 00ac 19F0      		breq .L5
+ 121:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** 		       shndx * sizeof(Melf_Shdr) + sizeof(Melf_Mhdr)) != SOS_OK) {
+ 122:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     return -EFAULT;
+ 334               	.LM12:
+ 335 00ae 82EF      		ldi r24,lo8(-14)
+ 336 00b0 9FEF      		ldi r25,hi8(-14)
+ 337 00b2 05C0      		rjmp .L3
+ 338               	.L5:
+ 123:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   }
+ 124:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   entoh_Shdr(shdr);
+ 340               	.LM13:
+ 341 00b4 CE01      		movw r24,r28
+ 342 00b6 0E94 0000 		call entoh_Shdr
+ 125:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   return SOS_OK;
+ 344               	.LM14:
+ 345 00ba 80E0      		ldi r24,lo8(0)
+ 346 00bc 90E0      		ldi r25,hi8(0)
+ 347               	.L3:
+ 348               	/* epilogue: frame size=0 */
+ 349 00be DF91      		pop r29
+ 350 00c0 CF91      		pop r28
+ 351 00c2 1F91      		pop r17
+ 352 00c4 0F91      		pop r16
+ 353 00c6 0895      		ret
+ 354               	/* epilogue end (size=5) */
+ 355               	/* function melf_read_shdr_ndx size 44 (35) */
+ 357               	.Lscope1:
+ 362               	.global	melf_read_progbits_shdr
+ 364               	melf_read_progbits_shdr:
+ 366               	.LM15:
+ 367               	/* prologue: frame size=0 */
+ 368 00c8 FF92      		push r15
+ 369 00ca 0F93      		push r16
+ 370 00cc 1F93      		push r17
+ 371 00ce CF93      		push r28
+ 372 00d0 DF93      		push r29
+ 373               	/* prologue end (size=5) */
+ 374 00d2 EC01      		movw r28,r24
+ 375 00d4 8B01      		movw r16,r22
+ 377               	.LM16:
+ 378 00d6 FF24      		clr r15
+ 379               	.L15:
+ 381               	.LM17:
+ 382 00d8 8C81      		ldd r24,Y+4
+ 383 00da F816      		cp r15,r24
+ 384 00dc 80F4      		brsh .L14
+ 386               	.LM18:
+ 387 00de 4F2D      		mov r20,r15
+ 388 00e0 B801      		movw r22,r16
+ 389 00e2 CE01      		movw r24,r28
+ 390 00e4 0E94 0000 		call melf_read_shdr_ndx
+ 391 00e8 8823      		tst r24
+ 392 00ea 49F4      		brne .L14
+ 394               	.LM19:
+ 395 00ec F801      		movw r30,r16
+ 396 00ee 8181      		ldd r24,Z+1
+ 397 00f0 8130      		cpi r24,lo8(1)
+ 398 00f2 19F4      		brne .L9
+ 400               	.LM20:
+ 401 00f4 80E0      		ldi r24,lo8(0)
+ 402 00f6 90E0      		ldi r25,hi8(0)
+ 403 00f8 04C0      		rjmp .L6
+ 404               	.L9:
+ 406               	.LM21:
+ 407 00fa F394      		inc r15
+ 408 00fc EDCF      		rjmp .L15
+ 409               	.L14:
+ 411               	.LM22:
+ 412 00fe 82EF      		ldi r24,lo8(-14)
+ 413 0100 9FEF      		ldi r25,hi8(-14)
+ 414               	.L6:
+ 415               	/* epilogue: frame size=0 */
+ 416 0102 DF91      		pop r29
+ 417 0104 CF91      		pop r28
+ 418 0106 1F91      		pop r17
+ 419 0108 0F91      		pop r16
+ 420 010a FF90      		pop r15
+ 421 010c 0895      		ret
+ 422               	/* epilogue end (size=6) */
+ 423               	/* function melf_read_progbits_shdr size 35 (24) */
+ 428               	.Lscope2:
+ 436               	melf_read_symbol:
+ 126:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** }
+ 127:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** //----------------------------------------------------------
+ 128:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** /*
+ 129:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** static int8_t melf_read_shdr_id(melf_desc_t* mdesc, Melf_Shdr* shdr, Melf_Half shid)
+ 130:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** {
+ 131:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   int i;
+ 132:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   for (i = 0; i < mdesc->mhdr.m_shnum; i++){
+ 133:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     if (melf_read_shdr_ndx(mdesc, shdr, i) != SOS_OK){
+ 134:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****       return -EFAULT;
+ 135:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     }
+ 136:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     if (shdr->sh_id == shid){
+ 137:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****       return SOS_OK;
+ 138:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     }
+ 139:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   }
+ 140:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   return -ESRCH;
+ 141:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** }
+ 142:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** */
+ 143:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** //----------------------------------------------------------
+ 144:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** static int8_t melf_read_symtab_shdr(melf_desc_t* mdesc, Melf_Shdr* symshdr)
+ 145:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** {
+ 146:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   Melf_Half i;
+ 147:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   for (i = 0; i < mdesc->mhdr.m_shnum; i++){
+ 148:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     if (melf_read_shdr_ndx(mdesc, symshdr, i) != SOS_OK){
+ 149:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****       return -EFAULT;
+ 150:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     }
+ 151:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     if (SHT_SYMTAB == symshdr->sh_type){
+ 152:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****       return SOS_OK;
+ 153:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     }
+ 154:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   }
+ 155:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   return -EFAULT;
+ 156:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** }
+ 157:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** //----------------------------------------------------------
+ 158:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** /*
+ 159:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** static int8_t melf_read_relatab_shdr(melf_desc_t* mdesc, Melf_Shdr* relashdr)
+ 160:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** {
+ 161:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   Melf_Half i;
+ 162:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   for (i = 0; i < mdesc->mhdr.m_shnum; i++){
+ 163:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     if (melf_read_shdr_ndx(mdesc, relashdr, i) != SOS_OK){
+ 164:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****       return -EFAULT;
+ 165:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     }
+ 166:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     if (SHT_RELA == relashdr->sh_type){
+ 167:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****       return SOS_OK;
+ 168:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     }
+ 169:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   }
+ 170:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   return -EFAULT;
+ 171:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** }
+ 172:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** */
+ 173:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** //----------------------------------------------------------
+ 174:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** static int8_t melf_read_symbol(melf_desc_t* mdesc, Melf_Shdr* symshdr, Melf_Word symndx, Melf_Sym* 
+ 175:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** {
+ 438               	.LM23:
+ 439               	/* prologue: frame size=0 */
+ 440 010e 0F93      		push r16
+ 441 0110 1F93      		push r17
+ 442 0112 CF93      		push r28
+ 443 0114 DF93      		push r29
+ 444               	/* prologue end (size=4) */
+ 445 0116 DC01      		movw r26,r24
+ 446 0118 FB01      		movw r30,r22
+ 447 011a E901      		movw r28,r18
+ 176:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   if (ker_codemem_read(mdesc->cmhdl, KER_DFT_LOADER_PID, (void*)sym, sizeof(Melf_Sym),
+ 449               	.LM24:
+ 450 011c 440F      		lsl r20
+ 451 011e 551F      		rol r21
+ 452 0120 440F      		lsl r20
+ 453 0122 551F      		rol r21
+ 454 0124 8281      		ldd r24,Z+2
+ 455 0126 9381      		ldd r25,Z+3
+ 456 0128 840F      		add r24,r20
+ 457 012a 951F      		adc r25,r21
+ 458 012c 8C01      		movw r16,r24
+ 459 012e 24E0      		ldi r18,lo8(4)
+ 460 0130 30E0      		ldi r19,hi8(4)
+ 461 0132 AE01      		movw r20,r28
+ 462 0134 61E1      		ldi r22,lo8(17)
+ 463 0136 8D91      		ld r24,X+
+ 464 0138 9C91      		ld r25,X
+ 465 013a 0E94 0000 		call ker_codemem_read
+ 466 013e 8823      		tst r24
+ 467 0140 19F0      		breq .L17
+ 177:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** 		       symshdr->sh_offset + symndx * sizeof(Melf_Sym)) != SOS_OK)
+ 178:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     return -EFAULT;
+ 469               	.LM25:
+ 470 0142 82EF      		ldi r24,lo8(-14)
+ 471 0144 9FEF      		ldi r25,hi8(-14)
+ 472 0146 05C0      		rjmp .L16
+ 473               	.L17:
+ 179:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   entoh_Sym(sym);
+ 475               	.LM26:
+ 476 0148 CE01      		movw r24,r28
+ 477 014a 0E94 0000 		call entoh_Sym
+ 180:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   return SOS_OK;
+ 479               	.LM27:
+ 480 014e 80E0      		ldi r24,lo8(0)
+ 481 0150 90E0      		ldi r25,hi8(0)
+ 482               	.L16:
+ 483               	/* epilogue: frame size=0 */
+ 484 0152 DF91      		pop r29
+ 485 0154 CF91      		pop r28
+ 486 0156 1F91      		pop r17
+ 487 0158 0F91      		pop r16
+ 488 015a 0895      		ret
+ 489               	/* epilogue end (size=5) */
+ 490               	/* function melf_read_symbol size 39 (30) */
+ 492               	.Lscope3:
+ 496               	.global	melf_get_header_address
+ 498               	melf_get_header_address:
+ 500               	.LM28:
+ 501               	/* prologue: frame size=30 */
+ 502 015c CF92      		push r12
+ 503 015e DF92      		push r13
+ 504 0160 FF92      		push r15
+ 505 0162 0F93      		push r16
+ 506 0164 1F93      		push r17
+ 507 0166 CF93      		push r28
+ 508 0168 DF93      		push r29
+ 509 016a CDB7      		in r28,__SP_L__
+ 510 016c DEB7      		in r29,__SP_H__
+ 511 016e 6E97      		sbiw r28,30
+ 512 0170 0FB6      		in __tmp_reg__,__SREG__
+ 513 0172 F894      		cli
+ 514 0174 DEBF      		out __SP_H__,r29
+ 515 0176 0FBE      		out __SREG__,__tmp_reg__
+ 516 0178 CDBF      		out __SP_L__,r28
+ 517               	/* prologue end (size=15) */
+ 519               	.LM29:
+ 520 017a BC01      		movw r22,r24
+ 521 017c CE01      		movw r24,r28
+ 522 017e 0196      		adiw r24,1
+ 523 0180 0E94 0000 		call melf_begin
+ 524 0184 8823      		tst r24
+ 525 0186 79F5      		brne .L36
+ 527               	.LM30:
+ 528 0188 BE01      		movw r22,r28
+ 529 018a 6D5E      		subi r22,lo8(-(19))
+ 530 018c 7F4F      		sbci r23,hi8(-(19))
+ 531 018e CE01      		movw r24,r28
+ 532 0190 0196      		adiw r24,1
+ 533 0192 0E94 0000 		call melf_read_progbits_shdr
+ 534 0196 8823      		tst r24
+ 535 0198 31F5      		brne .L36
+ 536               	.LBB2:
+ 538               	.LM31:
+ 539 019a 6E01      		movw r12,r28
+ 540 019c 0894      		sec
+ 541 019e C11C      		adc r12,__zero_reg__
+ 542 01a0 D11C      		adc r13,__zero_reg__
+ 543 01a2 8E01      		movw r16,r28
+ 544 01a4 055F      		subi r16,lo8(-(11))
+ 545 01a6 1F4F      		sbci r17,hi8(-(11))
+ 546               	.LBB3:
+ 548               	.LM32:
+ 549 01a8 F82E      		mov r15,r24
+ 550 01aa 8D81      		ldd r24,Y+5
+ 551               	.L35:
+ 552 01ac F816      		cp r15,r24
+ 553 01ae D8F4      		brsh .L36
+ 555               	.LM33:
+ 556 01b0 4F2D      		mov r20,r15
+ 557 01b2 B801      		movw r22,r16
+ 558 01b4 C601      		movw r24,r12
+ 559 01b6 0E94 0000 		call melf_read_shdr_ndx
+ 560 01ba 8823      		tst r24
+ 561 01bc A1F4      		brne .L36
+ 563               	.LM34:
+ 564 01be F801      		movw r30,r16
+ 565 01c0 8181      		ldd r24,Z+1
+ 566 01c2 8230      		cpi r24,lo8(2)
+ 567 01c4 21F0      		breq .L33
+ 569               	.LM35:
+ 570 01c6 F394      		inc r15
+ 571 01c8 F601      		movw r30,r12
+ 572 01ca 8481      		ldd r24,Z+4
+ 573 01cc EFCF      		rjmp .L35
+ 574               	.L33:
+ 575               	.LBE3:
+ 576               	.LBE2:
+ 578               	.LM36:
+ 579 01ce 9E01      		movw r18,r28
+ 580 01d0 255E      		subi r18,lo8(-(27))
+ 581 01d2 3F4F      		sbci r19,hi8(-(27))
+ 582 01d4 4B81      		ldd r20,Y+3
+ 583 01d6 5C81      		ldd r21,Y+4
+ 584 01d8 B801      		movw r22,r16
+ 585 01da CE01      		movw r24,r28
+ 586 01dc 0196      		adiw r24,1
+ 587 01de 0E94 0000 		call melf_read_symbol
+ 588 01e2 8823      		tst r24
+ 589 01e4 19F0      		breq .L29
+ 590               	.L36:
+ 592               	.LM37:
+ 593 01e6 80E0      		ldi r24,lo8(0)
+ 594 01e8 90E0      		ldi r25,hi8(0)
+ 595 01ea 19C0      		rjmp .L18
+ 596               	.L29:
+ 598               	.LM38:
+ 599 01ec 8D89      		ldd r24,Y+21
+ 600 01ee 9E89      		ldd r25,Y+22
+ 601 01f0 9C01      		movw r18,r24
+ 602 01f2 4427      		clr r20
+ 603 01f4 5527      		clr r21
+ 604 01f6 8F81      		ldd r24,Y+7
+ 605 01f8 9885      		ldd r25,Y+8
+ 606 01fa A985      		ldd r26,Y+9
+ 607 01fc BA85      		ldd r27,Y+10
+ 608 01fe 820F      		add r24,r18
+ 609 0200 931F      		adc r25,r19
+ 610 0202 A41F      		adc r26,r20
+ 611 0204 B51F      		adc r27,r21
+ 612 0206 2B8D      		ldd r18,Y+27
+ 613 0208 3C8D      		ldd r19,Y+28
+ 614 020a 4427      		clr r20
+ 615 020c 5527      		clr r21
+ 616 020e 820F      		add r24,r18
+ 617 0210 931F      		adc r25,r19
+ 618 0212 A41F      		adc r26,r20
+ 619 0214 B51F      		adc r27,r21
+ 621               	.LM39:
+ 622 0216 B695      		lsr r27
+ 623 0218 A795      		ror r26
+ 624 021a 9795      		ror r25
+ 625 021c 8795      		ror r24
+ 626               	.L18:
+ 627               	/* epilogue: frame size=30 */
+ 628 021e 6E96      		adiw r28,30
+ 629 0220 0FB6      		in __tmp_reg__,__SREG__
+ 630 0222 F894      		cli
+ 631 0224 DEBF      		out __SP_H__,r29
+ 632 0226 0FBE      		out __SREG__,__tmp_reg__
+ 633 0228 CDBF      		out __SP_L__,r28
+ 634 022a DF91      		pop r29
+ 635 022c CF91      		pop r28
+ 636 022e 1F91      		pop r17
+ 637 0230 0F91      		pop r16
+ 638 0232 FF90      		pop r15
+ 639 0234 DF90      		pop r13
+ 640 0236 CF90      		pop r12
+ 641 0238 0895      		ret
+ 642               	/* epilogue end (size=14) */
+ 643               	/* function melf_get_header_address size 111 (82) */
+ 658               	.Lscope4:
+ 662               	.global	melf_load_module
+ 664               	melf_load_module:
+ 666               	.LM40:
+ 667               	/* prologue: frame size=54 */
+ 668 023a 2F92      		push r2
+ 669 023c 3F92      		push r3
+ 670 023e 4F92      		push r4
+ 671 0240 5F92      		push r5
+ 672 0242 6F92      		push r6
+ 673 0244 7F92      		push r7
+ 674 0246 8F92      		push r8
+ 675 0248 9F92      		push r9
+ 676 024a AF92      		push r10
+ 677 024c BF92      		push r11
+ 678 024e CF92      		push r12
+ 679 0250 DF92      		push r13
+ 680 0252 EF92      		push r14
+ 681 0254 FF92      		push r15
+ 682 0256 0F93      		push r16
+ 683 0258 1F93      		push r17
+ 684 025a CF93      		push r28
+ 685 025c DF93      		push r29
+ 686 025e CDB7      		in r28,__SP_L__
+ 687 0260 DEB7      		in r29,__SP_H__
+ 688 0262 E697      		sbiw r28,54
+ 689 0264 0FB6      		in __tmp_reg__,__SREG__
+ 690 0266 F894      		cli
+ 691 0268 DEBF      		out __SP_H__,r29
+ 692 026a 0FBE      		out __SREG__,__tmp_reg__
+ 693 026c CDBF      		out __SP_L__,r28
+ 694               	/* prologue end (size=26) */
+ 696               	.LM41:
+ 697 026e BC01      		movw r22,r24
+ 698 0270 CE01      		movw r24,r28
+ 699 0272 0196      		adiw r24,1
+ 700 0274 0E94 0000 		call melf_begin
+ 701 0278 8823      		tst r24
+ 702 027a 19F0      		breq .L38
+ 703               	.L58:
+ 704               	.LBB4:
+ 706               	.LM42:
+ 707 027c 82EF      		ldi r24,lo8(-14)
+ 708 027e 9FEF      		ldi r25,hi8(-14)
+ 709 0280 98C0      		rjmp .L37
+ 710               	.L38:
+ 711               	.LBE4:
+ 713               	.LM43:
+ 714 0282 F82E      		mov r15,r24
+ 715               	.L59:
+ 716 0284 8D81      		ldd r24,Y+5
+ 717 0286 F816      		cp r15,r24
+ 718 0288 70F5      		brsh .L55
+ 719               	.LBB5:
+ 721               	.LM44:
+ 722 028a 8E01      		movw r16,r28
+ 723 028c 0D5D      		subi r16,lo8(-(35))
+ 724 028e 1F4F      		sbci r17,hi8(-(35))
+ 725 0290 4F2D      		mov r20,r15
+ 726 0292 B801      		movw r22,r16
+ 727 0294 CE01      		movw r24,r28
+ 728 0296 0196      		adiw r24,1
+ 729 0298 0E94 0000 		call melf_read_shdr_ndx
+ 730 029c 8823      		tst r24
+ 731 029e 71F7      		brne .L58
+ 733               	.LM45:
+ 734 02a0 8CA1      		ldd r24,Y+36
+ 735 02a2 8230      		cpi r24,lo8(2)
+ 736 02a4 41F4      		brne .L43
+ 738               	.LM46:
+ 739 02a6 88E0      		ldi r24,lo8(8)
+ 740 02a8 FE01      		movw r30,r28
+ 741 02aa 3B96      		adiw r30,11
+ 742 02ac D801      		movw r26,r16
+ 743 02ae 0D90      		ld __tmp_reg__,X+
+ 744 02b0 0192      		st Z+,__tmp_reg__
+ 745 02b2 8A95      		dec r24
+ 746 02b4 E1F7      		brne .-8
+ 747               	.L43:
+ 749               	.LM47:
+ 750 02b6 8CA1      		ldd r24,Y+36
+ 751 02b8 8130      		cpi r24,lo8(1)
+ 752 02ba 41F4      		brne .L44
+ 754               	.LM48:
+ 755 02bc 88E0      		ldi r24,lo8(8)
+ 756 02be FE01      		movw r30,r28
+ 757 02c0 7B96      		adiw r30,27
+ 758 02c2 D801      		movw r26,r16
+ 759 02c4 0D90      		ld __tmp_reg__,X+
+ 760 02c6 0192      		st Z+,__tmp_reg__
+ 761 02c8 8A95      		dec r24
+ 762 02ca E1F7      		brne .-8
+ 763               	.L44:
+ 765               	.LM49:
+ 766 02cc 8CA1      		ldd r24,Y+36
+ 767 02ce 8430      		cpi r24,lo8(4)
+ 768 02d0 41F4      		brne .L41
+ 770               	.LM50:
+ 771 02d2 88E0      		ldi r24,lo8(8)
+ 772 02d4 FE01      		movw r30,r28
+ 773 02d6 7396      		adiw r30,19
+ 774 02d8 D801      		movw r26,r16
+ 775 02da 0D90      		ld __tmp_reg__,X+
+ 776 02dc 0192      		st Z+,__tmp_reg__
+ 777 02de 8A95      		dec r24
+ 778 02e0 E1F7      		brne .-8
+ 779               	.L41:
+ 780               	.LBE5:
+ 782               	.LM51:
+ 783 02e2 F394      		inc r15
+ 784 02e4 CFCF      		rjmp .L59
+ 785               	.L55:
+ 786               	.LBB6:
+ 181:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** }
+ 182:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** //----------------------------------------------------------
+ 183:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** static int8_t melf_read_rela(melf_desc_t* mdesc, Melf_Shdr* relashdr, Melf_Word relandx, Melf_Rela*
+ 184:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** {
+ 185:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   if (ker_codemem_read(mdesc->cmhdl, KER_DFT_LOADER_PID, (void*)rela, sizeof(Melf_Rela),
+ 186:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** 		       relashdr->sh_offset + relandx * sizeof(Melf_Rela)) != SOS_OK)
+ 187:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     return -EFAULT;
+ 188:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   entoh_Rela(rela);
+ 189:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   return SOS_OK;
+ 190:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** }
+ 191:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** //----------------------------------------------------------
+ 192:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** static int8_t melf_relocate(melf_desc_t* mdesc, Melf_Shdr* relashdr, 
+ 193:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** 			    Melf_Shdr* progshdr, Melf_Shdr* symshdr)
+ 194:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** {
+ 788               	.LM52:
+ 789 02e6 4E01      		movw r8,r28
+ 790 02e8 0894      		sec
+ 791 02ea 811C      		adc r8,__zero_reg__
+ 792 02ec 911C      		adc r9,__zero_reg__
+ 793 02ee A3E1      		ldi r26,lo8(19)
+ 794 02f0 6A2E      		mov r6,r26
+ 795 02f2 712C      		mov r7,__zero_reg__
+ 796 02f4 6C0E      		add r6,r28
+ 797 02f6 7D1E      		adc r7,r29
+ 798 02f8 FBE1      		ldi r31,lo8(27)
+ 799 02fa 2F2E      		mov r2,r31
+ 800 02fc 312C      		mov r3,__zero_reg__
+ 801 02fe 2C0E      		add r2,r28
+ 802 0300 3D1E      		adc r3,r29
+ 803 0302 EBE0      		ldi r30,lo8(11)
+ 804 0304 4E2E      		mov r4,r30
+ 805 0306 512C      		mov r5,__zero_reg__
+ 806 0308 4C0E      		add r4,r28
+ 807 030a 5D1E      		adc r5,r29
+ 808               	.LBB7:
+ 195:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   Melf_Word relandx;
+ 196:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   Melf_Rela rela;
+ 197:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   Melf_Sym sym;
+ 198:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c **** 
+ 199:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   for (relandx = 0; relandx < (relashdr->sh_size/sizeof(Melf_Rela)); relandx++){
+ 810               	.LM53:
+ 811 030c CC24      		clr r12
+ 812 030e DD24      		clr r13
+ 813 0310 8F89      		ldd r24,Y+23
+ 814 0312 988D      		ldd r25,Y+24
+ 815 0314 73E0      		ldi r23,3
+ 816 0316 9695      	1:	lsr r25
+ 817 0318 8795      		ror r24
+ 818 031a 7A95      		dec r23
+ 819 031c E1F7      		brne 1b
+ 820 031e C816      		cp r12,r24
+ 821 0320 D906      		cpc r13,r25
+ 822 0322 08F0      		brlo .+2
+ 823 0324 3EC0      		rjmp .L57
+ 824 0326 5601      		movw r10,r12
+ 825               	.L52:
+ 826               	.LBB8:
+ 828               	.LM54:
+ 829 0328 6BE2      		ldi r22,lo8(43)
+ 830 032a E62E      		mov r14,r22
+ 831 032c F12C      		mov r15,__zero_reg__
+ 832 032e EC0E      		add r14,r28
+ 833 0330 FD1E      		adc r15,r29
+ 834               	.LBB9:
+ 836               	.LM55:
+ 837 0332 F301      		movw r30,r6
+ 838 0334 8281      		ldd r24,Z+2
+ 839 0336 9381      		ldd r25,Z+3
+ 840 0338 8A0D      		add r24,r10
+ 841 033a 9B1D      		adc r25,r11
+ 842 033c 8C01      		movw r16,r24
+ 843 033e 28E0      		ldi r18,lo8(8)
+ 844 0340 30E0      		ldi r19,hi8(8)
+ 845 0342 A701      		movw r20,r14
+ 846 0344 61E1      		ldi r22,lo8(17)
+ 847 0346 D401      		movw r26,r8
+ 848 0348 8D91      		ld r24,X+
+ 849 034a 9C91      		ld r25,X
+ 850 034c 0E94 0000 		call ker_codemem_read
+ 851 0350 8823      		tst r24
+ 852 0352 19F4      		brne .L51
+ 854               	.LM56:
+ 855 0354 C701      		movw r24,r14
+ 856 0356 0E94 0000 		call entoh_Rela
+ 857               	.L51:
+ 858               	.LBE9:
+ 859               	.LBE8:
+ 200:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     melf_read_rela(mdesc, relashdr, relandx, &rela);
+ 201:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     melf_read_symbol(mdesc, symshdr, rela.r_symbol, &sym);
+ 861               	.LM57:
+ 862 035a 9E01      		movw r18,r28
+ 863 035c 2D5C      		subi r18,lo8(-(51))
+ 864 035e 3F4F      		sbci r19,hi8(-(51))
+ 865 0360 4DA5      		ldd r20,Y+45
+ 866 0362 5EA5      		ldd r21,Y+46
+ 867 0364 B201      		movw r22,r4
+ 868 0366 C401      		movw r24,r8
+ 869 0368 0E94 0000 		call melf_read_symbol
+ 202:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     watchdog_reset();
+ 871               	.LM58:
+ 872               	/* #APP */
+ 873 036c A895      		wdr
+ 203:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****     melf_arch_relocate(mdesc, &rela, &sym, progshdr);
+ 875               	.LM59:
+ 876               	/* #NOAPP */
+ 877 036e 9101      		movw r18,r2
+ 878 0370 AE01      		movw r20,r28
+ 879 0372 4D5C      		subi r20,lo8(-(51))
+ 880 0374 5F4F      		sbci r21,hi8(-(51))
+ 881 0376 B701      		movw r22,r14
+ 882 0378 C401      		movw r24,r8
+ 883 037a 0E94 0000 		call melf_arch_relocate
+ 885               	.LM60:
+ 886 037e 0894      		sec
+ 887 0380 C11C      		adc r12,__zero_reg__
+ 888 0382 D11C      		adc r13,__zero_reg__
+ 889 0384 E8E0      		ldi r30,lo8(8)
+ 890 0386 F0E0      		ldi r31,hi8(8)
+ 891 0388 AE0E      		add r10,r30
+ 892 038a BF1E      		adc r11,r31
+ 893 038c F301      		movw r30,r6
+ 894 038e 8481      		ldd r24,Z+4
+ 895 0390 9581      		ldd r25,Z+5
+ 896 0392 53E0      		ldi r21,3
+ 897 0394 9695      	1:	lsr r25
+ 898 0396 8795      		ror r24
+ 899 0398 5A95      		dec r21
+ 900 039a E1F7      		brne 1b
+ 901 039c C816      		cp r12,r24
+ 902 039e D906      		cpc r13,r25
+ 903 03a0 18F2      		brlo .L52
+ 904               	.L57:
+ 204:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   }
+ 205:/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c ****   ker_codemem_flush(mdesc->cmhdl, KER_DFT_LOADER_PID);
+ 906               	.LM61:
+ 907 03a2 61E1      		ldi r22,lo8(17)
+ 908 03a4 D401      		movw r26,r8
+ 909 03a6 8D91      		ld r24,X+
+ 910 03a8 9C91      		ld r25,X
+ 911 03aa 0E94 0000 		call ker_codemem_flush
+ 912               	.LBE7:
+ 913               	.LBE6:
+ 915               	.LM62:
+ 916 03ae 80E0      		ldi r24,lo8(0)
+ 917 03b0 90E0      		ldi r25,hi8(0)
+ 918               	.L37:
+ 919               	/* epilogue: frame size=54 */
+ 920 03b2 E696      		adiw r28,54
+ 921 03b4 0FB6      		in __tmp_reg__,__SREG__
+ 922 03b6 F894      		cli
+ 923 03b8 DEBF      		out __SP_H__,r29
+ 924 03ba 0FBE      		out __SREG__,__tmp_reg__
+ 925 03bc CDBF      		out __SP_L__,r28
+ 926 03be DF91      		pop r29
+ 927 03c0 CF91      		pop r28
+ 928 03c2 1F91      		pop r17
+ 929 03c4 0F91      		pop r16
+ 930 03c6 FF90      		pop r15
+ 931 03c8 EF90      		pop r14
+ 932 03ca DF90      		pop r13
+ 933 03cc CF90      		pop r12
+ 934 03ce BF90      		pop r11
+ 935 03d0 AF90      		pop r10
+ 936 03d2 9F90      		pop r9
+ 937 03d4 8F90      		pop r8
+ 938 03d6 7F90      		pop r7
+ 939 03d8 6F90      		pop r6
+ 940 03da 5F90      		pop r5
+ 941 03dc 4F90      		pop r4
+ 942 03de 3F90      		pop r3
+ 943 03e0 2F90      		pop r2
+ 944 03e2 0895      		ret
+ 945               	/* epilogue end (size=25) */
+ 946               	/* function melf_load_module size 213 (162) */
+ 975               	.Lscope5:
+ 977               		.text
+ 979               	Letext:
+ 980               	/* File "/Users/Administrator/sos-2x/tools/elfloader/soslib/melfloader.c": code  498 = 0x01f2 ( 372
+DEFINED SYMBOLS
+                            *ABS*:00000000 melfloader.c
+                            *ABS*:0000003f __SREG__
+                            *ABS*:0000003e __SP_H__
+                            *ABS*:0000003d __SP_L__
+                            *ABS*:00000000 __tmp_reg__
+                            *ABS*:00000001 __zero_reg__
+/var/tmp//ccaTyM1j.s:208    .text:00000000 melf_begin
+/var/tmp//ccaTyM1j.s:291    .text:00000070 melf_read_shdr_ndx
+/var/tmp//ccaTyM1j.s:364    .text:000000c8 melf_read_progbits_shdr
+/var/tmp//ccaTyM1j.s:436    .text:0000010e melf_read_symbol
+/var/tmp//ccaTyM1j.s:498    .text:0000015c melf_get_header_address
+/var/tmp//ccaTyM1j.s:664    .text:0000023a melf_load_module
+/var/tmp//ccaTyM1j.s:979    .text:000003e4 Letext
+
+UNDEFINED SYMBOLS
+__do_copy_data
+__do_clear_bss
+ker_codemem_read
+entoh_Mhdr
+ker_codemem_get_start_address
+entoh_Shdr
+entoh_Sym
+entoh_Rela
+melf_arch_relocate
+ker_codemem_flush

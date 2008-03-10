@@ -1,0 +1,1207 @@
+   1               		.file	"cc2420_hal.c"
+   2               		.arch atmega128
+   3               	__SREG__ = 0x3f
+   4               	__SP_H__ = 0x3e
+   5               	__SP_L__ = 0x3d
+   6               	__tmp_reg__ = 0
+   7               	__zero_reg__ = 1
+   8               		.global __do_copy_data
+   9               		.global __do_clear_bss
+  12               		.text
+  13               	.Ltext0:
+ 287               	.global	_SFD_IS_CLR_CALL
+ 288               	.global	_SFD_IS_CLR_CALL
+ 289               		.section .bss
+ 292               	_SFD_IS_CLR_CALL:
+ 293 0000 0000      		.skip 2,0
+ 294               	.global	_SFD_IS_SET_CALL
+ 295               	.global	_SFD_IS_SET_CALL
+ 298               	_SFD_IS_SET_CALL:
+ 299 0002 0000      		.skip 2,0
+ 300               	.global	_CCA_IS_SET_CALL
+ 301               	.global	_CCA_IS_SET_CALL
+ 304               	_CCA_IS_SET_CALL:
+ 305 0004 0000      		.skip 2,0
+ 306               	.global	_FIFO_IS_SET_CALL
+ 307               	.global	_FIFO_IS_SET_CALL
+ 310               	_FIFO_IS_SET_CALL:
+ 311 0006 0000      		.skip 2,0
+ 312               	.global	_FIFOP_IS_SET_CALL
+ 313               	.global	_FIFOP_IS_SET_CALL
+ 316               	_FIFOP_IS_SET_CALL:
+ 317 0008 0000      		.skip 2,0
+ 318               	.global	_current_stat
+ 319               	.global	_current_stat
+ 322               	_current_stat:
+ 323 000a 00        		.skip 1,0
+ 324               		.text
+ 327               	.global	TC_UWAIT
+ 329               	TC_UWAIT:
+   1:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** /* "Copyright (c) 2000-2003 The Regents of the University  of California.  
+   2:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** * All rights reserved.
+   3:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** *
+   4:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** * Permission to use, copy, modify, and distribute this software and its
+   5:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** * documentation for any purpose, without fee, and without written agreement is
+   6:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** * hereby granted, provided that the above copyright notice, the following
+   7:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** * two paragraphs and the author appear in all copies of this software.
+   8:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** * 
+   9:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** * IN NO EVENT SHALL THE UNIVERSITY OF CALIFORNIA BE LIABLE TO ANY PARTY FOR
+  10:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** * DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES ARISING OUT
+  11:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** * OF THE USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF THE UNIVERSITY OF
+  12:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** * CALIFORNIA HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  13:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** * 
+  14:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** * THE UNIVERSITY OF CALIFORNIA SPECIFICALLY DISCLAIMS ANY WARRANTIES,
+  15:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
+  16:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** * AND FITNESS FOR A PARTICULAR PURPOSE.  THE SOFTWARE PROVIDED HEREUNDER IS
+  17:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** * ON AN "AS IS" BASIS, AND THE UNIVERSITY OF CALIFORNIA HAS NO OBLIGATION TO
+  18:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** * PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS."
+  19:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** *
+  20:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** * Copyright (c) 2002-2003 Intel Corporation
+  21:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** * All rights reserved.
+  22:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** *
+  23:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** * This file is distributed under the terms in the attached INTEL-LICENSE     
+  24:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** * file. If you do not find these files, copies can be found by writing to
+  25:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** * Intel Research Berkeley, 2150 Shattuck Avenue, Suite 1300, Berkeley, CA, 
+  26:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** * 94704.  Attention:  Intel License Inquiry.
+  27:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** *
+  28:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** */
+  29:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 
+  30:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** /**
+  31:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  * @file cc2420_hal.c
+  32:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  * @brief CC2420 Hardware Abstraction Layer
+  33:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  * @author hubert wu {hubert@cs.ucla.edu}
+  34:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  */
+  35:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 
+  36:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** //--------------------------------------------------------
+  37:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** // INCLUDES
+  38:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** //--------------------------------------------------------
+  39:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** #include <hardware.h>
+  40:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** #include <spi_hal.h>
+  41:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** #include <cc2420_hal.h>
+  42:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** //#define LED_DEBUG
+  43:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** #include <led_dbg.h>
+  44:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 
+  45:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** uint8_t _current_stat=0;					//current stat
+  46:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** void (*_FIFOP_IS_SET_CALL)(int16_t timestamp) = NULL;	//FIFOP callback function
+  47:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** void (*_FIFO_IS_SET_CALL)(int16_t timestamp) = NULL;	//FIFO callback function
+  48:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** void (*_CCA_IS_SET_CALL)(int16_t timestamp) = NULL;	//CCA callback function
+  49:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** void (*_SFD_IS_SET_CALL)(int16_t timestamp) = NULL;	//SFD is set callback function
+  50:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** void (*_SFD_IS_CLR_CALL)(int16_t timestamp) = NULL;	//SFD is clear callback function
+  51:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 
+  52:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** /*****************************************************************
+  53:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  * Wait for million second                                       *
+  54:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  *****************************************************************/
+  55:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** void TC_UWAIT(uint16_t u)
+  56:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** {
+ 331               	.LM1:
+ 332               	/* prologue: frame size=0 */
+ 333               	/* prologue end (size=0) */
+ 334               	.L8:
+  57:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	uint16_t i;
+  58:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	for (i=0; i < u; i++) {
+ 336               	.LM2:
+ 337 0000 0097      		sbiw r24,0
+ 338 0002 61F0      		breq .L7
+  59:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 		asm volatile("nop\n\t"
+ 340               	.LM3:
+ 341               	/* #APP */
+ 342 0004 0000      		nop
+ 343 0006 0000      		nop
+ 344 0008 0000      		nop
+ 345 000a 0000      		nop
+ 346 000c 0000      		nop
+ 347 000e 0000      		nop
+ 348 0010 0000      		nop
+ 349 0012 0000      		nop
+ 350 0014 0000      		nop
+ 351 0016 0000      		nop
+ 352               		
+ 354               	.LM4:
+ 355               	/* #NOAPP */
+ 356 0018 0197      		sbiw r24,1
+ 357 001a F2CF      		rjmp .L8
+ 358               	.L7:
+ 359 001c 0895      		ret
+ 360               	/* epilogue: frame size=0 */
+ 361               	/* epilogue: noreturn */
+ 362               	/* epilogue end (size=0) */
+ 363               	/* function TC_UWAIT size 27 (27) */
+ 368               	.Lscope0:
+ 372               	.global	TC_MWAIT
+ 374               	TC_MWAIT:
+  60:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****                    "nop\n\t"
+  61:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****                    "nop\n\t"
+  62:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****                    "nop\n\t"
+  63:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 		   "nop\n\t"
+  64:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****                    "nop\n\t"
+  65:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****                    "nop\n\t"
+  66:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  		   "nop\n\t"
+  67:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****                    "nop\n\t"
+  68:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****                    "nop\n\t"
+  69:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****                    ::);
+  70:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	}
+  71:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** }
+  72:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 
+  73:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** /*****************************************************************
+  74:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  * Wait for more time                                            *
+  75:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  *****************************************************************/
+  76:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** void TC_MWAIT(uint16_t u)
+  77:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** {
+ 376               	.LM5:
+ 377               	/* prologue: frame size=0 */
+ 378 001e 0F93      		push r16
+ 379 0020 1F93      		push r17
+ 380 0022 CF93      		push r28
+ 381 0024 DF93      		push r29
+ 382               	/* prologue end (size=4) */
+ 383 0026 8C01      		movw r16,r24
+  78:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	uint16_t i;
+  79:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	for(i=0; i<u; i++) {
+ 385               	.LM6:
+ 386 0028 0097      		sbiw r24,0
+ 387 002a 31F0      		breq .L15
+ 388 002c EC01      		movw r28,r24
+ 389               	.L13:
+  80:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 		TC_UWAIT(u);
+ 391               	.LM7:
+ 392 002e C801      		movw r24,r16
+ 393 0030 0E94 0000 		call TC_UWAIT
+ 395               	.LM8:
+ 396 0034 2197      		sbiw r28,1
+ 397 0036 D9F7      		brne .L13
+ 398               	.L15:
+ 399               	/* epilogue: frame size=0 */
+ 400 0038 DF91      		pop r29
+ 401 003a CF91      		pop r28
+ 402 003c 1F91      		pop r17
+ 403 003e 0F91      		pop r16
+ 404 0040 0895      		ret
+ 405               	/* epilogue end (size=5) */
+ 406               	/* function TC_MWAIT size 19 (10) */
+ 411               	.Lscope1:
+ 414               	.global	TC_INIT_PINS
+ 416               	TC_INIT_PINS:
+  81:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	}
+  82:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** }
+  83:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 
+  84:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** /*****************************************************************
+  85:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  * Initiate pin directions                                       *
+  86:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  *****************************************************************/
+  87:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** void TC_INIT_PINS() 
+  88:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** {
+ 418               	.LM9:
+ 419               	/* prologue: frame size=0 */
+ 420               	/* prologue end (size=0) */
+  89:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	SETBITHIGH(DDRA,5);
+ 422               	.LM10:
+ 423 0042 D59A      		sbi 58-0x20,5
+  90:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	SETBITHIGH(DDRA,6);
+ 425               	.LM11:
+ 426 0044 D69A      		sbi 58-0x20,6
+  91:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	SETBITHIGH(DDRB,2);	
+ 428               	.LM12:
+ 429 0046 BA9A      		sbi 55-0x20,2
+  92:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	SETBITHIGH(DDRB,1);
+ 431               	.LM13:
+ 432 0048 B99A      		sbi 55-0x20,1
+  93:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	SETBITHIGH(DDRB,0);
+ 434               	.LM14:
+ 435 004a B89A      		sbi 55-0x20,0
+  94:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 
+  95:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	SETBITLOW(DDRB,3);
+ 437               	.LM15:
+ 438 004c BB98      		cbi 55-0x20,3
+  96:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	SETBITLOW(DDRE,6); //external interrupt 6 as input
+ 440               	.LM16:
+ 441 004e 1698      		cbi 34-0x20,6
+  97:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	SETBITLOW(DDRD,7);
+ 443               	.LM17:
+ 444 0050 8F98      		cbi 49-0x20,7
+  98:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	SETBITLOW(DDRD,6);
+ 446               	.LM18:
+ 447 0052 8E98      		cbi 49-0x20,6
+  99:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	SETBITLOW(DDRD,4);
+ 449               	.LM19:
+ 450 0054 8C98      		cbi 49-0x20,4
+ 100:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 
+ 101:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	SETBITHIGH(PORTB,3);
+ 452               	.LM20:
+ 453 0056 C39A      		sbi 56-0x20,3
+ 102:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** //	SETBITHIGH(PORTE,6);
+ 103:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** //	SETBITHIGH(PORTD,7);
+ 104:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	SETBITHIGH(PORTD,6);
+ 455               	.LM21:
+ 456 0058 969A      		sbi 50-0x20,6
+ 105:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	SETBITHIGH(PORTD,4);
+ 458               	.LM22:
+ 459 005a 949A      		sbi 50-0x20,4
+ 106:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 
+ 107:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	//SPCR=(1<<SPE)|(1<<MSTR)|(1<<SPR0);
+ 108:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	SETBITHIGH(SPCR,MSTR);
+ 461               	.LM23:
+ 462 005c 6C9A      		sbi 45-0x20,4
+ 463               	/* epilogue: frame size=0 */
+ 464 005e 0895      		ret
+ 465               	/* epilogue end (size=1) */
+ 466               	/* function TC_INIT_PINS size 15 (14) */
+ 468               	.Lscope2:
+ 472               	.global	TC_WRITE_BYTE
+ 474               	TC_WRITE_BYTE:
+ 109:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** //	SETBITHIGH(SPCR,SPE);
+ 110:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** //	SETBITLOW(SPCR,DORD);
+ 111:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** }
+ 112:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 
+ 113:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** /*****************************************************************
+ 114:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  * Write byte to spi                                             *
+ 115:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  *****************************************************************/
+ 116:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** void TC_WRITE_BYTE(uint8_t CC)
+ 117:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** {	
+ 476               	.LM24:
+ 477               	/* prologue: frame size=0 */
+ 478 0060 1F93      		push r17
+ 479 0062 CF93      		push r28
+ 480               	/* prologue end (size=2) */
+ 481 0064 182F      		mov r17,r24
+ 118:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	int j;
+ 119:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	HAS_CRITICAL_SECTION;
+ 120:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	ENTER_CRITICAL_SECTION();
+ 483               	.LM25:
+ 484               	/* #APP */
+ 485 0066 CFB7      		in r28, __SREG__
+ 486 0068 F894      		cli
+ 487               		
+ 121:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	TC_SET_SPI_WRITE;
+ 489               	.LM26:
+ 490               	/* #NOAPP */
+ 491 006a 0E94 0000 		call TC_INIT_PINS
+ 122:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	for(j=7; j>=0; j--) {
+ 493               	.LM27:
+ 494 006e 27E0      		ldi r18,lo8(7)
+ 495 0070 30E0      		ldi r19,hi8(7)
+ 496 0072 412F      		mov r20,r17
+ 497 0074 5527      		clr r21
+ 498 0076 61E0      		ldi r22,lo8(1)
+ 499 0078 70E0      		ldi r23,hi8(1)
+ 500               	.L23:
+ 123:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 		if( GETBIT(CC,j) ) 
+ 502               	.LM28:
+ 503 007a CB01      		movw r24,r22
+ 504 007c 022E      		mov r0,r18
+ 505 007e 02C0      		rjmp 2f
+ 506 0080 880F      	1:	lsl r24
+ 507 0082 991F      		rol r25
+ 508 0084 0A94      	2:	dec r0
+ 509 0086 E2F7      		brpl 1b
+ 510 0088 8423      		and r24,r20
+ 511 008a 9523      		and r25,r21
+ 512 008c 022E      		mov r0,r18
+ 513 008e 02C0      		rjmp 2f
+ 514 0090 9595      	1:	asr r25
+ 515 0092 8795      		ror r24
+ 516 0094 0A94      	2:	dec r0
+ 517 0096 E2F7      		brpl 1b
+ 518 0098 892B      		or r24,r25
+ 519 009a 11F0      		breq .L21
+ 124:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 			TC_SET_SI;	
+ 521               	.LM29:
+ 522 009c C29A      		sbi 56-0x20,2
+ 523 009e 01C0      		rjmp .L22
+ 524               	.L21:
+ 125:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 		else
+ 126:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 			TC_CLR_SI;
+ 526               	.LM30:
+ 527 00a0 C298      		cbi 56-0x20,2
+ 528               	.L22:
+ 127:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 		TC_SET_SCLK;	//generate the clock for spi
+ 530               	.LM31:
+ 531 00a2 C19A      		sbi 56-0x20,1
+ 128:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 		TC_CLR_SCLK;	//generate the clock for spi
+ 533               	.LM32:
+ 534 00a4 C198      		cbi 56-0x20,1
+ 536               	.LM33:
+ 537 00a6 2150      		subi r18,lo8(-(-1))
+ 538 00a8 3040      		sbci r19,hi8(-(-1))
+ 539 00aa 37FF      		sbrs r19,7
+ 540 00ac E6CF      		rjmp .L23
+ 129:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	}
+ 130:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	LEAVE_CRITICAL_SECTION();
+ 542               	.LM34:
+ 543               	/* #APP */
+ 544 00ae CFBF      		out __SREG__, r28
+ 545               		
+ 546               	/* #NOAPP */
+ 547               	/* epilogue: frame size=0 */
+ 548 00b0 CF91      		pop r28
+ 549 00b2 1F91      		pop r17
+ 550 00b4 0895      		ret
+ 551               	/* epilogue end (size=3) */
+ 552               	/* function TC_WRITE_BYTE size 50 (45) */
+ 558               	.Lscope3:
+ 562               	.global	TC_WRITE_WORD
+ 564               	TC_WRITE_WORD:
+ 131:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** }
+ 132:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 
+ 133:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** /*****************************************************************
+ 134:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  * Write word to spi                                             *
+ 135:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  *****************************************************************/
+ 136:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** void TC_WRITE_WORD(uint16_t CC)
+ 137:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** {	
+ 566               	.LM35:
+ 567               	/* prologue: frame size=0 */
+ 568 00b6 1F93      		push r17
+ 569 00b8 CF93      		push r28
+ 570 00ba DF93      		push r29
+ 571               	/* prologue end (size=3) */
+ 572 00bc EC01      		movw r28,r24
+ 138:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	int j;
+ 139:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	HAS_CRITICAL_SECTION;
+ 140:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	ENTER_CRITICAL_SECTION();
+ 574               	.LM36:
+ 575               	/* #APP */
+ 576 00be 1FB7      		in r17, __SREG__
+ 577 00c0 F894      		cli
+ 578               		
+ 141:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	TC_SET_SPI_WRITE;
+ 580               	.LM37:
+ 581               	/* #NOAPP */
+ 582 00c2 0E94 0000 		call TC_INIT_PINS
+ 142:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	for(j=15; j>=0; j--) {
+ 584               	.LM38:
+ 585 00c6 2FE0      		ldi r18,lo8(15)
+ 586 00c8 30E0      		ldi r19,hi8(15)
+ 587 00ca 41E0      		ldi r20,lo8(1)
+ 588 00cc 50E0      		ldi r21,hi8(1)
+ 589               	.L32:
+ 143:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 		if( GETBIT(CC,j) )
+ 591               	.LM39:
+ 592 00ce CA01      		movw r24,r20
+ 593 00d0 022E      		mov r0,r18
+ 594 00d2 02C0      		rjmp 2f
+ 595 00d4 880F      	1:	lsl r24
+ 596 00d6 991F      		rol r25
+ 597 00d8 0A94      	2:	dec r0
+ 598 00da E2F7      		brpl 1b
+ 599 00dc 8C23      		and r24,r28
+ 600 00de 9D23      		and r25,r29
+ 601 00e0 022E      		mov r0,r18
+ 602 00e2 02C0      		rjmp 2f
+ 603 00e4 9695      	1:	lsr r25
+ 604 00e6 8795      		ror r24
+ 605 00e8 0A94      	2:	dec r0
+ 606 00ea E2F7      		brpl 1b
+ 607 00ec 892B      		or r24,r25
+ 608 00ee 11F0      		breq .L30
+ 144:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 			TC_SET_SI;	
+ 610               	.LM40:
+ 611 00f0 C29A      		sbi 56-0x20,2
+ 612 00f2 01C0      		rjmp .L31
+ 613               	.L30:
+ 145:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 		else
+ 146:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 			TC_CLR_SI;
+ 615               	.LM41:
+ 616 00f4 C298      		cbi 56-0x20,2
+ 617               	.L31:
+ 147:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 		TC_SET_SCLK;
+ 619               	.LM42:
+ 620 00f6 C19A      		sbi 56-0x20,1
+ 148:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 		TC_CLR_SCLK;
+ 622               	.LM43:
+ 623 00f8 C198      		cbi 56-0x20,1
+ 625               	.LM44:
+ 626 00fa 2150      		subi r18,lo8(-(-1))
+ 627 00fc 3040      		sbci r19,hi8(-(-1))
+ 628 00fe 37FF      		sbrs r19,7
+ 629 0100 E6CF      		rjmp .L32
+ 149:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	}
+ 150:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	LEAVE_CRITICAL_SECTION();
+ 631               	.LM45:
+ 632               	/* #APP */
+ 633 0102 1FBF      		out __SREG__, r17
+ 634               		
+ 635               	/* #NOAPP */
+ 636               	/* epilogue: frame size=0 */
+ 637 0104 DF91      		pop r29
+ 638 0106 CF91      		pop r28
+ 639 0108 1F91      		pop r17
+ 640 010a 0895      		ret
+ 641               	/* epilogue end (size=4) */
+ 642               	/* function TC_WRITE_WORD size 50 (43) */
+ 648               	.Lscope4:
+ 652               	.global	TC_READ_BYTE
+ 654               	TC_READ_BYTE:
+ 151:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** }
+ 152:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 
+ 153:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** /*****************************************************************
+ 154:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  * Read byte from spi                                            *
+ 155:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  *****************************************************************/
+ 156:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** void TC_READ_BYTE(uint8_t *CC)
+ 157:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** {	
+ 656               	.LM46:
+ 657               	/* prologue: frame size=0 */
+ 658 010c 0F93      		push r16
+ 659 010e 1F93      		push r17
+ 660 0110 CF93      		push r28
+ 661 0112 DF93      		push r29
+ 662               	/* prologue end (size=4) */
+ 663 0114 EC01      		movw r28,r24
+ 158:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	int j;
+ 159:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	uint8_t ret = 0;
+ 665               	.LM47:
+ 666 0116 10E0      		ldi r17,lo8(0)
+ 160:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	HAS_CRITICAL_SECTION;
+ 161:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	ENTER_CRITICAL_SECTION();
+ 668               	.LM48:
+ 669               	/* #APP */
+ 670 0118 0FB7      		in r16, __SREG__
+ 671 011a F894      		cli
+ 672               		
+ 162:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	TC_SET_SPI_READ;
+ 674               	.LM49:
+ 675               	/* #NOAPP */
+ 676 011c 0E94 0000 		call TC_INIT_PINS
+ 163:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	for(j=7; j>=0; j--) {
+ 678               	.LM50:
+ 679 0120 27E0      		ldi r18,lo8(7)
+ 680 0122 30E0      		ldi r19,hi8(7)
+ 681 0124 41E0      		ldi r20,lo8(1)
+ 682 0126 50E0      		ldi r21,hi8(1)
+ 683               	.L40:
+ 164:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 		TC_SET_SCLK;		//generate the clock for spi
+ 685               	.LM51:
+ 686 0128 C19A      		sbi 56-0x20,1
+ 165:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 		if( TC_SO_IS_SET )
+ 688               	.LM52:
+ 689 012a B39B      		sbis 54-0x20,3
+ 690 012c 08C0      		rjmp .L39
+ 166:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 			SETBITHIGH(ret,j);
+ 692               	.LM53:
+ 693 012e CA01      		movw r24,r20
+ 694 0130 022E      		mov r0,r18
+ 695 0132 02C0      		rjmp 2f
+ 696 0134 880F      	1:	lsl r24
+ 697 0136 991F      		rol r25
+ 698 0138 0A94      	2:	dec r0
+ 699 013a E2F7      		brpl 1b
+ 700 013c 182B      		or r17,r24
+ 701               	.L39:
+ 167:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 		TC_CLR_SCLK;		//generate the clock for spi
+ 703               	.LM54:
+ 704 013e C198      		cbi 56-0x20,1
+ 706               	.LM55:
+ 707 0140 2150      		subi r18,lo8(-(-1))
+ 708 0142 3040      		sbci r19,hi8(-(-1))
+ 709 0144 37FF      		sbrs r19,7
+ 710 0146 F0CF      		rjmp .L40
+ 168:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	}
+ 169:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	*CC = ret;
+ 712               	.LM56:
+ 713 0148 1883      		st Y,r17
+ 170:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	LEAVE_CRITICAL_SECTION();
+ 715               	.LM57:
+ 716               	/* #APP */
+ 717 014a 0FBF      		out __SREG__, r16
+ 718               		
+ 719               	/* #NOAPP */
+ 720               	/* epilogue: frame size=0 */
+ 721 014c DF91      		pop r29
+ 722 014e CF91      		pop r28
+ 723 0150 1F91      		pop r17
+ 724 0152 0F91      		pop r16
+ 725 0154 0895      		ret
+ 726               	/* epilogue end (size=5) */
+ 727               	/* function TC_READ_BYTE size 44 (35) */
+ 734               	.Lscope5:
+ 738               	.global	TC_READ_WORD
+ 740               	TC_READ_WORD:
+ 171:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** }
+ 172:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 
+ 173:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** /*****************************************************************
+ 174:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  * Read word from spi                                            *
+ 175:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  *****************************************************************/
+ 176:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** void TC_READ_WORD(uint16_t *CC)
+ 177:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** {	
+ 742               	.LM58:
+ 743               	/* prologue: frame size=0 */
+ 744 0156 FF92      		push r15
+ 745 0158 0F93      		push r16
+ 746 015a 1F93      		push r17
+ 747 015c CF93      		push r28
+ 748 015e DF93      		push r29
+ 749               	/* prologue end (size=5) */
+ 750 0160 8C01      		movw r16,r24
+ 178:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	int j;
+ 179:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	uint16_t ret = 0;
+ 752               	.LM59:
+ 753 0162 C0E0      		ldi r28,lo8(0)
+ 754 0164 D0E0      		ldi r29,hi8(0)
+ 180:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	HAS_CRITICAL_SECTION;
+ 181:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	ENTER_CRITICAL_SECTION();
+ 756               	.LM60:
+ 757               	/* #APP */
+ 758 0166 FFB6      		in r15, __SREG__
+ 759 0168 F894      		cli
+ 760               		
+ 182:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	TC_SET_SPI_READ;
+ 762               	.LM61:
+ 763               	/* #NOAPP */
+ 764 016a 0E94 0000 		call TC_INIT_PINS
+ 183:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	for(j=15; j>=0; j--) {
+ 766               	.LM62:
+ 767 016e 2FE0      		ldi r18,lo8(15)
+ 768 0170 30E0      		ldi r19,hi8(15)
+ 769 0172 41E0      		ldi r20,lo8(1)
+ 770 0174 50E0      		ldi r21,hi8(1)
+ 771               	.L48:
+ 184:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 		TC_SET_SCLK;
+ 773               	.LM63:
+ 774 0176 C19A      		sbi 56-0x20,1
+ 185:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 		if( TC_SO_IS_SET )
+ 776               	.LM64:
+ 777 0178 B39B      		sbis 54-0x20,3
+ 778 017a 09C0      		rjmp .L47
+ 186:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 			SETBITHIGH(ret,j);
+ 780               	.LM65:
+ 781 017c CA01      		movw r24,r20
+ 782 017e 022E      		mov r0,r18
+ 783 0180 02C0      		rjmp 2f
+ 784 0182 880F      	1:	lsl r24
+ 785 0184 991F      		rol r25
+ 786 0186 0A94      	2:	dec r0
+ 787 0188 E2F7      		brpl 1b
+ 788 018a C82B      		or r28,r24
+ 789 018c D92B      		or r29,r25
+ 790               	.L47:
+ 187:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 		TC_CLR_SCLK;
+ 792               	.LM66:
+ 793 018e C198      		cbi 56-0x20,1
+ 795               	.LM67:
+ 796 0190 2150      		subi r18,lo8(-(-1))
+ 797 0192 3040      		sbci r19,hi8(-(-1))
+ 798 0194 37FF      		sbrs r19,7
+ 799 0196 EFCF      		rjmp .L48
+ 188:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	}
+ 189:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	*CC = ret;
+ 801               	.LM68:
+ 802 0198 F801      		movw r30,r16
+ 803 019a C083      		st Z,r28
+ 804 019c D183      		std Z+1,r29
+ 190:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	LEAVE_CRITICAL_SECTION();
+ 806               	.LM69:
+ 807               	/* #APP */
+ 808 019e FFBE      		out __SREG__, r15
+ 809               		
+ 810               	/* #NOAPP */
+ 811               	/* epilogue: frame size=0 */
+ 812 01a0 DF91      		pop r29
+ 813 01a2 CF91      		pop r28
+ 814 01a4 1F91      		pop r17
+ 815 01a6 0F91      		pop r16
+ 816 01a8 FF90      		pop r15
+ 817 01aa 0895      		ret
+ 818               	/* epilogue end (size=6) */
+ 819               	/* function TC_READ_WORD size 50 (39) */
+ 826               	.Lscope6:
+ 833               	.global	TC_GET_REG
+ 835               	TC_GET_REG:
+ 191:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** }
+ 192:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 
+ 193:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** /*****************************************************************
+ 194:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  * read register word                                            *
+ 195:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  *****************************************************************/
+ 196:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** void TC_GET_REG(uint8_t R, int8_t I, int8_t J, uint16_t* C)
+ 197:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** {	
+ 837               	.LM70:
+ 838               	/* prologue: frame size=0 */
+ 839 01ac EF92      		push r14
+ 840 01ae FF92      		push r15
+ 841 01b0 0F93      		push r16
+ 842 01b2 1F93      		push r17
+ 843               	/* prologue end (size=4) */
+ 844 01b4 F62E      		mov r15,r22
+ 845 01b6 E42E      		mov r14,r20
+ 846 01b8 8901      		movw r16,r18
+ 198:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	int8_t i=I;
+ 199:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	int8_t j=J;
+ 200:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	TC_UNSELECT_RADIO;
+ 848               	.LM71:
+ 849 01ba C09A      		sbi 56-0x20,0
+ 201:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	TC_SELECT_RADIO;
+ 851               	.LM72:
+ 852 01bc C098      		cbi 56-0x20,0
+ 202:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	TC_WRITE_BYTE((0x40|R));
+ 854               	.LM73:
+ 855 01be 8064      		ori r24,lo8(64)
+ 856 01c0 0E94 0000 		call TC_WRITE_BYTE
+ 203:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	TC_READ_WORD(C);
+ 858               	.LM74:
+ 859 01c4 C801      		movw r24,r16
+ 860 01c6 0E94 0000 		call TC_READ_WORD
+ 204:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	*C = GETBITS(*C,i,j);
+ 862               	.LM75:
+ 863 01ca 8F2D      		mov r24,r15
+ 864 01cc 9927      		clr r25
+ 865 01ce 87FD      		sbrc r24,7
+ 866 01d0 9095      		com r25
+ 867 01d2 0196      		adiw r24,1
+ 868 01d4 2FEF      		ldi r18,lo8(-1)
+ 869 01d6 3FEF      		ldi r19,hi8(-1)
+ 870 01d8 A901      		movw r20,r18
+ 871 01da 02C0      		rjmp 2f
+ 872 01dc 440F      	1:	lsl r20
+ 873 01de 551F      		rol r21
+ 874 01e0 8A95      	2:	dec r24
+ 875 01e2 E2F7      		brpl 1b
+ 876 01e4 6E2D      		mov r22,r14
+ 877 01e6 7727      		clr r23
+ 878 01e8 67FD      		sbrc r22,7
+ 879 01ea 7095      		com r23
+ 880 01ec 80E1      		ldi r24,lo8(16)
+ 881 01ee 90E0      		ldi r25,hi8(16)
+ 882 01f0 861B      		sub r24,r22
+ 883 01f2 970B      		sbc r25,r23
+ 884 01f4 02C0      		rjmp 2f
+ 885 01f6 3695      	1:	lsr r19
+ 886 01f8 2795      		ror r18
+ 887 01fa 8A95      	2:	dec r24
+ 888 01fc E2F7      		brpl 1b
+ 889 01fe 422B      		or r20,r18
+ 890 0200 532B      		or r21,r19
+ 891 0202 4095      		com r20
+ 892 0204 5095      		com r21
+ 893 0206 F801      		movw r30,r16
+ 894 0208 8081      		ld r24,Z
+ 895 020a 9181      		ldd r25,Z+1
+ 896 020c 8423      		and r24,r20
+ 897 020e 9523      		and r25,r21
+ 898 0210 02C0      		rjmp 2f
+ 899 0212 9695      	1:	lsr r25
+ 900 0214 8795      		ror r24
+ 901 0216 6A95      	2:	dec r22
+ 902 0218 E2F7      		brpl 1b
+ 903 021a 8083      		st Z,r24
+ 904 021c 9183      		std Z+1,r25
+ 205:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	TC_UNSELECT_RADIO;
+ 906               	.LM76:
+ 907 021e C09A      		sbi 56-0x20,0
+ 206:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	TC_SELECT_RADIO;
+ 909               	.LM77:
+ 910 0220 C098      		cbi 56-0x20,0
+ 911               	/* epilogue: frame size=0 */
+ 912 0222 1F91      		pop r17
+ 913 0224 0F91      		pop r16
+ 914 0226 FF90      		pop r15
+ 915 0228 EF90      		pop r14
+ 916 022a 0895      		ret
+ 917               	/* epilogue end (size=5) */
+ 918               	/* function TC_GET_REG size 67 (58) */
+ 920               	.Lscope7:
+ 927               	.global	TC_SET_REG
+ 929               	TC_SET_REG:
+ 207:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** }
+ 208:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 
+ 209:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 
+ 210:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** /*****************************************************************
+ 211:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  * set register word                                             *
+ 212:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  *****************************************************************/
+ 213:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** void TC_SET_REG(uint8_t R, int8_t I, int8_t J, uint16_t C)
+ 214:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** {	
+ 931               	.LM78:
+ 932               	/* prologue: frame size=2 */
+ 933 022c DF92      		push r13
+ 934 022e EF92      		push r14
+ 935 0230 FF92      		push r15
+ 936 0232 0F93      		push r16
+ 937 0234 1F93      		push r17
+ 938 0236 CF93      		push r28
+ 939 0238 DF93      		push r29
+ 940 023a CDB7      		in r28,__SP_L__
+ 941 023c DEB7      		in r29,__SP_H__
+ 942 023e 2297      		sbiw r28,2
+ 943 0240 0FB6      		in __tmp_reg__,__SREG__
+ 944 0242 F894      		cli
+ 945 0244 DEBF      		out __SP_H__,r29
+ 946 0246 0FBE      		out __SREG__,__tmp_reg__
+ 947 0248 CDBF      		out __SP_L__,r28
+ 948               	/* prologue end (size=15) */
+ 949 024a D82E      		mov r13,r24
+ 950 024c 162F      		mov r17,r22
+ 951 024e 042F      		mov r16,r20
+ 952 0250 7901      		movw r14,r18
+ 215:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	uint16_t wd;
+ 216:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	uint16_t tmp;
+ 217:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	int8_t i=I;
+ 218:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	int8_t j=J;
+ 219:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	TC_UNSELECT_RADIO;
+ 954               	.LM79:
+ 955 0252 C09A      		sbi 56-0x20,0
+ 220:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	TC_SELECT_RADIO;
+ 957               	.LM80:
+ 958 0254 C098      		cbi 56-0x20,0
+ 221:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	TC_WRITE_BYTE((0x40|R));
+ 960               	.LM81:
+ 961 0256 8064      		ori r24,lo8(64)
+ 962 0258 0E94 0000 		call TC_WRITE_BYTE
+ 222:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	TC_READ_WORD(&wd);
+ 964               	.LM82:
+ 965 025c CE01      		movw r24,r28
+ 966 025e 0196      		adiw r24,1
+ 967 0260 0E94 0000 		call TC_READ_WORD
+ 223:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	tmp=SETBITS(wd,C,i,j);
+ 969               	.LM83:
+ 970 0264 812F      		mov r24,r17
+ 971 0266 9927      		clr r25
+ 972 0268 87FD      		sbrc r24,7
+ 973 026a 9095      		com r25
+ 974 026c 0196      		adiw r24,1
+ 975 026e 2FEF      		ldi r18,lo8(-1)
+ 976 0270 3FEF      		ldi r19,hi8(-1)
+ 977 0272 A901      		movw r20,r18
+ 978 0274 02C0      		rjmp 2f
+ 979 0276 440F      	1:	lsl r20
+ 980 0278 551F      		rol r21
+ 981 027a 8A95      	2:	dec r24
+ 982 027c E2F7      		brpl 1b
+ 983 027e 1127      		clr r17
+ 984 0280 07FD      		sbrc r16,7
+ 985 0282 1095      		com r17
+ 986 0284 80E1      		ldi r24,lo8(16)
+ 987 0286 90E0      		ldi r25,hi8(16)
+ 988 0288 801B      		sub r24,r16
+ 989 028a 910B      		sbc r25,r17
+ 990 028c 02C0      		rjmp 2f
+ 991 028e 3695      	1:	lsr r19
+ 992 0290 2795      		ror r18
+ 993 0292 8A95      	2:	dec r24
+ 994 0294 E2F7      		brpl 1b
+ 995 0296 422B      		or r20,r18
+ 996 0298 532B      		or r21,r19
+ 997 029a 8981      		ldd r24,Y+1
+ 998 029c 9A81      		ldd r25,Y+2
+ 999 029e 8423      		and r24,r20
+ 1000 02a0 9523      		and r25,r21
+ 1001 02a2 8983      		std Y+1,r24
+ 1002 02a4 9A83      		std Y+2,r25
+ 1003 02a6 0097      		sbiw r24,0
+ 1004 02a8 49F0      		breq .L53
+ 1006               	.LM84:
+ 1007 02aa 02C0      		rjmp 2f
+ 1008 02ac EE0C      	1:	lsl r14
+ 1009 02ae FF1C      		rol r15
+ 1010 02b0 0A95      	2:	dec r16
+ 1011 02b2 E2F7      		brpl 1b
+ 1012 02b4 8E29      		or r24,r14
+ 1013 02b6 9F29      		or r25,r15
+ 1014 02b8 8983      		std Y+1,r24
+ 1015 02ba 9A83      		std Y+2,r25
+ 1016               	.L53:
+ 224:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	TC_WRITE_BYTE(R);
+ 1018               	.LM85:
+ 1019 02bc 8D2D      		mov r24,r13
+ 1020 02be 0E94 0000 		call TC_WRITE_BYTE
+ 225:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	TC_WRITE_WORD(wd);
+ 1022               	.LM86:
+ 1023 02c2 8981      		ldd r24,Y+1
+ 1024 02c4 9A81      		ldd r25,Y+2
+ 1025 02c6 0E94 0000 		call TC_WRITE_WORD
+ 226:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	TC_UNSELECT_RADIO;
+ 1027               	.LM87:
+ 1028 02ca C09A      		sbi 56-0x20,0
+ 227:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	TC_SELECT_RADIO;
+ 1030               	.LM88:
+ 1031 02cc C098      		cbi 56-0x20,0
+ 1032               	/* epilogue: frame size=2 */
+ 1033 02ce 2296      		adiw r28,2
+ 1034 02d0 0FB6      		in __tmp_reg__,__SREG__
+ 1035 02d2 F894      		cli
+ 1036 02d4 DEBF      		out __SP_H__,r29
+ 1037 02d6 0FBE      		out __SREG__,__tmp_reg__
+ 1038 02d8 CDBF      		out __SP_L__,r28
+ 1039 02da DF91      		pop r29
+ 1040 02dc CF91      		pop r28
+ 1041 02de 1F91      		pop r17
+ 1042 02e0 0F91      		pop r16
+ 1043 02e2 FF90      		pop r15
+ 1044 02e4 EF90      		pop r14
+ 1045 02e6 DF90      		pop r13
+ 1046 02e8 0895      		ret
+ 1047               	/* epilogue end (size=14) */
+ 1048               	/* function TC_SET_REG size 98 (69) */
+ 1053               	.Lscope8:
+ 1057               	.global	TC_STROBE
+ 1059               	TC_STROBE:
+ 228:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** }
+ 229:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 
+ 230:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** /*****************************************************************
+ 231:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  * run a strobe command on cc2420                                *
+ 232:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  *****************************************************************/
+ 233:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** void TC_STROBE(uint8_t CC)
+ 234:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** {	
+ 1061               	.LM89:
+ 1062               	/* prologue: frame size=0 */
+ 1063               	/* prologue end (size=0) */
+ 235:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	TC_CLR_CSN;
+ 1065               	.LM90:
+ 1066 02ea C098      		cbi 56-0x20,0
+ 236:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	TC_WRITE_BYTE(CC);
+ 1068               	.LM91:
+ 1069 02ec 0E94 0000 		call TC_WRITE_BYTE
+ 237:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	TC_READ_BYTE(&_current_stat);
+ 1071               	.LM92:
+ 1072 02f0 80E0      		ldi r24,lo8(_current_stat)
+ 1073 02f2 90E0      		ldi r25,hi8(_current_stat)
+ 1074 02f4 0E94 0000 		call TC_READ_BYTE
+ 238:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	TC_SET_CSN;
+ 1076               	.LM93:
+ 1077 02f8 C09A      		sbi 56-0x20,0
+ 239:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	TC_CLR_CSN;
+ 1079               	.LM94:
+ 1080 02fa C098      		cbi 56-0x20,0
+ 1081               	/* epilogue: frame size=0 */
+ 1082 02fc 0895      		ret
+ 1083               	/* epilogue end (size=1) */
+ 1084               	/* function TC_STROBE size 10 (9) */
+ 1086               	.Lscope9:
+ 1090               	.global	TC_SetFIFOPCallBack
+ 1092               	TC_SetFIFOPCallBack:
+ 240:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** }
+ 241:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 
+ 242:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** /*****************************************************************
+ 243:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  * set callback functions                                        *
+ 244:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  *****************************************************************/
+ 245:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** void TC_SetFIFOPCallBack(void (*f)(int16_t timestamp)) {
+ 1094               	.LM95:
+ 1095               	/* prologue: frame size=0 */
+ 1096               	/* prologue end (size=0) */
+ 246:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	_FIFOP_IS_SET_CALL = f;
+ 1098               	.LM96:
+ 1099 02fe 9093 0000 		sts (_FIFOP_IS_SET_CALL)+1,r25
+ 1100 0302 8093 0000 		sts _FIFOP_IS_SET_CALL,r24
+ 1101               	/* epilogue: frame size=0 */
+ 1102 0306 0895      		ret
+ 1103               	/* epilogue end (size=1) */
+ 1104               	/* function TC_SetFIFOPCallBack size 5 (4) */
+ 1106               	.Lscope10:
+ 1110               	.global	TC_SetFIFOCallBack
+ 1112               	TC_SetFIFOCallBack:
+ 247:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** }
+ 248:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** void TC_SetFIFOCallBack(void (*f)(int16_t timestamp)) {
+ 1114               	.LM97:
+ 1115               	/* prologue: frame size=0 */
+ 1116               	/* prologue end (size=0) */
+ 249:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	_FIFO_IS_SET_CALL = f;
+ 1118               	.LM98:
+ 1119 0308 9093 0000 		sts (_FIFO_IS_SET_CALL)+1,r25
+ 1120 030c 8093 0000 		sts _FIFO_IS_SET_CALL,r24
+ 1121               	/* epilogue: frame size=0 */
+ 1122 0310 0895      		ret
+ 1123               	/* epilogue end (size=1) */
+ 1124               	/* function TC_SetFIFOCallBack size 5 (4) */
+ 1126               	.Lscope11:
+ 1130               	.global	TC_SetCCACallBack
+ 1132               	TC_SetCCACallBack:
+ 250:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** }
+ 251:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** void TC_SetCCACallBack(void (*f)(int16_t timestamp)) {
+ 1134               	.LM99:
+ 1135               	/* prologue: frame size=0 */
+ 1136               	/* prologue end (size=0) */
+ 252:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	_CCA_IS_SET_CALL = f;
+ 1138               	.LM100:
+ 1139 0312 9093 0000 		sts (_CCA_IS_SET_CALL)+1,r25
+ 1140 0316 8093 0000 		sts _CCA_IS_SET_CALL,r24
+ 1141               	/* epilogue: frame size=0 */
+ 1142 031a 0895      		ret
+ 1143               	/* epilogue end (size=1) */
+ 1144               	/* function TC_SetCCACallBack size 5 (4) */
+ 1146               	.Lscope12:
+ 1151               	.global	TC_SetSFDCallBack
+ 1153               	TC_SetSFDCallBack:
+ 253:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** }
+ 254:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** void TC_SetSFDCallBack(void (*f1)(int16_t timestamp), void (*f2)(int16_t timestamp)) {
+ 1155               	.LM101:
+ 1156               	/* prologue: frame size=0 */
+ 1157               	/* prologue end (size=0) */
+ 255:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	_SFD_IS_SET_CALL = f1;
+ 1159               	.LM102:
+ 1160 031c 9093 0000 		sts (_SFD_IS_SET_CALL)+1,r25
+ 1161 0320 8093 0000 		sts _SFD_IS_SET_CALL,r24
+ 256:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	_SFD_IS_CLR_CALL = f2;
+ 1163               	.LM103:
+ 1164 0324 7093 0000 		sts (_SFD_IS_CLR_CALL)+1,r23
+ 1165 0328 6093 0000 		sts _SFD_IS_CLR_CALL,r22
+ 1166               	/* epilogue: frame size=0 */
+ 1167 032c 0895      		ret
+ 1168               	/* epilogue end (size=1) */
+ 1169               	/* function TC_SetSFDCallBack size 9 (8) */
+ 1171               	.Lscope13:
+ 1174               	.global	TC_Enable_Interrupt
+ 1176               	TC_Enable_Interrupt:
+ 257:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** }
+ 258:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 
+ 259:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** /*****************************************************************
+ 260:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  * define the interrupt functio                                  *
+ 261:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  *****************************************************************/
+ 262:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** void TC_Enable_Interrupt()
+ 263:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** {
+ 1178               	.LM104:
+ 1179               	/* prologue: frame size=0 */
+ 1180               	/* prologue end (size=0) */
+ 264:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	SETBITLOW(EIMSK,INT6);
+ 1182               	.LM105:
+ 1183 032e 89B7      		in r24,89-0x20
+ 1184 0330 8F7B      		andi r24,lo8(-65)
+ 1185 0332 89BF      		out 89-0x20,r24
+ 265:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	SETBITHIGH(EICRB,ISC61);
+ 1187               	.LM106:
+ 1188 0334 8AB7      		in r24,90-0x20
+ 1189 0336 8062      		ori r24,lo8(32)
+ 1190 0338 8ABF      		out 90-0x20,r24
+ 266:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	SETBITHIGH(EICRB,ISC60);
+ 1192               	.LM107:
+ 1193 033a 8AB7      		in r24,90-0x20
+ 1194 033c 8061      		ori r24,lo8(16)
+ 1195 033e 8ABF      		out 90-0x20,r24
+ 267:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	SETBITHIGH(EIMSK,INT6);
+ 1197               	.LM108:
+ 1198 0340 89B7      		in r24,89-0x20
+ 1199 0342 8064      		ori r24,lo8(64)
+ 1200 0344 89BF      		out 89-0x20,r24
+ 268:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	SETBITHIGH(SREG,7);
+ 1202               	.LM109:
+ 1203 0346 8FB7      		in r24,95-0x20
+ 1204 0348 8068      		ori r24,lo8(-128)
+ 1205 034a 8FBF      		out 95-0x20,r24
+ 1206               	/* epilogue: frame size=0 */
+ 1207 034c 0895      		ret
+ 1208               	/* epilogue end (size=1) */
+ 1209               	/* function TC_Enable_Interrupt size 16 (15) */
+ 1211               	.Lscope14:
+ 1214               	.global	TC_Disable_Interrupt
+ 1216               	TC_Disable_Interrupt:
+ 269:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** }
+ 270:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 
+ 271:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** void TC_Disable_Interrupt()
+ 272:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** {
+ 1218               	.LM110:
+ 1219               	/* prologue: frame size=0 */
+ 1220               	/* prologue end (size=0) */
+ 273:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	SETBITLOW(EIMSK,INT6);
+ 1222               	.LM111:
+ 1223 034e 89B7      		in r24,89-0x20
+ 1224 0350 8F7B      		andi r24,lo8(-65)
+ 1225 0352 89BF      		out 89-0x20,r24
+ 274:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	SETBITLOW(SREG,7);
+ 1227               	.LM112:
+ 1228 0354 8FB7      		in r24,95-0x20
+ 1229 0356 8F77      		andi r24,lo8(127)
+ 1230 0358 8FBF      		out 95-0x20,r24
+ 1231               	/* epilogue: frame size=0 */
+ 1232 035a 0895      		ret
+ 1233               	/* epilogue end (size=1) */
+ 1234               	/* function TC_Disable_Interrupt size 7 (6) */
+ 1236               	.Lscope15:
+ 1239               	.global	__vector_7
+ 1241               	__vector_7:
+ 275:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** }
+ 276:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 
+ 277:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** static uint16_t st_timestamp;		//remember the time when start receiving packet
+ 278:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 
+ 279:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** //ISR(INT6_vect) {
+ 280:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** //FIXED BY JONATHAN! MICAZ DOES NOT HAVE THIS SIGNAL (it's jumper-optioned to ADC1, but ships with 
+ 281:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** //MOTESTIX has this connection if you need a MicaZ compatible device with a function interrupt sign
+ 282:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** //I'll leave this code here for now in case some init routine turns on the interrupt
+ 283:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** SIGNAL(SIG_INTERRUPT6)
+ 284:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** {
+ 1243               	.LM113:
+ 1244               	/* prologue: frame size=0 */
+ 1245 035c 1F92      		push __zero_reg__
+ 1246 035e 0F92      		push __tmp_reg__
+ 1247 0360 0FB6      		in __tmp_reg__,__SREG__
+ 1248 0362 0F92      		push __tmp_reg__
+ 1249 0364 1124      		clr __zero_reg__
+ 1250 0366 2F93      		push r18
+ 1251 0368 3F93      		push r19
+ 1252 036a 4F93      		push r20
+ 1253 036c 5F93      		push r21
+ 1254 036e 6F93      		push r22
+ 1255 0370 7F93      		push r23
+ 1256 0372 8F93      		push r24
+ 1257 0374 9F93      		push r25
+ 1258 0376 AF93      		push r26
+ 1259 0378 BF93      		push r27
+ 1260 037a EF93      		push r30
+ 1261 037c FF93      		push r31
+ 1262               	/* prologue end (size=17) */
+ 285:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** //showbyte(0x0f);
+ 286:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	if( TC_FIFOP_IS_SET )
+ 1264               	.LM114:
+ 1265 037e 0E9B      		sbis 33-0x20,6
+ 1266 0380 0BC0      		rjmp .L61
+ 287:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 		if(_FIFOP_IS_SET_CALL) {
+ 1268               	.LM115:
+ 1269 0382 E091 0000 		lds r30,_FIFOP_IS_SET_CALL
+ 1270 0386 F091 0000 		lds r31,(_FIFOP_IS_SET_CALL)+1
+ 1271 038a 3097      		sbiw r30,0
+ 1272 038c 29F0      		breq .L61
+ 288:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** //			_FIFOP_IS_SET_CALL(timestamp);
+ 289:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 			_FIFOP_IS_SET_CALL(st_timestamp); //we want the timestamp when it receives the first byte
+ 1274               	.LM116:
+ 1275 038e 8091 0000 		lds r24,st_timestamp
+ 1276 0392 9091 0000 		lds r25,(st_timestamp)+1
+ 1277 0396 0995      		icall
+ 1278               	.L61:
+ 1279               	/* epilogue: frame size=0 */
+ 1280 0398 FF91      		pop r31
+ 1281 039a EF91      		pop r30
+ 1282 039c BF91      		pop r27
+ 1283 039e AF91      		pop r26
+ 1284 03a0 9F91      		pop r25
+ 1285 03a2 8F91      		pop r24
+ 1286 03a4 7F91      		pop r23
+ 1287 03a6 6F91      		pop r22
+ 1288 03a8 5F91      		pop r21
+ 1289 03aa 4F91      		pop r20
+ 1290 03ac 3F91      		pop r19
+ 1291 03ae 2F91      		pop r18
+ 1292 03b0 0F90      		pop __tmp_reg__
+ 1293 03b2 0FBE      		out __SREG__,__tmp_reg__
+ 1294 03b4 0F90      		pop __tmp_reg__
+ 1295 03b6 1F90      		pop __zero_reg__
+ 1296 03b8 1895      		reti
+ 1297               	/* epilogue end (size=17) */
+ 1298               	/* function __vector_7 size 47 (13) */
+ 1300               	.Lscope16:
+ 1303               	.global	ker_radio_ack_enable
+ 1305               	ker_radio_ack_enable:
+ 290:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 		}
+ 291:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** //	SETBITLOW(PORTE,6);
+ 292:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** //	SETBITLOW(EIFR,7);
+ 293:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** //showbyte(0xf0);
+ 294:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** }
+ 295:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 
+ 296:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** //FIXED BY JONATHAN! There is no connection to INT7 by CC2420 on MicaZ or other platform.
+ 297:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 
+ 298:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 
+ 299:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** /*****************************************************************
+ 300:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  * define these two functions for hardware.c                     *
+ 301:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  *****************************************************************/
+ 302:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** void ker_radio_ack_enable()
+ 303:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** {
+ 1307               	.LM117:
+ 1308               	/* prologue: frame size=0 */
+ 1309               	/* prologue end (size=0) */
+ 304:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	TC_ENABLE_ADDR_CHK;
+ 1311               	.LM118:
+ 1312 03ba 21E0      		ldi r18,lo8(1)
+ 1313 03bc 30E0      		ldi r19,hi8(1)
+ 1314 03be 4BE0      		ldi r20,lo8(11)
+ 1315 03c0 642F      		mov r22,r20
+ 1316 03c2 81E1      		ldi r24,lo8(17)
+ 1317 03c4 0E94 0000 		call TC_SET_REG
+ 1318               	/* epilogue: frame size=0 */
+ 1319 03c8 0895      		ret
+ 1320               	/* epilogue end (size=1) */
+ 1321               	/* function ker_radio_ack_enable size 8 (7) */
+ 1323               	.Lscope17:
+ 1326               	.global	ker_radio_ack_disable
+ 1328               	ker_radio_ack_disable:
+ 305:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** }
+ 306:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** void ker_radio_ack_disable()
+ 307:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** {
+ 1330               	.LM119:
+ 1331               	/* prologue: frame size=0 */
+ 1332               	/* prologue end (size=0) */
+ 308:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	TC_DISABLE_ADDR_CHK;
+ 1334               	.LM120:
+ 1335 03ca 20E0      		ldi r18,lo8(0)
+ 1336 03cc 30E0      		ldi r19,hi8(0)
+ 1337 03ce 4BE0      		ldi r20,lo8(11)
+ 1338 03d0 642F      		mov r22,r20
+ 1339 03d2 81E1      		ldi r24,lo8(17)
+ 1340 03d4 0E94 0000 		call TC_SET_REG
+ 1341               	/* epilogue: frame size=0 */
+ 1342 03d8 0895      		ret
+ 1343               	/* epilogue end (size=1) */
+ 1344               	/* function ker_radio_ack_disable size 8 (7) */
+ 1346               	.Lscope18:
+ 1350               	.global	host_to_net
+ 1352               	host_to_net:
+ 309:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** }
+ 310:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 
+ 311:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** /*****************************************************************
+ 312:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  * define endian switch function for host between net            *
+ 313:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  *
+ 314:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  * IEEE802.15.4 has little endian net protocol. See clause 7.2 of
+ 315:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  * 802.15.4-2004:
+ 316:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  * " Fields that are longer than a single octet are sent to the 
+ 317:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  * PHY in the order from the octet containing the lowest numbered bits
+ 318:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  * to the octet containing the highest numbered bits."
+ 319:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c ****  *****************************************************************/
+ 320:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** uint16_t host_to_net(uint16_t a)
+ 321:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** {
+ 1354               	.LM121:
+ 1355               	/* prologue: frame size=0 */
+ 1356               	/* prologue end (size=0) */
+ 1357               	/* epilogue: frame size=0 */
+ 1358 03da 0895      		ret
+ 1359               	/* epilogue end (size=1) */
+ 1360               	/* function host_to_net size 1 (0) */
+ 1362               	.Lscope19:
+ 1366               	.global	net_to_host
+ 1368               	net_to_host:
+ 322:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 	return a;
+ 323:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** }
+ 324:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** 
+ 325:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** uint16_t net_to_host(uint16_t a)
+ 326:/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c **** {
+ 1370               	.LM122:
+ 1371               	/* prologue: frame size=0 */
+ 1372               	/* prologue end (size=0) */
+ 1373               	/* epilogue: frame size=0 */
+ 1374 03dc 0895      		ret
+ 1375               	/* epilogue end (size=1) */
+ 1376               	/* function net_to_host size 1 (0) */
+ 1378               	.Lscope20:
+ 1380               		.lcomm st_timestamp,2
+ 1388               		.text
+ 1390               	Letext:
+ 1391               	/* File "/Users/Administrator/sos-2x/platform/micaz/cc2420_hal.c": code  542 = 0x021e ( 417), prolo
+DEFINED SYMBOLS
+                            *ABS*:00000000 cc2420_hal.c
+                            *ABS*:0000003f __SREG__
+                            *ABS*:0000003e __SP_H__
+                            *ABS*:0000003d __SP_L__
+                            *ABS*:00000000 __tmp_reg__
+                            *ABS*:00000001 __zero_reg__
+/var/tmp//ccy8xhqv.s:292    .bss:00000000 _SFD_IS_CLR_CALL
+/var/tmp//ccy8xhqv.s:298    .bss:00000002 _SFD_IS_SET_CALL
+/var/tmp//ccy8xhqv.s:304    .bss:00000004 _CCA_IS_SET_CALL
+/var/tmp//ccy8xhqv.s:310    .bss:00000006 _FIFO_IS_SET_CALL
+/var/tmp//ccy8xhqv.s:316    .bss:00000008 _FIFOP_IS_SET_CALL
+/var/tmp//ccy8xhqv.s:322    .bss:0000000a _current_stat
+/var/tmp//ccy8xhqv.s:329    .text:00000000 TC_UWAIT
+/var/tmp//ccy8xhqv.s:374    .text:0000001e TC_MWAIT
+/var/tmp//ccy8xhqv.s:416    .text:00000042 TC_INIT_PINS
+/var/tmp//ccy8xhqv.s:474    .text:00000060 TC_WRITE_BYTE
+/var/tmp//ccy8xhqv.s:564    .text:000000b6 TC_WRITE_WORD
+/var/tmp//ccy8xhqv.s:654    .text:0000010c TC_READ_BYTE
+/var/tmp//ccy8xhqv.s:740    .text:00000156 TC_READ_WORD
+/var/tmp//ccy8xhqv.s:835    .text:000001ac TC_GET_REG
+/var/tmp//ccy8xhqv.s:929    .text:0000022c TC_SET_REG
+/var/tmp//ccy8xhqv.s:1059   .text:000002ea TC_STROBE
+/var/tmp//ccy8xhqv.s:1092   .text:000002fe TC_SetFIFOPCallBack
+/var/tmp//ccy8xhqv.s:1112   .text:00000308 TC_SetFIFOCallBack
+/var/tmp//ccy8xhqv.s:1132   .text:00000312 TC_SetCCACallBack
+/var/tmp//ccy8xhqv.s:1153   .text:0000031c TC_SetSFDCallBack
+/var/tmp//ccy8xhqv.s:1176   .text:0000032e TC_Enable_Interrupt
+/var/tmp//ccy8xhqv.s:1216   .text:0000034e TC_Disable_Interrupt
+/var/tmp//ccy8xhqv.s:1241   .text:0000035c __vector_7
+                             .bss:0000000b st_timestamp
+/var/tmp//ccy8xhqv.s:1305   .text:000003ba ker_radio_ack_enable
+/var/tmp//ccy8xhqv.s:1328   .text:000003ca ker_radio_ack_disable
+/var/tmp//ccy8xhqv.s:1352   .text:000003da host_to_net
+/var/tmp//ccy8xhqv.s:1368   .text:000003dc net_to_host
+/var/tmp//ccy8xhqv.s:1390   .text:000003de Letext
+
+UNDEFINED SYMBOLS
+__do_copy_data
+__do_clear_bss

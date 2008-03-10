@@ -1,0 +1,728 @@
+   1               		.file	"uart_system.c"
+   2               		.arch atmega128
+   3               	__SREG__ = 0x3f
+   4               	__SP_H__ = 0x3e
+   5               	__SP_L__ = 0x3d
+   6               	__tmp_reg__ = 0
+   7               	__zero_reg__ = 1
+   8               		.global __do_copy_data
+   9               		.global __do_clear_bss
+  12               		.text
+  13               	.Ltext0:
+ 301               	.global	uart_system_init
+ 303               	uart_system_init:
+   1:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** /* -*- Mode: C; tab-width:2 -*- */
+   2:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** /* ex: set ts=2 shiftwidth=2 softtabstop=2 cindent: */
+   3:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** /**
+   4:/Users/Administrator/sos-2x/drivers/uart/uart_system.c ****  * @file uart_system.c
+   5:/Users/Administrator/sos-2x/drivers/uart/uart_system.c ****  * @brief SOS interface to UART
+   6:/Users/Administrator/sos-2x/drivers/uart/uart_system.c ****  * @author Roy Shea
+   7:/Users/Administrator/sos-2x/drivers/uart/uart_system.c ****  * @author David Lee (modified 4/7/2005)
+   8:/Users/Administrator/sos-2x/drivers/uart/uart_system.c ****  **/
+   9:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** #include <hardware.h>
+  10:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** #include <net_stack.h>
+  11:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** #include <message.h>
+  12:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** #include <malloc.h>
+  13:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** #include <sos_error_types.h>
+  14:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+  15:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** //#define LED_DEBUG
+  16:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** #include <led_dbg.h>
+  17:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+  18:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** #include "hdlc.h"  // for hdlc msg types
+  19:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** #include "uart_hal.h"
+  20:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** #include "uart.h"
+  21:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** #include "uart_system.h"
+  22:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** #ifndef NO_SOS_UART
+  23:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** #include <sos_uart.h>
+  24:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** #endif
+  25:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+  26:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+  27:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** enum {
+  28:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	UART_SYS_INIT=0,
+  29:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	UART_SYS_IDLE,
+  30:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	UART_SYS_WAIT,
+  31:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	UART_SYS_BUSY,
+  32:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** };
+  33:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+  34:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+  35:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** typedef struct uart_system_state {
+  36:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	uint8_t system_state;
+  37:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	uint8_t calling_mod_id[2]; // ID of the calling module
+  38:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	uint8_t state[2]; // Protocol state of uart.
+  39:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	uint8_t flags[2];
+  40:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	uint8_t senddone_status;
+  41:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	uint8_t *txBuf; // Transceiver buffer
+  42:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** } uart_system_state_t;
+  43:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+  44:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** #define TX 0
+  45:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** #define RX 1
+  46:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+  47:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** static uart_system_state_t s;
+  48:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+  49:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** /**
+  50:/Users/Administrator/sos-2x/drivers/uart/uart_system.c ****  ****************************************
+  51:/Users/Administrator/sos-2x/drivers/uart/uart_system.c ****  Initialize the UART hardware on an AVR
+  52:/Users/Administrator/sos-2x/drivers/uart/uart_system.c ****  ****************************************
+  53:/Users/Administrator/sos-2x/drivers/uart/uart_system.c ****  */
+  54:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** int8_t uart_system_init() {
+ 305               	.LM1:
+ 306               	/* prologue: frame size=0 */
+ 307 0000 1F93      		push r17
+ 308               	/* prologue end (size=1) */
+  55:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	uint8_t i=0;
+ 310               	.LM2:
+ 311 0002 10E0      		ldi r17,lo8(0)
+  56:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+  57:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	s.state[TX] = s.state[RX] = UART_SYS_INIT;
+ 313               	.LM3:
+ 314 0004 1093 0000 		sts s+4,r17
+ 315 0008 1093 0000 		sts s+3,r17
+  58:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	s.system_state = UART_SYS_INIT;
+ 317               	.LM4:
+ 318 000c 1093 0000 		sts s,r17
+  59:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	
+  60:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	uart_init();
+ 320               	.LM5:
+ 321 0010 0E94 0000 		call uart_init
+ 322 0014 8FEF      		ldi r24,lo8(-1)
+  61:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+  62:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	for (i=0;i<2;i++) { 
+  63:/Users/Administrator/sos-2x/drivers/uart/uart_system.c ****     s.calling_mod_id[i] = NULL_PID;
+ 324               	.LM6:
+ 325 0016 8093 0000 		sts s+1,r24
+  64:/Users/Administrator/sos-2x/drivers/uart/uart_system.c ****     s.flags[i] = 0; 
+ 327               	.LM7:
+ 328 001a 1093 0000 		sts s+5,r17
+ 330               	.LM8:
+ 331 001e 8093 0000 		sts s+2,r24
+ 333               	.LM9:
+ 334 0022 1093 0000 		sts s+6,r17
+  65:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	}
+  66:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	s.txBuf = NULL;
+ 336               	.LM10:
+ 337 0026 1092 0000 		sts (s+8)+1,__zero_reg__
+ 338 002a 1092 0000 		sts s+8,__zero_reg__
+  67:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+  68:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	s.system_state = UART_SYS_IDLE;
+ 340               	.LM11:
+ 341 002e 81E0      		ldi r24,lo8(1)
+ 342 0030 8093 0000 		sts s,r24
+  69:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	s.state[TX] = s.state[RX] = UART_SYS_IDLE;
+ 344               	.LM12:
+ 345 0034 8093 0000 		sts s+4,r24
+ 346 0038 8093 0000 		sts s+3,r24
+  70:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+  71:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	return SOS_OK;
+  72:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** }    
+ 348               	.LM13:
+ 349 003c 80E0      		ldi r24,lo8(0)
+ 350 003e 90E0      		ldi r25,hi8(0)
+ 351               	/* epilogue: frame size=0 */
+ 352 0040 1F91      		pop r17
+ 353 0042 0895      		ret
+ 354               	/* epilogue end (size=2) */
+ 355               	/* function uart_system_init size 34 (31) */
+ 360               	.Lscope0:
+ 365               	.global	ker_uart_reserve_bus
+ 367               	ker_uart_reserve_bus:
+  73:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+  74:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+  75:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** /**
+  76:/Users/Administrator/sos-2x/drivers/uart/uart_system.c ****  ****************************************
+  77:/Users/Administrator/sos-2x/drivers/uart/uart_system.c ****  SOS Specific Interface to the uart
+  78:/Users/Administrator/sos-2x/drivers/uart/uart_system.c ****  ****************************************
+  79:/Users/Administrator/sos-2x/drivers/uart/uart_system.c ****  */
+  80:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** int8_t ker_uart_reserve_bus(uint8_t calling_id, uint8_t flags) {
+ 369               	.LM14:
+ 370               	/* prologue: frame size=0 */
+ 371 0044 CF93      		push r28
+ 372 0046 DF93      		push r29
+ 373               	/* prologue end (size=2) */
+ 374 0048 982F      		mov r25,r24
+  81:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+  82:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	// allow module currently reserving the bus to change reservation type
+  83:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	uint8_t mode = RX;
+ 376               	.LM15:
+ 377 004a E1E0      		ldi r30,lo8(1)
+  84:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+  85:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	//DEBUG("in reserve bus\n");
+  86:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	if (flags & UART_SYS_TX_FLAG) {
+ 379               	.LM16:
+ 380 004c 66FD      		sbrc r22,6
+  87:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		mode = TX;
+ 382               	.LM17:
+ 383 004e E0E0      		ldi r30,lo8(0)
+ 384               	.L13:
+  88:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	}
+  89:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+  90:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	// if it is already reaserved AND
+  91:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	// it was reserved by another module OR it is currently busy
+  92:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	if ((s.calling_mod_id[mode] != NULL_PID) &&
+ 386               	.LM18:
+ 387 0050 FF27      		clr r31
+ 388 0052 DF01      		movw r26,r30
+ 389 0054 A050      		subi r26,lo8(-(s))
+ 390 0056 B040      		sbci r27,hi8(-(s))
+ 391 0058 ED01      		movw r28,r26
+ 392 005a 8981      		ldd r24,Y+1
+ 393 005c 8F3F      		cpi r24,lo8(-1)
+ 394 005e 41F0      		breq .L14
+ 395 0060 8917      		cp r24,r25
+ 396 0062 19F4      		brne .L15
+ 397 0064 8B81      		ldd r24,Y+3
+ 398 0066 8230      		cpi r24,lo8(2)
+ 399 0068 19F0      		breq .L14
+ 400               	.L15:
+  93:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 			((s.calling_mod_id[mode] != calling_id) || (s.state[mode] != UART_SYS_WAIT))) {
+  94:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		LED_DBG(LED_RED_TOGGLE);
+  95:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		return -EBUSY;
+ 402               	.LM19:
+ 403 006a 80EF      		ldi r24,lo8(-16)
+ 404 006c 9FEF      		ldi r25,hi8(-16)
+ 405 006e 0BC0      		rjmp .L12
+ 406               	.L14:
+  96:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	}
+  97:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	s.calling_mod_id[mode] = calling_id;
+ 408               	.LM20:
+ 409 0070 E050      		subi r30,lo8(-(s))
+ 410 0072 F040      		sbci r31,hi8(-(s))
+ 411 0074 9183      		std Z+1,r25
+  98:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+  99:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	s.system_state = UART_SYS_BUSY;
+ 413               	.LM21:
+ 414 0076 83E0      		ldi r24,lo8(3)
+ 415 0078 8093 0000 		sts s,r24
+ 100:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	s.flags[mode] = flags;
+ 417               	.LM22:
+ 418 007c 6583      		std Z+5,r22
+ 101:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	s.state[mode] = UART_SYS_WAIT;
+ 420               	.LM23:
+ 421 007e 82E0      		ldi r24,lo8(2)
+ 422 0080 8383      		std Z+3,r24
+ 102:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	
+ 103:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	LED_DBG(LED_GREEN_TOGGLE);
+ 104:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	//DEBUG("end reserve bus\n");
+ 105:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	return SOS_OK;
+ 424               	.LM24:
+ 425 0082 80E0      		ldi r24,lo8(0)
+ 426 0084 90E0      		ldi r25,hi8(0)
+ 427               	.L12:
+ 428               	/* epilogue: frame size=0 */
+ 429 0086 DF91      		pop r29
+ 430 0088 CF91      		pop r28
+ 431 008a 0895      		ret
+ 432               	/* epilogue end (size=3) */
+ 433               	/* function ker_uart_reserve_bus size 37 (32) */
+ 438               	.Lscope1:
+ 442               	.global	ker_uart_release_bus
+ 444               	ker_uart_release_bus:
+ 106:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** }
+ 107:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+ 108:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+ 109:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** int8_t ker_uart_release_bus(uint8_t calling_id) {
+ 446               	.LM25:
+ 447               	/* prologue: frame size=0 */
+ 448               	/* prologue end (size=0) */
+ 449 008c 282F      		mov r18,r24
+ 110:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	uint8_t i=0;
+ 111:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+ 112:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	// Always allow uart_module to release uart
+ 113:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	// Otherwise, check that the correct module is calling the resease and
+ 114:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	// that the uart is not busy
+ 115:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	if (calling_id != UART_PID) {
+ 451               	.LM26:
+ 452 008e 8234      		cpi r24,lo8(66)
+ 453 0090 01F1      		breq .L17
+ 116:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		if ((s.calling_mod_id[TX] != calling_id) && (s.calling_mod_id[RX] != calling_id)) {
+ 455               	.LM27:
+ 456 0092 9091 0000 		lds r25,s+1
+ 457 0096 9817      		cp r25,r24
+ 458 0098 39F0      		breq .L18
+ 459 009a 8091 0000 		lds r24,s+2
+ 460 009e 8217      		cp r24,r18
+ 461 00a0 19F0      		breq .L18
+ 117:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 			return -EPERM;
+ 463               	.LM28:
+ 464 00a2 8FEF      		ldi r24,lo8(-1)
+ 465 00a4 9FEF      		ldi r25,hi8(-1)
+ 466 00a6 0895      		ret
+ 467               	.L18:
+ 118:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		}
+ 119:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+ 120:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		if (((s.calling_mod_id[TX] == calling_id) && (s.state[TX] != UART_SYS_IDLE) && (s.state[TX] != UA
+ 469               	.LM29:
+ 470 00a8 9217      		cp r25,r18
+ 471 00aa 99F4      		brne .L17
+ 472 00ac 8091 0000 		lds r24,s+3
+ 473 00b0 8130      		cpi r24,lo8(1)
+ 474 00b2 79F0      		breq .L17
+ 475 00b4 8230      		cpi r24,lo8(2)
+ 476 00b6 69F0      		breq .L17
+ 477 00b8 8091 0000 		lds r24,s+2
+ 478 00bc 8217      		cp r24,r18
+ 479 00be 49F4      		brne .L17
+ 480 00c0 8091 0000 		lds r24,s+4
+ 481 00c4 8130      		cpi r24,lo8(1)
+ 482 00c6 29F0      		breq .L17
+ 483 00c8 8230      		cpi r24,lo8(2)
+ 484 00ca 19F0      		breq .L17
+ 121:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 				((s.calling_mod_id[RX] == calling_id) && (s.state[RX] != UART_SYS_IDLE) && (s.state[RX] != UART
+ 122:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 			return -EBUSY;
+ 486               	.LM30:
+ 487 00cc 80EF      		ldi r24,lo8(-16)
+ 488 00ce 9FEF      		ldi r25,hi8(-16)
+ 489 00d0 0895      		ret
+ 490               	.L17:
+ 491 00d2 4FEF      		ldi r20,lo8(-1)
+ 492 00d4 31E0      		ldi r19,lo8(1)
+ 493 00d6 E0E0      		ldi r30,lo8(s)
+ 494 00d8 F0E0      		ldi r31,hi8(s)
+ 495 00da 932F      		mov r25,r19
+ 496               	.L24:
+ 123:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		}
+ 124:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	}
+ 125:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	// Release the uart
+ 126:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	for (i=0;i<2;i++) {	
+ 127:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		if ((s.calling_mod_id[i] == calling_id) && ((s.state[i] == UART_SYS_IDLE) || (s.state[i] == UART_
+ 498               	.LM31:
+ 499 00dc 8181      		ldd r24,Z+1
+ 500 00de 8217      		cp r24,r18
+ 501 00e0 39F4      		brne .L22
+ 502 00e2 8381      		ldd r24,Z+3
+ 503 00e4 8150      		subi r24,lo8(-(-1))
+ 504 00e6 8230      		cpi r24,lo8(2)
+ 505 00e8 18F4      		brsh .L22
+ 128:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 			s.flags[i] = 0; 
+ 507               	.LM32:
+ 508 00ea 1582      		std Z+5,__zero_reg__
+ 129:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 			s.calling_mod_id[i] = NULL_PID;
+ 510               	.LM33:
+ 511 00ec 4183      		std Z+1,r20
+ 130:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 			s.state[i] = UART_SYS_IDLE;
+ 513               	.LM34:
+ 514 00ee 3383      		std Z+3,r19
+ 515               	.L22:
+ 517               	.LM35:
+ 518 00f0 9150      		subi r25,lo8(-(-1))
+ 519 00f2 3196      		adiw r30,1
+ 520 00f4 97FF      		sbrs r25,7
+ 521 00f6 F2CF      		rjmp .L24
+ 131:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		}
+ 132:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	}
+ 133:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+ 134:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	if ((s.state[TX] == UART_SYS_IDLE) && (s.state[RX] == UART_SYS_IDLE)) {
+ 523               	.LM36:
+ 524 00f8 8091 0000 		lds r24,s+3
+ 525 00fc 8130      		cpi r24,lo8(1)
+ 526 00fe 31F4      		brne .L25
+ 527 0100 8091 0000 		lds r24,s+4
+ 528 0104 8130      		cpi r24,lo8(1)
+ 529 0106 11F4      		brne .L25
+ 135:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		s.system_state = UART_SYS_IDLE;
+ 531               	.LM37:
+ 532 0108 8093 0000 		sts s,r24
+ 533               	.L25:
+ 136:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	}
+ 137:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+ 138:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	return SOS_OK;
+ 535               	.LM38:
+ 536 010c 80E0      		ldi r24,lo8(0)
+ 537 010e 90E0      		ldi r25,hi8(0)
+ 139:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** }
+ 539               	.LM39:
+ 540 0110 0895      		ret
+ 541               	/* epilogue: frame size=0 */
+ 542 0112 0895      		ret
+ 543               	/* epilogue end (size=1) */
+ 544               	/* function ker_uart_release_bus size 68 (67) */
+ 549               	.Lscope2:
+ 555               	.global	ker_uart_send_data
+ 557               	ker_uart_send_data:
+ 140:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+ 141:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+ 142:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** /**
+ 143:/Users/Administrator/sos-2x/drivers/uart/uart_system.c ****  * Send data over the uart
+ 144:/Users/Administrator/sos-2x/drivers/uart/uart_system.c ****  *
+ 145:/Users/Administrator/sos-2x/drivers/uart/uart_system.c ****  * if called with a sos msg (after reserving with the UART_SYS_SOS_MSG flag)
+ 146:/Users/Administrator/sos-2x/drivers/uart/uart_system.c ****  * type cast the msg pointer to a (uint8_t*) the lower layers will handle it
+ 147:/Users/Administrator/sos-2x/drivers/uart/uart_system.c ****  * correctly based on the flags that are set.
+ 148:/Users/Administrator/sos-2x/drivers/uart/uart_system.c ****  */
+ 149:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+ 150:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** int8_t ker_uart_send_data(
+ 151:/Users/Administrator/sos-2x/drivers/uart/uart_system.c ****         uint8_t *buff, 
+ 152:/Users/Administrator/sos-2x/drivers/uart/uart_system.c ****         uint8_t msg_size, 
+ 153:/Users/Administrator/sos-2x/drivers/uart/uart_system.c ****         uint8_t calling_id) {
+ 559               	.LM40:
+ 560               	/* prologue: frame size=0 */
+ 561               	/* prologue end (size=0) */
+ 562 0114 FC01      		movw r30,r24
+ 154:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+ 155:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	// uart has not been reserved or has been researved for reading
+ 156:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	if (s.state[TX] == UART_SYS_IDLE) {
+ 564               	.LM41:
+ 565 0116 2091 0000 		lds r18,s+3
+ 566 011a 2130      		cpi r18,lo8(1)
+ 567 011c 19F4      		brne .L29
+ 157:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		//DEBUG("tx Idle\n");
+ 158:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		return -EINVAL;
+ 569               	.LM42:
+ 570 011e 8AEE      		ldi r24,lo8(-22)
+ 571 0120 9FEF      		ldi r25,hi8(-22)
+ 572 0122 0895      		ret
+ 573               	.L29:
+ 159:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	}
+ 160:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	if ((s.calling_mod_id[TX] != calling_id) || (s.state[TX] != UART_SYS_WAIT)) {
+ 575               	.LM43:
+ 576 0124 8091 0000 		lds r24,s+1
+ 577 0128 8417      		cp r24,r20
+ 578 012a 11F4      		brne .L31
+ 579 012c 2230      		cpi r18,lo8(2)
+ 580 012e 19F0      		breq .L30
+ 581               	.L31:
+ 161:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		//DEBUG("Wait \n");
+ 162:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		return -EBUSY;
+ 583               	.LM44:
+ 584 0130 80EF      		ldi r24,lo8(-16)
+ 585 0132 9FEF      		ldi r25,hi8(-16)
+ 586 0134 0895      		ret
+ 587               	.L30:
+ 163:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	}
+ 164:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	// get a handle to the outgoing data
+ 165:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	s.txBuf = buff;
+ 589               	.LM45:
+ 590 0136 F093 0000 		sts (s+8)+1,r31
+ 591 013a E093 0000 		sts s+8,r30
+ 166:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+ 167:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	if (uart_startTransceiverTx(s.txBuf, msg_size, s.flags[TX]) == SOS_OK) {
+ 593               	.LM46:
+ 594 013e 4091 0000 		lds r20,s+5
+ 595 0142 CF01      		movw r24,r30
+ 596 0144 0E94 0000 		call uart_startTransceiverTx
+ 597 0148 8823      		tst r24
+ 598 014a 41F4      		brne .L32
+ 168:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		s.state[TX] = UART_SYS_BUSY;
+ 600               	.LM47:
+ 601 014c 83E0      		ldi r24,lo8(3)
+ 602 014e 8093 0000 		sts s+3,r24
+ 169:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		s.system_state = UART_SYS_BUSY;
+ 604               	.LM48:
+ 605 0152 8093 0000 		sts s,r24
+ 170:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		return SOS_OK;
+ 607               	.LM49:
+ 608 0156 80E0      		ldi r24,lo8(0)
+ 609 0158 90E0      		ldi r25,hi8(0)
+ 610 015a 0895      		ret
+ 611               	.L32:
+ 171:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	}
+ 172:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	//DEBUG("stat Transceiver failed\n");
+ 173:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	// lower layer busy (async recieve?)
+ 174:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	return -EBUSY;
+ 613               	.LM50:
+ 614 015c 80EF      		ldi r24,lo8(-16)
+ 615 015e 9FEF      		ldi r25,hi8(-16)
+ 175:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** }
+ 617               	.LM51:
+ 618 0160 0895      		ret
+ 619               	/* epilogue: frame size=0 */
+ 620 0162 0895      		ret
+ 621               	/* epilogue end (size=1) */
+ 622               	/* function ker_uart_send_data size 40 (39) */
+ 624               	.Lscope3:
+ 629               	.global	ker_uart_read_data
+ 631               	ker_uart_read_data:
+ 176:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+ 177:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+ 178:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** /**
+ 179:/Users/Administrator/sos-2x/drivers/uart/uart_system.c ****  * Read data from the uart.
+ 180:/Users/Administrator/sos-2x/drivers/uart/uart_system.c ****  */
+ 181:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** int8_t ker_uart_read_data(
+ 182:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		uint8_t read_size,
+ 183:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		uint8_t calling_id) {
+ 633               	.LM52:
+ 634               	/* prologue: frame size=0 */
+ 635               	/* prologue end (size=0) */
+ 636 0164 282F      		mov r18,r24
+ 184:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+ 185:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	// uart has not been reserved or reserved for writing
+ 186:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	if (s.state[RX] == UART_SYS_IDLE) {
+ 638               	.LM53:
+ 639 0166 9091 0000 		lds r25,s+4
+ 640 016a 9130      		cpi r25,lo8(1)
+ 641 016c 19F4      		brne .L34
+ 187:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		return -EINVAL;
+ 643               	.LM54:
+ 644 016e 8AEE      		ldi r24,lo8(-22)
+ 645 0170 9FEF      		ldi r25,hi8(-22)
+ 646 0172 0895      		ret
+ 647               	.L34:
+ 188:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	}
+ 189:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	// Check if uart rx is currently in use
+ 190:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	if ((s.calling_mod_id[RX] != calling_id) || (s.state[RX] != UART_SYS_WAIT)) {
+ 649               	.LM55:
+ 650 0174 8091 0000 		lds r24,s+2
+ 651 0178 8617      		cp r24,r22
+ 652 017a 11F4      		brne .L36
+ 653 017c 9230      		cpi r25,lo8(2)
+ 654 017e 19F0      		breq .L35
+ 655               	.L36:
+ 191:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		return -EBUSY;
+ 657               	.LM56:
+ 658 0180 80EF      		ldi r24,lo8(-16)
+ 659 0182 9FEF      		ldi r25,hi8(-16)
+ 660 0184 0895      		ret
+ 661               	.L35:
+ 192:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	}
+ 193:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	
+ 194:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	if (uart_startTransceiverRx(read_size, s.flags[RX]) == SOS_OK) {
+ 663               	.LM57:
+ 664 0186 6091 0000 		lds r22,s+6
+ 665 018a 822F      		mov r24,r18
+ 666 018c 0E94 0000 		call uart_startTransceiverRx
+ 667 0190 8823      		tst r24
+ 668 0192 41F4      		brne .L37
+ 195:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		s.state[RX] = UART_SYS_BUSY; 
+ 670               	.LM58:
+ 671 0194 83E0      		ldi r24,lo8(3)
+ 672 0196 8093 0000 		sts s+4,r24
+ 196:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		s.system_state = UART_SYS_BUSY; 
+ 674               	.LM59:
+ 675 019a 8093 0000 		sts s,r24
+ 197:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		return SOS_OK;
+ 677               	.LM60:
+ 678 019e 80E0      		ldi r24,lo8(0)
+ 679 01a0 90E0      		ldi r25,hi8(0)
+ 680 01a2 0895      		ret
+ 681               	.L37:
+ 198:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	}
+ 199:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	// lower layer busy (async recieve?)
+ 200:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	return -EBUSY;
+ 683               	.LM61:
+ 684 01a4 80EF      		ldi r24,lo8(-16)
+ 685 01a6 9FEF      		ldi r25,hi8(-16)
+ 201:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** }
+ 687               	.LM62:
+ 688 01a8 0895      		ret
+ 689               	/* epilogue: frame size=0 */
+ 690 01aa 0895      		ret
+ 691               	/* epilogue end (size=1) */
+ 692               	/* function ker_uart_read_data size 36 (35) */
+ 694               	.Lscope4:
+ 698               	.global	uart_send_done
+ 700               	uart_send_done:
+ 202:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+ 203:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** /**
+ 204:/Users/Administrator/sos-2x/drivers/uart/uart_system.c ****  * Send MSG_UART_SEND_DONE 
+ 205:/Users/Administrator/sos-2x/drivers/uart/uart_system.c ****  */
+ 206:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** void uart_send_done(uint8_t status) 
+ 207:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** {
+ 702               	.LM63:
+ 703               	/* prologue: frame size=0 */
+ 704 01ac EF92      		push r14
+ 705 01ae FF92      		push r15
+ 706 01b0 0F93      		push r16
+ 707 01b2 1F93      		push r17
+ 708               	/* prologue end (size=4) */
+ 709 01b4 982F      		mov r25,r24
+ 208:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	// bus was reserved by someone and they sent something
+ 209:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	if ((s.calling_mod_id[TX] != NULL_PID) && (s.state[TX] == UART_SYS_BUSY)) {
+ 711               	.LM64:
+ 712 01b6 3091 0000 		lds r19,s+1
+ 713 01ba 3F3F      		cpi r19,lo8(-1)
+ 714 01bc E9F0      		breq .L38
+ 716               	.LM65:
+ 717 01be 8091 0000 		lds r24,s+3
+ 718 01c2 8330      		cpi r24,lo8(3)
+ 719 01c4 C9F4      		brne .L38
+ 210:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		s.state[TX] = UART_SYS_WAIT;
+ 721               	.LM66:
+ 722 01c6 82E0      		ldi r24,lo8(2)
+ 723 01c8 8093 0000 		sts s+3,r24
+ 211:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		if (status & UART_SYS_ERROR_FLAG) {
+ 725               	.LM67:
+ 726 01cc 892F      		mov r24,r25
+ 727 01ce 9927      		clr r25
+ 728 01d0 8C01      		movw r16,r24
+ 729 01d2 0170      		andi r16,lo8(1)
+ 730 01d4 1070      		andi r17,hi8(1)
+ 731 01d6 80FF      		sbrs r24,0
+ 732 01d8 06C0      		rjmp .L40
+ 212:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 				post_short(s.calling_mod_id[TX], UART_PID, MSG_UART_SEND_DONE, 0, 0, SOS_MSG_SEND_FAIL|SOS_MSG_
+ 734               	.LM68:
+ 735 01da 92E4      		ldi r25,lo8(66)
+ 736 01dc E92E      		mov r14,r25
+ 737 01de F12C      		mov r15,__zero_reg__
+ 738 01e0 00E0      		ldi r16,lo8(0)
+ 739 01e2 10E0      		ldi r17,hi8(0)
+ 740 01e4 03C0      		rjmp .L42
+ 741               	.L40:
+ 213:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		} else {
+ 214:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 			post_short(s.calling_mod_id[TX], UART_PID, MSG_UART_SEND_DONE, 0, 0, SOS_MSG_HIGH_PRIORITY);
+ 743               	.LM69:
+ 744 01e6 80E4      		ldi r24,lo8(64)
+ 745 01e8 E82E      		mov r14,r24
+ 746 01ea F12C      		mov r15,__zero_reg__
+ 747               	.L42:
+ 748 01ec 20E0      		ldi r18,lo8(0)
+ 749 01ee 42E4      		ldi r20,lo8(66)
+ 750 01f0 642F      		mov r22,r20
+ 751 01f2 832F      		mov r24,r19
+ 752 01f4 0E94 0000 		call post_short
+ 753               	.L38:
+ 754               	/* epilogue: frame size=0 */
+ 755 01f8 1F91      		pop r17
+ 756 01fa 0F91      		pop r16
+ 757 01fc FF90      		pop r15
+ 758 01fe EF90      		pop r14
+ 759 0200 0895      		ret
+ 760               	/* epilogue end (size=5) */
+ 761               	/* function uart_send_done size 43 (34) */
+ 763               	.Lscope5:
+ 768               	.global	uart_read_done
+ 770               	uart_read_done:
+ 215:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		}
+ 216:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	}
+ 217:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** }
+ 218:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+ 219:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+ 220:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** /**
+ 221:/Users/Administrator/sos-2x/drivers/uart/uart_system.c ****  * Send MSG_UART_READ_DONE 
+ 222:/Users/Administrator/sos-2x/drivers/uart/uart_system.c ****  */
+ 223:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** void uart_read_done(uint8_t length, uint8_t status) {
+ 772               	.LM70:
+ 773               	/* prologue: frame size=0 */
+ 774 0202 EF92      		push r14
+ 775 0204 FF92      		push r15
+ 776 0206 0F93      		push r16
+ 777 0208 1F93      		push r17
+ 778               	/* prologue end (size=4) */
+ 224:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+ 225:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	uint8_t *buff = NULL;
+ 226:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	
+ 227:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	if (status & UART_SYS_ERROR_FLAG  && (s.calling_mod_id[RX] != NULL_PID)) {
+ 780               	.LM71:
+ 781 020a 60FF      		sbrs r22,0
+ 782 020c 0EC0      		rjmp .L43
+ 784               	.LM72:
+ 785 020e 8091 0000 		lds r24,s+2
+ 786 0212 8F3F      		cpi r24,lo8(-1)
+ 787 0214 51F0      		breq .L43
+ 788               	.L45:
+ 228:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		goto post_error_msg;
+ 229:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	} else {
+ 230:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		return;
+ 231:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	}
+ 232:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+ 233:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	buff = uart_getRecievedData();
+ 234:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+ 235:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	// if it passes sanity checks give it to the scheduler
+ 236:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	/*
+ 237:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	 * with a correct protocol byte this should never happen
+ 238:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	 *
+ 239:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	if ((buff != NULL) && (s.calling_mod_id[RX] == NULL_PID) && (length >= (SOS_MSG_HEADER_SIZE))) {
+ 240:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		Message *rxd_msg = (Message*)buff;
+ 241:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		if (length == (SOS_MSG_HEADER_SIZE + rxd_msg->len)) {
+ 242:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 			rxd_msg->flag &= ~(SOS_MSG_PORT_MSK);
+ 243:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 			handle_incoming_msg(rxd_msg, SOS_MSG_UART_IO);
+ 244:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 			LED_DBG(LED_YELLOW_TOGGLE);
+ 245:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 			return;
+ 246:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		}
+ 247:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	}
+ 248:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** */
+ 249:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	// got data but no one cares, trash buffer and return
+ 250:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	if (s.calling_mod_id[RX] == NULL_PID) {
+ 251:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		ker_free(buff);
+ 252:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		return;
+ 253:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	}
+ 254:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+ 255:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	// no data, tell it to someone who cares
+ 256:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	if (buff == NULL) {
+ 257:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		goto post_error_msg;
+ 258:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	}
+ 259:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+ 260:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	// verify message type and dispatch
+ 261:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	switch (buff[0]) {  // protocol byte
+ 262:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		case HDLC_SOS_MSG:
+ 263:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 			{
+ 264:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 				if (s.flags[RX] & UART_SYS_SOS_MSG_FLAG) {
+ 265:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 					post_long(
+ 266:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 							s.calling_mod_id[RX],
+ 267:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 							UART_PID,
+ 268:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 							MSG_UART_READ_DONE,
+ 269:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 							length,
+ 270:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 							buff,
+ 271:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 							SOS_MSG_RELEASE|SOS_MSG_HIGH_PRIORITY);
+ 272:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 					s.state[RX] = UART_SYS_WAIT;
+ 273:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 					return;
+ 274:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 				} else {
+ 275:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 					ker_free(buff);
+ 276:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 					goto post_error_msg;
+ 277:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 				}
+ 278:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 			}
+ 279:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		case HDLC_RAW:
+ 280:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 			{
+ 281:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 				// wrap in message and send
+ 282:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 				post_long(
+ 283:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 						s.calling_mod_id[RX],
+ 284:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 						UART_PID,
+ 285:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 						MSG_UART_READ_DONE,
+ 286:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 						length, 
+ 287:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 						buff,   
+ 288:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 						SOS_MSG_RELEASE|SOS_MSG_HIGH_PRIORITY);
+ 289:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 				s.state[RX] = UART_SYS_WAIT;
+ 290:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 				return;
+ 291:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 			}
+ 292:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 		default:
+ 293:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 			ker_free(buff);
+ 294:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 			break;
+ 295:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	}
+ 296:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 
+ 297:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** post_error_msg:
+ 298:/Users/Administrator/sos-2x/drivers/uart/uart_system.c **** 	post_short(
+ 790               	.LM73:
+ 791 0216 20E4      		ldi r18,lo8(64)
+ 792 0218 E22E      		mov r14,r18
+ 793 021a F12C      		mov r15,__zero_reg__
+ 794 021c 00E0      		ldi r16,lo8(0)
+ 795 021e 10E0      		ldi r17,hi8(0)
+ 796 0220 20E0      		ldi r18,lo8(0)
+ 797 0222 4FE0      		ldi r20,lo8(15)
+ 798 0224 62E4      		ldi r22,lo8(66)
+ 799 0226 0E94 0000 		call post_short
+ 800               	.L43:
+ 801               	/* epilogue: frame size=0 */
+ 802 022a 1F91      		pop r17
+ 803 022c 0F91      		pop r16
+ 804 022e FF90      		pop r15
+ 805 0230 EF90      		pop r14
+ 806 0232 0895      		ret
+ 807               	/* epilogue end (size=5) */
+ 808               	/* function uart_read_done size 25 (16) */
+ 810               	.Lscope6:
+ 812               		.lcomm s,10
+ 814               		.text
+ 816               	Letext:
+ 817               	/* File "/Users/Administrator/sos-2x/drivers/uart/uart_system.c": code  283 = 0x011b ( 254), prolog
+DEFINED SYMBOLS
+                            *ABS*:00000000 uart_system.c
+                            *ABS*:0000003f __SREG__
+                            *ABS*:0000003e __SP_H__
+                            *ABS*:0000003d __SP_L__
+                            *ABS*:00000000 __tmp_reg__
+                            *ABS*:00000001 __zero_reg__
+/var/tmp//ccdZvMp0.s:303    .text:00000000 uart_system_init
+                             .bss:00000000 s
+/var/tmp//ccdZvMp0.s:367    .text:00000044 ker_uart_reserve_bus
+/var/tmp//ccdZvMp0.s:444    .text:0000008c ker_uart_release_bus
+/var/tmp//ccdZvMp0.s:557    .text:00000114 ker_uart_send_data
+/var/tmp//ccdZvMp0.s:631    .text:00000164 ker_uart_read_data
+/var/tmp//ccdZvMp0.s:700    .text:000001ac uart_send_done
+/var/tmp//ccdZvMp0.s:770    .text:00000202 uart_read_done
+/var/tmp//ccdZvMp0.s:816    .text:00000234 Letext
+
+UNDEFINED SYMBOLS
+__do_copy_data
+__do_clear_bss
+uart_init
+uart_startTransceiverTx
+uart_startTransceiverRx
+post_short
