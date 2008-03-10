@@ -10,7 +10,7 @@ mod_header_ptr test_param_get_header();
 #endif
 
 //! forward declaration
-//mod_header_ptr loader_get_header();
+mod_header_ptr loader_get_header();
 //mod_header_ptr neighbor_get_header();
 //mod_header_ptr tree_routing_get_header();
 mod_header_ptr rfid_get_header();

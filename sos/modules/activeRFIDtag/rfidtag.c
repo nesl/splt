@@ -9,7 +9,7 @@
 #include <routing/tree_routing/tree_routing.h>
 #include <module.h>
 
-#define aRFID_TIMER_INTERVAL	1024L
+#define aRFID_TIMER_INTERVAL	2048L
 #define aRFID_TID		0
 
 #define MSG_RFID_COMMAND (MOD_MSG_START+2)
@@ -72,7 +72,7 @@ static int8_t rfidtag_msg_handler(void *state, Message *msg)
 
     case MSG_TIMER_TIMEOUT:
 	{
-		sys_led(LED_RED_TOGGLE);
+		sys_led(LED_YELLOW_TOGGLE);
 		uint8_t *address;
 		uint8_t data;
 		data = sys_id();
