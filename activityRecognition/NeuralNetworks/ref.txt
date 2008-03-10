@@ -1,0 +1,3 @@
+http://ffnet.sourceforge.net/examples/ocr.html
+http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/496908
+
