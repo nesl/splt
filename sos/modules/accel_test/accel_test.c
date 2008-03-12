@@ -10,7 +10,7 @@
 #include <mts310sb.h>
 
 #define ACCEL_TEST_APP_TID 0
-#define ACCEL_TEST_APP_INTERVAL 10
+#define ACCEL_TEST_APP_INTERVAL 5
 #define ACCEL_TEST_APP_INTERVAL_2 20
 
 #define ACCEL_TEST_PID DFLT_APP_ID0
@@ -38,9 +38,9 @@ typedef struct {
 } app_state_t;
 
 static uint16_t xcounter = 0;
-static uint16_t ycounter = 0;
+//static uint16_t ycounter = 0;
 static uint16_t valuesx[MAX_COUNT];
-static uint16_t valuesy[MAX_COUNT];
+//static uint16_t valuesy[MAX_COUNT];
 
 static double var(int count, uint16_t data[])
 {
@@ -155,15 +155,15 @@ static int8_t accel_test_msg_handler(void *state, Message *msg)
 
 				msg_len = msg->len;
 				payload = sys_msg_take_data(msg);
-				sys_free(payload);
+		//		sys_free(payload);
 
-/*				sys_post_uart (
+				sys_post_uart (
 						s->pid,
 						MSG_ACCEL_DATA,
 						msg_len,
 						payload,
 						SOS_MSG_RELEASE,
-						BCAST_ADDRESS);*/
+						BCAST_ADDRESS);
 			}
 			break;
 
@@ -186,8 +186,16 @@ static int8_t accel_test_msg_handler(void *state, Message *msg)
 						{
 							sys_timer_stop(ACCEL_TEST_APP_TID);
 							xcounter = 0;
-							//variance = sys_malloc(sizeof(double));
-							//variance[0] = var(MAX_COUNT,valuesx);
+							variance = sys_malloc(sizeof(double));
+							variance[0] = var(MAX_COUNT,valuesx);
+							if(sys_id() == 0)
+							{
+							sys_post_uart(s->pid, MSG_ACCEL_DATA, sizeof(double), (void*)variance, SOS_MSG_RELEASE, BCAST_ADDRESS);
+							}
+							else
+							{
+							sys_post_net(s->pid, MSG_ACCEL_DATA, sizeof(double), (void*)variance, SOS_MSG_RELEASE, BCAST_ADDRESS);
+							}
 							valuesx[xcounter] = *data;
 			        sys_timer_start(ACCEL_TEST_APP_TID, ACCEL_TEST_APP_INTERVAL, SLOW_TIMER_REPEAT);
 						}
@@ -197,7 +205,9 @@ static int8_t accel_test_msg_handler(void *state, Message *msg)
 							valuesx[xcounter] = *data;
 						}
 					}
-					else if(data_msg->data[0] ==5)
+
+//					else if(data_msg->data[0] == 5)
+/*          if(data_msg->data[0] ==5)
 					{
 						if (ycounter >= MAX_COUNT)
 						{
@@ -205,7 +215,14 @@ static int8_t accel_test_msg_handler(void *state, Message *msg)
 							ycounter = 0;
 							variance = sys_malloc(sizeof(double));
 							variance[0] = var(MAX_COUNT,valuesy);
+              if(sys_id() == 0)
+							{
 							sys_post_uart(s->pid, MSG_ACCEL_DATA, sizeof(double), (void*)variance, SOS_MSG_RELEASE, BCAST_ADDRESS);
+							}
+							else
+							{
+							sys_post_net(s->pid, MSG_ACCEL_DATA, sizeof(double), (void*)variance, SOS_MSG_RELEASE, 0);
+							}
 							valuesy[ycounter] = *data;
 			        sys_timer_start(ACCEL_TEST_APP_TID, ACCEL_TEST_APP_INTERVAL, SLOW_TIMER_REPEAT);
 						}
@@ -214,7 +231,7 @@ static int8_t accel_test_msg_handler(void *state, Message *msg)
 							ycounter++;
 							valuesy[ycounter] = *data;
 						}
-					}
+					}*/
 				  sys_free(data);	
 					if (sys_id() == 0){
 		/*				sys_post_uart ( 
@@ -229,7 +246,7 @@ static int8_t accel_test_msg_handler(void *state, Message *msg)
 
 					} else {
 						sys_led(LED_YELLOW_TOGGLE);
-
+/*
 						sys_post_net (
 								s->pid, 
 								MSG_ACCEL_DATA,
@@ -237,12 +254,15 @@ static int8_t accel_test_msg_handler(void *state, Message *msg)
 								data_msg,
 								SOS_MSG_RELEASE,
 								0);
-					}
+*/
+						sys_free(data_msg);
+								}
 				} else
 					sys_led(LED_RED_ON);
 					switch(s->state) {
 					case ACCEL_TEST_APP_ACCEL_0_BUSY:
-						s->state = ACCEL_TEST_APP_ACCEL_1;
+// was previously 1, we only use challen 0
+						s->state = ACCEL_TEST_APP_ACCEL_0;
 						break;
 					case ACCEL_TEST_APP_ACCEL_1_BUSY:
 						s->state = ACCEL_TEST_APP_ACCEL_0;
