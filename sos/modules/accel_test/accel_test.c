@@ -37,6 +37,11 @@ typedef struct {
 	uint16_t counter;
 } app_state_t;
 
+typedef struct {
+	uint8_t address;
+	double variance;
+} variance_t;
+
 static uint16_t xcounter = 0;
 //static uint16_t ycounter = 0;
 static uint16_t valuesx[MAX_COUNT];
@@ -171,7 +176,6 @@ static int8_t accel_test_msg_handler(void *state, Message *msg)
 			{
 				data_msg_t *data_msg;
         uint16_t *data;
-				double *variance;
 				data_msg = (data_msg_t*) sys_malloc (sizeof(data_msg_t));
 				data = sys_malloc(sizeof(uint16_t));
 
@@ -185,16 +189,21 @@ static int8_t accel_test_msg_handler(void *state, Message *msg)
 						if (xcounter >= MAX_COUNT)
 						{
 							sys_timer_stop(ACCEL_TEST_APP_TID);
+							variance_t *variance_tuple;
+							variance_tuple = (variance_t *) sys_malloc(sizeof(variance_t));
+							if(variance_tuple)
+							{
 							xcounter = 0;
-							variance = sys_malloc(sizeof(double));
-							variance[0] = var(MAX_COUNT,valuesx);
+							variance_tuple->address = sys_id();
+							variance_tuple->variance = var(MAX_COUNT,valuesx);
 							if(sys_id() == 0)
 							{
-							sys_post_uart(s->pid, MSG_ACCEL_DATA, sizeof(double), (void*)variance, SOS_MSG_RELEASE, BCAST_ADDRESS);
+							sys_post_uart(s->pid, MSG_ACCEL_DATA, sizeof(variance_t), (void*)variance_tuple, SOS_MSG_RELEASE, BCAST_ADDRESS);
 							}
 							else
 							{
-							sys_post_net(s->pid, MSG_ACCEL_DATA, sizeof(double), (void*)variance, SOS_MSG_RELEASE, BCAST_ADDRESS);
+							sys_post_net(s->pid, MSG_ACCEL_DATA, sizeof(variance_t), (void*)variance_tuple, SOS_MSG_RELEASE, BCAST_ADDRESS);
+							}
 							}
 							valuesx[xcounter] = *data;
 			        sys_timer_start(ACCEL_TEST_APP_TID, ACCEL_TEST_APP_INTERVAL, SLOW_TIMER_REPEAT);
