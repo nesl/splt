@@ -1,0 +1,142 @@
+   1               		.file	"test_uart.c"
+   2               		.arch atmega128
+   3               	__SREG__ = 0x3f
+   4               	__SP_H__ = 0x3e
+   5               	__SP_L__ = 0x3d
+   6               	__tmp_reg__ = 0
+   7               	__zero_reg__ = 1
+   8               		.global __do_copy_data
+   9               		.global __do_clear_bss
+  10               	.global	foo0
+  11               	.global	foo0
+  12               		.section .bss
+  15               	foo0:
+  16 0000 00        		.skip 1,0
+  17               	.global	foo1
+  18               	.global	foo1
+  21               	foo1:
+  22 0001 00        		.skip 1,0
+  23               		.text
+  24               	.global	main
+  26               	main:
+  27               	/* prologue: frame size=0 */
+  28 0000 C0E0      		ldi r28,lo8(__stack - 0)
+  29 0002 D0E0      		ldi r29,hi8(__stack - 0)
+  30 0004 DEBF      		out __SP_H__,r29
+  31 0006 CDBF      		out __SP_L__,r28
+  32               	/* prologue end (size=4) */
+  33 0008 83E0      		ldi r24,lo8(3)
+  34 000a 8093 6A00 		sts 106,r24
+  35 000e 8091 5900 		lds r24,89
+  36 0012 8360      		ori r24,lo8(3)
+  37 0014 8093 5900 		sts 89,r24
+  38 0018 8091 5500 		lds r24,85
+  39 001c 8360      		ori r24,lo8(3)
+  40 001e 8093 5500 		sts 85,r24
+  41               	/* #APP */
+  42 0022 7894      		sei
+  43               	/* #NOAPP */
+  44 0024 8091 3A00 		lds r24,58
+  45 0028 8760      		ori r24,lo8(7)
+  46 002a 8093 3A00 		sts 58,r24
+  47 002e 8091 3B00 		lds r24,59
+  48 0032 8260      		ori r24,lo8(2)
+  49 0034 8093 3B00 		sts 59,r24
+  50 0038 8091 3B00 		lds r24,59
+  51 003c 8460      		ori r24,lo8(4)
+  52 003e 8093 3B00 		sts 59,r24
+  53 0042 8091 3B00 		lds r24,59
+  54 0046 8160      		ori r24,lo8(1)
+  55 0048 8093 3B00 		sts 59,r24
+  56 004c 8091 3B00 		lds r24,59
+  57 0050 8460      		ori r24,lo8(4)
+  58 0052 8093 3B00 		sts 59,r24
+  59 0056 8091 3B00 		lds r24,59
+  60 005a 8160      		ori r24,lo8(1)
+  61 005c 8093 3B00 		sts 59,r24
+  62               	.L2:
+  63 0060 FFCF      		rjmp .L2
+  64               	/* epilogue: frame size=0 */
+  65               	/* epilogue: noreturn */
+  66               	/* epilogue end (size=0) */
+  67               	/* function main size 50 (46) */
+  69               	.global	__vector_1
+  71               	__vector_1:
+  72               	/* prologue: frame size=0 */
+  73 0062 1F92      		push __zero_reg__
+  74 0064 0F92      		push __tmp_reg__
+  75 0066 0FB6      		in __tmp_reg__,__SREG__
+  76 0068 0F92      		push __tmp_reg__
+  77 006a 1124      		clr __zero_reg__
+  78 006c 8F93      		push r24
+  79 006e 9F93      		push r25
+  80 0070 CF93      		push r28
+  81 0072 DF93      		push r29
+  82 0074 CDB7      		in r28,__SP_L__
+  83 0076 DEB7      		in r29,__SP_H__
+  84               	/* prologue end (size=11) */
+  85 0078 8091 3B00 		lds r24,59
+  86 007c 94E0      		ldi r25,lo8(4)
+  87 007e 8927      		eor r24,r25
+  88 0080 8093 3B00 		sts 59,r24
+  89               	/* epilogue: frame size=0 */
+  90 0084 DF91      		pop r29
+  91 0086 CF91      		pop r28
+  92 0088 9F91      		pop r25
+  93 008a 8F91      		pop r24
+  94 008c 0F90      		pop __tmp_reg__
+  95 008e 0FBE      		out __SREG__,__tmp_reg__
+  96 0090 0F90      		pop __tmp_reg__
+  97 0092 1F90      		pop __zero_reg__
+  98 0094 1895      		reti
+  99               	/* epilogue end (size=9) */
+ 100               	/* function __vector_1 size 26 (6) */
+ 102               	.global	__vector_2
+ 104               	__vector_2:
+ 105               	/* prologue: frame size=0 */
+ 106 0096 1F92      		push __zero_reg__
+ 107 0098 0F92      		push __tmp_reg__
+ 108 009a 0FB6      		in __tmp_reg__,__SREG__
+ 109 009c 0F92      		push __tmp_reg__
+ 110 009e 1124      		clr __zero_reg__
+ 111 00a0 8F93      		push r24
+ 112 00a2 9F93      		push r25
+ 113 00a4 CF93      		push r28
+ 114 00a6 DF93      		push r29
+ 115 00a8 CDB7      		in r28,__SP_L__
+ 116 00aa DEB7      		in r29,__SP_H__
+ 117               	/* prologue end (size=11) */
+ 118 00ac 8091 3B00 		lds r24,59
+ 119 00b0 92E0      		ldi r25,lo8(2)
+ 120 00b2 8927      		eor r24,r25
+ 121 00b4 8093 3B00 		sts 59,r24
+ 122               	/* epilogue: frame size=0 */
+ 123 00b8 DF91      		pop r29
+ 124 00ba CF91      		pop r28
+ 125 00bc 9F91      		pop r25
+ 126 00be 8F91      		pop r24
+ 127 00c0 0F90      		pop __tmp_reg__
+ 128 00c2 0FBE      		out __SREG__,__tmp_reg__
+ 129 00c4 0F90      		pop __tmp_reg__
+ 130 00c6 1F90      		pop __zero_reg__
+ 131 00c8 1895      		reti
+ 132               	/* epilogue end (size=9) */
+ 133               	/* function __vector_2 size 26 (6) */
+ 135               	/* File "test_uart.c": code  102 = 0x0066 (  58), prologues  26, epilogues  18 */
+DEFINED SYMBOLS
+                            *ABS*:00000000 test_uart.c
+                            *ABS*:0000003f __SREG__
+                            *ABS*:0000003e __SP_H__
+                            *ABS*:0000003d __SP_L__
+                            *ABS*:00000000 __tmp_reg__
+                            *ABS*:00000001 __zero_reg__
+/var/tmp//ccwYsVHD.s:15     .bss:00000000 foo0
+/var/tmp//ccwYsVHD.s:21     .bss:00000001 foo1
+/var/tmp//ccwYsVHD.s:26     .text:00000000 main
+/var/tmp//ccwYsVHD.s:71     .text:00000062 __vector_1
+/var/tmp//ccwYsVHD.s:104    .text:00000096 __vector_2
+
+UNDEFINED SYMBOLS
+__do_copy_data
+__do_clear_bss
+__stack

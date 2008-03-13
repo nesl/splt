@@ -1,0 +1,184 @@
+
+test_uart.elf:     file format elf32-avr
+
+Sections:
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .data         00000000  00800100  00000194  00000228  2**0
+                  CONTENTS, ALLOC, LOAD, DATA
+  1 .text         00000194  00000000  00000000  00000094  2**0
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+  2 .bss          00000002  00800100  00800100  00000228  2**0
+                  ALLOC
+  3 .noinit       00000000  00800102  00800102  00000228  2**0
+                  CONTENTS
+  4 .eeprom       00000000  00810000  00810000  00000228  2**0
+                  CONTENTS
+  5 .stab         00000408  00000000  00000000  00000228  2**2
+                  CONTENTS, READONLY, DEBUGGING
+  6 .stabstr      00000059  00000000  00000000  00000630  2**0
+                  CONTENTS, READONLY, DEBUGGING
+Disassembly of section .text:
+
+00000000 <__vectors>:
+   0:	0c 94 46 00 	jmp	0x8c
+   4:	0c 94 96 00 	jmp	0x12c
+   8:	0c 94 b0 00 	jmp	0x160
+   c:	0c 94 63 00 	jmp	0xc6
+  10:	0c 94 63 00 	jmp	0xc6
+  14:	0c 94 63 00 	jmp	0xc6
+  18:	0c 94 63 00 	jmp	0xc6
+  1c:	0c 94 63 00 	jmp	0xc6
+  20:	0c 94 63 00 	jmp	0xc6
+  24:	0c 94 63 00 	jmp	0xc6
+  28:	0c 94 63 00 	jmp	0xc6
+  2c:	0c 94 63 00 	jmp	0xc6
+  30:	0c 94 63 00 	jmp	0xc6
+  34:	0c 94 63 00 	jmp	0xc6
+  38:	0c 94 63 00 	jmp	0xc6
+  3c:	0c 94 63 00 	jmp	0xc6
+  40:	0c 94 63 00 	jmp	0xc6
+  44:	0c 94 63 00 	jmp	0xc6
+  48:	0c 94 63 00 	jmp	0xc6
+  4c:	0c 94 63 00 	jmp	0xc6
+  50:	0c 94 63 00 	jmp	0xc6
+  54:	0c 94 63 00 	jmp	0xc6
+  58:	0c 94 63 00 	jmp	0xc6
+  5c:	0c 94 63 00 	jmp	0xc6
+  60:	0c 94 63 00 	jmp	0xc6
+  64:	0c 94 63 00 	jmp	0xc6
+  68:	0c 94 63 00 	jmp	0xc6
+  6c:	0c 94 63 00 	jmp	0xc6
+  70:	0c 94 63 00 	jmp	0xc6
+  74:	0c 94 63 00 	jmp	0xc6
+  78:	0c 94 63 00 	jmp	0xc6
+  7c:	0c 94 63 00 	jmp	0xc6
+  80:	0c 94 63 00 	jmp	0xc6
+  84:	0c 94 63 00 	jmp	0xc6
+  88:	0c 94 63 00 	jmp	0xc6
+
+0000008c <__ctors_end>:
+  8c:	11 24       	eor	r1, r1
+  8e:	1f be       	out	0x3f, r1	; 63
+  90:	cf ef       	ldi	r28, 0xFF	; 255
+  92:	d0 e1       	ldi	r29, 0x10	; 16
+  94:	de bf       	out	0x3e, r29	; 62
+  96:	cd bf       	out	0x3d, r28	; 61
+
+00000098 <__do_copy_data>:
+  98:	11 e0       	ldi	r17, 0x01	; 1
+  9a:	a0 e0       	ldi	r26, 0x00	; 0
+  9c:	b1 e0       	ldi	r27, 0x01	; 1
+  9e:	e4 e9       	ldi	r30, 0x94	; 148
+  a0:	f1 e0       	ldi	r31, 0x01	; 1
+  a2:	00 e0       	ldi	r16, 0x00	; 0
+  a4:	0b bf       	out	0x3b, r16	; 59
+  a6:	02 c0       	rjmp	.+4      	; 0xac
+  a8:	07 90       	elpm	r0, Z+
+  aa:	0d 92       	st	X+, r0
+  ac:	a0 30       	cpi	r26, 0x00	; 0
+  ae:	b1 07       	cpc	r27, r17
+  b0:	d9 f7       	brne	.-10     	; 0xa8
+
+000000b2 <__do_clear_bss>:
+  b2:	11 e0       	ldi	r17, 0x01	; 1
+  b4:	a0 e0       	ldi	r26, 0x00	; 0
+  b6:	b1 e0       	ldi	r27, 0x01	; 1
+  b8:	01 c0       	rjmp	.+2      	; 0xbc
+
+000000ba <.do_clear_bss_loop>:
+  ba:	1d 92       	st	X+, r1
+
+000000bc <.do_clear_bss_start>:
+  bc:	a2 30       	cpi	r26, 0x02	; 2
+  be:	b1 07       	cpc	r27, r17
+  c0:	e1 f7       	brne	.-8      	; 0xba
+  c2:	0c 94 65 00 	jmp	0xca
+
+000000c6 <__bad_interrupt>:
+  c6:	0c 94 00 00 	jmp	0x0
+
+000000ca <main>:
+  ca:	cf ef       	ldi	r28, 0xFF	; 255
+  cc:	d0 e1       	ldi	r29, 0x10	; 16
+  ce:	de bf       	out	0x3e, r29	; 62
+  d0:	cd bf       	out	0x3d, r28	; 61
+  d2:	83 e0       	ldi	r24, 0x03	; 3
+  d4:	80 93 6a 00 	sts	0x006A, r24
+  d8:	80 91 59 00 	lds	r24, 0x0059
+  dc:	83 60       	ori	r24, 0x03	; 3
+  de:	80 93 59 00 	sts	0x0059, r24
+  e2:	80 91 55 00 	lds	r24, 0x0055
+  e6:	83 60       	ori	r24, 0x03	; 3
+  e8:	80 93 55 00 	sts	0x0055, r24
+  ec:	78 94       	sei
+  ee:	80 91 3a 00 	lds	r24, 0x003A
+  f2:	87 60       	ori	r24, 0x07	; 7
+  f4:	80 93 3a 00 	sts	0x003A, r24
+  f8:	80 91 3b 00 	lds	r24, 0x003B
+  fc:	82 60       	ori	r24, 0x02	; 2
+  fe:	80 93 3b 00 	sts	0x003B, r24
+ 102:	80 91 3b 00 	lds	r24, 0x003B
+ 106:	84 60       	ori	r24, 0x04	; 4
+ 108:	80 93 3b 00 	sts	0x003B, r24
+ 10c:	80 91 3b 00 	lds	r24, 0x003B
+ 110:	81 60       	ori	r24, 0x01	; 1
+ 112:	80 93 3b 00 	sts	0x003B, r24
+ 116:	80 91 3b 00 	lds	r24, 0x003B
+ 11a:	84 60       	ori	r24, 0x04	; 4
+ 11c:	80 93 3b 00 	sts	0x003B, r24
+ 120:	80 91 3b 00 	lds	r24, 0x003B
+ 124:	81 60       	ori	r24, 0x01	; 1
+ 126:	80 93 3b 00 	sts	0x003B, r24
+ 12a:	ff cf       	rjmp	.-2      	; 0x12a
+
+0000012c <__vector_1>:
+ 12c:	1f 92       	push	r1
+ 12e:	0f 92       	push	r0
+ 130:	0f b6       	in	r0, 0x3f	; 63
+ 132:	0f 92       	push	r0
+ 134:	11 24       	eor	r1, r1
+ 136:	8f 93       	push	r24
+ 138:	9f 93       	push	r25
+ 13a:	cf 93       	push	r28
+ 13c:	df 93       	push	r29
+ 13e:	cd b7       	in	r28, 0x3d	; 61
+ 140:	de b7       	in	r29, 0x3e	; 62
+ 142:	80 91 3b 00 	lds	r24, 0x003B
+ 146:	94 e0       	ldi	r25, 0x04	; 4
+ 148:	89 27       	eor	r24, r25
+ 14a:	80 93 3b 00 	sts	0x003B, r24
+ 14e:	df 91       	pop	r29
+ 150:	cf 91       	pop	r28
+ 152:	9f 91       	pop	r25
+ 154:	8f 91       	pop	r24
+ 156:	0f 90       	pop	r0
+ 158:	0f be       	out	0x3f, r0	; 63
+ 15a:	0f 90       	pop	r0
+ 15c:	1f 90       	pop	r1
+ 15e:	18 95       	reti
+
+00000160 <__vector_2>:
+ 160:	1f 92       	push	r1
+ 162:	0f 92       	push	r0
+ 164:	0f b6       	in	r0, 0x3f	; 63
+ 166:	0f 92       	push	r0
+ 168:	11 24       	eor	r1, r1
+ 16a:	8f 93       	push	r24
+ 16c:	9f 93       	push	r25
+ 16e:	cf 93       	push	r28
+ 170:	df 93       	push	r29
+ 172:	cd b7       	in	r28, 0x3d	; 61
+ 174:	de b7       	in	r29, 0x3e	; 62
+ 176:	80 91 3b 00 	lds	r24, 0x003B
+ 17a:	92 e0       	ldi	r25, 0x02	; 2
+ 17c:	89 27       	eor	r24, r25
+ 17e:	80 93 3b 00 	sts	0x003B, r24
+ 182:	df 91       	pop	r29
+ 184:	cf 91       	pop	r28
+ 186:	9f 91       	pop	r25
+ 188:	8f 91       	pop	r24
+ 18a:	0f 90       	pop	r0
+ 18c:	0f be       	out	0x3f, r0	; 63
+ 18e:	0f 90       	pop	r0
+ 190:	1f 90       	pop	r1
+ 192:	18 95       	reti
