@@ -13,8 +13,7 @@
 #include <mts310sb.h>
 
 #define ACCEL_TEST_APP_TID 0
-#define ACCEL_TEST_APP_INTERVAL 10240
-#define ACCEL_TEST_APP_INTERVAL_2 20
+#define ACCEL_TEST_APP_INTERVAL 1024
 
 #define ACCEL_TEST_PID DFLT_APP_ID0
 
@@ -45,7 +44,10 @@ typedef struct {
 	double variance;
 } variance_t;
 
-
+typedef struct {
+	uint8_t address;
+	uint16_t count;
+} waterflow_t;
 
 typedef struct {
 	uint8_t id;
@@ -99,10 +101,19 @@ static int8_t water_meter_msg_handler(void *state, Message *msg)
 
 		case MSG_TIMER_TIMEOUT:
 			{
-				uint16_t *temp = sys_malloc(sizeof(uint16_t));
-				*temp = number;
+        waterflow_t *waterflow = (waterflow_t*) sys_malloc(sizeof(waterflow_t));
+				waterflow->count = number;
+				waterflow->address = sys_id();
 				number = 0;
-				sys_post_uart(s->pid, MSG_ACCEL_DATA, sizeof(uint16_t),(void*)temp, SOS_MSG_RELEASE, BCAST_ADDRESS);
+				if(sys_id() == 0)
+				{
+				sys_post_uart(s->pid, MSG_ACCEL_DATA, sizeof(waterflow_t),(void*)waterflow, SOS_MSG_RELEASE, BCAST_ADDRESS);
+        }
+				else
+				{
+					sys_post_net(s->pid, MSG_ACCEL_DATA, sizeof(waterflow_t),(void*)waterflow, SOS_MSG_RELEASE, BCAST_ADDRESS);
+				}
+				
 				//			  sys_led(LED_RED_TOGGLE);
 			}
 			break;
