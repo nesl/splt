@@ -22,7 +22,7 @@ class WaterModule:
 			pass
 		try:
 			(ID,Data) = pysos.unpack('<Bf',pkt)
-			print "Var", Data
+			print "Var", ID, Data
 		except:
 			pass
 			#if ID == 10:
