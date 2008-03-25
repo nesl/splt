@@ -38,7 +38,7 @@ class WaterModule:
 
 if(__name__ == "__main__"):
 	dummy = WaterModule()
-	file = open('data.txt','w')
+	file = open('data_gp.txt','w')
 	while True:
-		file.write("%d,%.15f, %.15f, %.15\n"%(data[0],data[1],data[2],data[3]))
+		file.write("%d,%.15f, %.15f, %.15f\n"%(data[0],data[1],data[2],data[3]))
 		time.sleep(0.5)
