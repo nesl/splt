@@ -1,0 +1,48 @@
+Stern, P.C., Information, Incentives, and Proenvironmental Consumer Behavior. Journal of Consumer Policy, 1999.
+
+Ester, P., Consumer Behavior and Energy Conservation, Boston: Martinus Nijhoff Publishers, 1985. 
+
+McMakin, A.H., Malone, E.L., Lundgren, R.E., Motivating Residents to Conserve Energy without Financial Incentives, Environment and Behavior Journal, Feb. 2002.
+
+Electronic Educational Devices. Watts up? Pro . DOI = http://www.wattsupmeters.com/. 
+
+Fogarty, J., Au, C., Hudson, S. E., Sensing from the basement: A Feasibility Study of Unobtrusive and Low-Cost Home Activity Recognition. ACM UIST 2006.
+
+Patel, S. N., Robertson, T., Kientz, J. A., Reynolds, M. S. , Abowd, G. D., At the Flick of a Switch: Detecting and Classifying Unique Electrical Events on Residential Power Line. Ubicomp 2007.
+
+Leland, E., White, R. M., Wright, P. K., Energy Scavenging Power Sources for Household Electrical Monitoring. PowerMEMS, Dec. 2006.
+
+Han, C., Kumar, R., Shea, R., Kohler, E., Srivastava, M., A Dynamic Operating System for Sensor Nodes. Mobisys 2005.
+
+Ryder, J., Agapie, E.,  Steiner, A., Chen, F., Estrin, D., Burke, J., Personal Environmental Impact Report(PEIR), Center for Embedded Networked Sensing(CENS), UCLA, DOI = http://wiki.urban.cens.ucla.edu/index.php?title=PEIR 
+
+Lindsey,Q., Lymberopoulos, D., Savvides, A., An empirical analysis of radio signal strength variability in ieee 802.15.4 networks using monopole antennas. ENALAB Technical Report 050501, 2006.
+
+Ohta ,Y., Sugano, Kawazoe, M., Murata, M.. Indoor localization system using rssi measurement of wireless sensor network based on zigbee standard. Wireless Sensor Networks, 2006.
+
+Wilson, D., Atkeson, C., Simultaneous Tracking & Activity Recognition (STAR) Using Many Anonymous, Binary Sensors, Percom 2005. 
+
+Liao, L., Fox, D., Kautz, H., Location-based activity recognition. In Advances in Neural Information Processing Systems (NIPS), 2005.
+
+Demirdjian, D., Tollmar, K., Koile, K., Checka, N., Darrell, T. "Activity maps for location-aware computing",  IEEE WACV, 2002.
+
+Rowan, J., Mynatt, E. D., Digital Family Portrait Field Trial: Support for Aging in Place. In: Proceedings of ACM Conference on Human Factors in Computing Systems 2005.
+
+Chang, K., Yau, N., Hansen, M., Estrin, D. Sensorbase.org - a centralized repository to slog sensor network data, 2006. 
+
+Chen, J., Zhang, J., Kam, A.H., Shue, L., An automatic acoustic bathroom monitoring system. ISCAS (2) 2005.
+
+Sonderegger, R.C., Movers and stayers: The resident’s contribution to variation across houses in energy consumption for space heating., in Saving energy in the hoome, Princeton’s experiments at twin rivers(R.H. Socolow, Editor), Ballinger, Cambridge, MA (1978).
+
+Hart, G. "Nonintrusive appliance load monitoring." Proceedings of the IEEE, vol. 80, no. 12, 1870-1891, 1992. 
+
+Arens, E., et. al., Demand Response Enabling Technology Development, Phase I Report,  UC, Berkeley, 2006.
+
+Smart Home, DOI = http://www.smarthome.com/. 
+
+Chiang, M. Geometric Programming for Communication Systems, Foundations and Trends in Communications and Information Theory, Now Publishers, 2005
+
+Boyd, S. Kim, S.J., Vandenberghe, L., Hassibi, A., A Tutorial on Geometric Programming, DOI = http://stanford.edu/~boyd/papers/pdf/gp_tutorial.pdf, 2005
+
+Boyd, S., Vandenbeghe, L., Convex Optimization, Cambridge University Press, 2004
+
