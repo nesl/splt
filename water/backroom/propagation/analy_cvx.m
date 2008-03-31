@@ -65,11 +65,16 @@ Vout = [V1out ; V2out];
 % cvx_begin
 %     variables x(8);
 %     Vtemp = Vout'*x;
+% %     windowSize = 5;
+% %     tempgp = filter(ones(1,windowSize)/windowSize,1,data_gp(:,1))/5;
+% %     tempVout =  filter(ones(1,windowSize)/windowSize,1,Vout)/5;
+%     
 %     for i = 1:length
-%         temp(i) = sum(data_gp(1:i,1)-Vtemp(1:i));
+%        temp(i) = sum(data_gp(1:i,1))-sum(Vtemp(1:i));
 %     end
 %     minimize(norm(temp,Inf))
-%     x >= 0
+% %     minimize(norm(tempgp-tempVout'*x,Inf))
+%     %x >= 0
 % cvx_end
 %  
 
@@ -78,7 +83,7 @@ cvx_begin
     variables x(8);
     Vtemp = Vout'*x;
     minimize(norm(data_gp(:,1)-Vtemp,Inf))
-    x >= 0
+    %x >= 0
 cvx_end
 
 X=x
