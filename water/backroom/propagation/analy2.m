@@ -24,13 +24,14 @@ title('Vibration Propagation Parameter, pipe 2 to pipe 3')
 xlabel('Variance of Vibration of Pipe 2')
 ylabel('Variance of Vibration of Pipe 3')
 
-load data_gp.txt
+load data_lp.txt
 
+data_gp = data_lp
 P12 = 0.52;
 P21 = 0.15;
 P = [1 P21 ; P12 1];
 
-length = 358;
+length = 832;
 
 V = zeros(2,length);
 V1out = zeros(4, length);
