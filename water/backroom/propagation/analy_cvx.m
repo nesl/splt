@@ -142,3 +142,18 @@ plot((1:length)*0.5, F2filtered, 'm')
 plot((1:length)*0.5, (F2filtered+F1filtered), 'r')
 plot((1:length)*0.5, data_gp_filtered(:,1))
 
+% normalized
+
+for i = 1:length
+    F1normalized(i) = F1filtered(i)/(F1filtered(i)+F2filtered(i))*data_gp_filtered(i,1);
+    F2normalized(i) = F2filtered(i)/(F1filtered(i)+F2filtered(i))*data_gp_filtered(i,1);
+end
+figure
+plot((1:length)*0.5, F1normalized, 'y')
+hold on
+plot((1:length)*0.5, F2normalized, 'm')
+plot((1:length)*0.5, (F2normalized+F1normalized), 'r')
+plot((1:length)*0.5, data_gp(:,1))
+
+
+
