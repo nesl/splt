@@ -46,10 +46,16 @@ subplot(2,1,1)
 plot(0:(length-1),data_pipe1(:,1))
 hold on
 grid on
-plot(0:(length-1),F,'r')
+plot(0:(length-1),F,'r-')
+title('Water Flow Rate Estimate and Actual Flow Rate in a Single Pipe')
+xlabel('time')
+ylabel('flow rate')
 subplot(2,1,2)
 plot(0:(length-1),data_pipe1(:,1)-F','r')
 grid on
+title('Estimation Error')
+xlabel('time')
+ylabel('flow rate')
 
 figure
 subplot(2,1,1)
@@ -57,9 +63,15 @@ plot(0:(length-1),Tsum)
 hold on
 grid on
 plot(0:(length-1),Fsum,'r')
+title('Accumulated Water Usage Estimate and True Water Usage in a Single Pipe')
+xlabel('time')
+ylabel('water volumn')
 subplot(2,1,2)
 plot(0:(length-1),Tsum-Fsum,'r')
 grid on
+title('Accumulated Water Usage Estimate Error')
+xlabel('time')
+ylabel('water volumn')
 
 
 

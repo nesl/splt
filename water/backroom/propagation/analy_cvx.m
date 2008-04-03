@@ -149,12 +149,20 @@ for i = 1:length
     F2normalized(i) = F2filtered(i)/(F1filtered(i)+F2filtered(i))*data_gp(i,1);
 end
 figure
-plot((1:length)*0.5, F1normalized, 'y')
+subplot(2,1,1)
+plot((1:length)*0.5, (F2normalized+F1normalized))
 hold on
+plot((1:length)*0.5, F1normalized, 'r')
 plot((1:length)*0.5, F2normalized, 'm')
-plot((1:length)*0.5, (F2normalized+F1normalized), 'r')
+title('Water Flow Rate Estimate of Pipe1 and Pipe2')
+legend('Sum', 'Pipe1', 'Pipe2')
+xlabel('time')
+ylabel('flow rate')
+subplot(2,1,2)
 plot((1:length)*0.5, data_gp(:,1))
-
+title('True Water Flow Rate Estimate in the main pipe')
+xlabel('time')
+ylabel('flow rate')
 
 for i=1:length
     F1normalizedsum(i) = sum(F1normalized(1:i));
@@ -163,9 +171,17 @@ for i=1:length
 end
 
 figure
+subplot(2,1,2)
 plot((1:length)*0.5, data_gp_sum(:))
+title('Accumulated Water Usage in the main pipe')
+xlabel('time')
+ylabel('water volumn')
+subplot(2,1,1)
+plot((1:length)*0.5, F2normalizedsum+F1normalizedsum)
 hold on
-plot((1:length)*0.5, F2normalizedsum+F1normalizedsum, 'r.')
-plot((1:length)*0.5, F1normalizedsum, 'y.')
-plot((1:length)*0.5, F2normalizedsum, 'm.')
-
+plot((1:length)*0.5, F1normalizedsum, 'r')
+plot((1:length)*0.5, F2normalizedsum, 'm')
+title('Accumulated Water Usage Estimate of Pipe1 and Pipe2')
+legend('Sum', 'Pipe1', 'Pipe2')
+xlabel('time')
+ylabel('water volumn')
