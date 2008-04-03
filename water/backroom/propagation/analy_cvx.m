@@ -25,9 +25,9 @@ xlabel('Variance of Vibration of Pipe 2')
 ylabel('Variance of Vibration of Pipe 3')
 
 load data_gp.txt
-load data_lp2.txt
+load data_lp4.txt
 
-data_gp = data_lp2;%(500:3887,:);
+data_gp = data_lp4;%(500:3887,:);
 P12 = 0.52;
 %P12 = 0.15;
 P21 = 0.15;
@@ -83,7 +83,7 @@ cvx_begin
     variables x(8);
     Vtemp = Vout'*x;
     minimize(norm(data_gp(:,1)-Vtemp,Inf))
-    %x >= 0
+    x >= 0
 cvx_end
 
 X=x
@@ -145,8 +145,8 @@ plot((1:length)*0.5, data_gp_filtered(:,1))
 % normalized
 
 for i = 1:length
-    F1normalized(i) = F1filtered(i)/(F1filtered(i)+F2filtered(i))*data_gp_filtered(i,1);
-    F2normalized(i) = F2filtered(i)/(F1filtered(i)+F2filtered(i))*data_gp_filtered(i,1);
+    F1normalized(i) = F1filtered(i)/(F1filtered(i)+F2filtered(i))*data_gp(i,1);
+    F2normalized(i) = F2filtered(i)/(F1filtered(i)+F2filtered(i))*data_gp(i,1);
 end
 figure
 plot((1:length)*0.5, F1normalized, 'y')
@@ -156,4 +156,16 @@ plot((1:length)*0.5, (F2normalized+F1normalized), 'r')
 plot((1:length)*0.5, data_gp(:,1))
 
 
+for i=1:length
+    F1normalizedsum(i) = sum(F1normalized(1:i));
+    F2normalizedsum(i) = sum(F2normalized(1:i));
+    data_gp_sum(i) = sum(data_gp(1:i,1));
+end
+
+figure
+plot((1:length)*0.5, data_gp_sum(:))
+hold on
+plot((1:length)*0.5, F2normalizedsum+F1normalizedsum, 'r.')
+plot((1:length)*0.5, F1normalizedsum, 'y.')
+plot((1:length)*0.5, F2normalizedsum, 'm.')
 
