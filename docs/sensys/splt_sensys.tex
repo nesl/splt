@@ -24,21 +24,32 @@
 \usepackage{url}
 
 
-\numberofauthors{2}
+\def\sharedaffiliation{%
+\end{tabular}
+\begin{tabular}{c}}
 
-
-\author{
+\numberofauthors{1}
+% Three authors sharing the same affiliation.
+    \author{
+      \alignauthor Younghun Kim, Thomas Schmid, Zainul Charbiwala, Mani B. Srivastava   \\  
+     % \email{kimyh@ucla.edu}
 %
-% The command \alignauthor (no curly braces needed) should
-% precede each author name, affiliation/snail-mail address and
-% e-mail address. Additionally, tag each line of
-% affiliation/address with \affaddr, and tag the
-%% e-mail address with \email.
-\alignauthor Younghun Kim, Thomas Schmid, Zainul Charbiwala, Mani B. Srivastava \\
-        \affaddr{Networked and Embedded Systems Lab.}\\
-        \affaddr{University of California, Los Angeles}\\
-       \email{ {kimyh, thomas.schmid, zainul, mbs}@ucla.edu}
-}
+      %\alignauthor Thomas Schmid   
+      %\email{thomas.schmid@ucla.edu}
+%
+      %\alignauthor Zainul Charbiwala  
+      %\email{zainul@ucla.edu}
+%
+     %\alignauthor Mani B. Srivastava 
+     %\email{mbs@ucla.edu}
+ %    
+      \sharedaffiliation
+     \affaddr{Networked and Embedded Systems Lab.}  \\
+     \affaddr{Electrical Engineering Department}  \\
+      \affaddr{University of California, Los Angeles}\\
+      \email{\{kimyh,thomas.schmid,zainul,mbs\}@ucla.edu}
+    }
+    
 
 \title{NAWMS: Nonintrusive Autonomous Water Monitoring System}
 
