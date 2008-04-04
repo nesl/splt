@@ -178,17 +178,15 @@ Solving this optimization problem yields all the necessary parameters if it give
 Since this optimization problem minimizes the error; (Total Water Flow Rate - Sum of Water Flow Rate of every pipe branches), it guarantees minimum error in its estimation. However section 3.2 only considers one simple pipe topology, in this section we consider a more general topology of pipe structure and show that the problem can be decomposed depending on their topology. This might have more than one optimization problem but can be solved very efficiently in known polynomial time. Thus, we describes how to decompose a more complex topology of the pipes but rest of the paper focuses on the first problem() as each of optimization problem can be dealt with separately.  
 Consider a pipe structure in figure ??, assuming there is no water leakage, the total flow rate must be the sum of water flow rate of sub pipes. Similarly the flow rate of each sub pipe must be the sum of flow rate of its sub-sub pipes. Therefore we have K equalities that need to hold to satisfy the law of mass conservation. 
 Let define the water flow rate in a pipe as 
-$f_{i,j}(t)$
+$f_{i,j}(t)$ where $i$ is sub pipe index and $j$ is sub-sub pipe index
 
-where
-
-$i$ : sub pipe index 
-
-$j$ : sub-sub pipe index
-
-$f_{i}(t) = \sum_{j=1}^{J}f_{i,j}(t)$
-
-$ M(t) = \sum_{i=1}^{N}f_{i}(t)$
+Due to the law of mass conservation, these two equations must hold unless there's water leakage in a pipe
+\begin{equation}
+\begin{array}{l}
+f_{i}(t) = \sum_{j=1}^{J}f_{i,j}(t)\\
+ M(t) = \sum_{i=1}^{N}f_{i}(t)
+\end{array}
+\end{equation}
 \\
 
 From the equations () and (), we can immediately get the following which is a slight modification of equation (). 
