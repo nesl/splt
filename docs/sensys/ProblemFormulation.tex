@@ -220,6 +220,35 @@ Similarly, this concept can be generalized as the main pipe water flow rate is t
 Therefore, depending on users’ need, one can always make these equalities to formulate similar problem forms. For example, if they are interested in the water flow rate to the bathroom rather than each of bathroom sink, toilet bin, and  shower booth, they want to omit individual pipe, instead they want to monitor a sub pipe that has each of branches. 
  
  \subsection{Account for Vibration Propagation}
+
+ \begin{figure}
+\centering
+\includegraphics[width=80mm]{.//figures/P12.jpg}
+\caption{Vibration Propagation from Pipe 1 to Pipe 2}
+\vskip -6pt
+\end{figure}
+
+ \begin{figure}
+\centering
+\includegraphics[width=80mm]{.//figures/P13.jpg}
+\caption{Vibration Propagation from Pipe 1 to Pipe 3}
+\vskip -6pt
+\end{figure}
+
+ \begin{figure}
+\centering
+\includegraphics[width=80mm]{.//figures/P21.jpg}
+\caption{Vibration Propagation from Pipe 2 to Pipe 1}
+\vskip -6pt
+\end{figure}
+
+ \begin{figure}
+\centering
+\includegraphics[width=80mm]{.//figures/P23.jpg}
+\caption{Vibration Propagation from Pipe 2 to Pipe 3}
+\vskip -6pt
+\end{figure}
+
  If we consider a pipe structure in figures ?? and ??, we didn’t take vibration propagation among pipes into account. However, pipes are physically connected and metal and PVC pipes are pretty good material that transfer vibration among themselves. Therefore, the model needs to consider vibration propagation among pipes and compensate this effect to achieve better precision. 
 In general, the vibration propagation may not be linear because pipe topology could be very complex, connection among pipes may consist of hybrid material, different types of mechanical structure have different resonance frequency, etc. Since the water flow induced vibration if relatively small, we want to assume that the vibration propagation is linear and show this through our experiment in section 4.??. 
 Consider there is vibration only on pipe j and let first define propagation parameter from pipe i to pipe j as
