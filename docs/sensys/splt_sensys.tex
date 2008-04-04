@@ -1,0 +1,87 @@
+
+%
+% sample.tex
+% $Id: sample.tex,v 1.1 2006/03/18 00:21:36 johnh Exp johnh $
+%
+
+
+% The default of sigplan-proc-varsize is 9pt, indented paragraphs (acm style)
+% For Sensys or other 10pt conference, use the 10pt option
+%\documentclass{sigplan-proc-varsize}
+% options:
+%\documentclass[9pt]{sigplan-proc-varsize}
+\documentclass[10pt]{sigplan-proc-varsize}
+%\documentclass[noindentedparagraphs]{sigplan-proc-varsize}
+
+
+
+% % hack to avoid the ugly ACM paragraph definition
+% % => can't leave blank line after this
+% (remove comment for this hack)
+% \renewcommand{\paragraph}[1]{\vskip 6pt\noindent\textbf{#1 }}
+
+\usepackage{graphicx}
+\usepackage{url}
+
+
+\numberofauthors{2}
+
+
+\author{
+%
+% The command \alignauthor (no curly braces needed) should
+% precede each author name, affiliation/snail-mail address and
+% e-mail address. Additionally, tag each line of
+% affiliation/address with \affaddr, and tag the
+%% e-mail address with \email.
+\alignauthor Younghun Kim, Thomas Schmid, Zainul Charbiwala, Mani B. Srivastava \\
+        \affaddr{Networked and Embedded Systems Lab.}\\
+        \affaddr{University of California, Los Angeles}\\
+       \email{ {kimyh, thomas.schmid, zainul, mbs}@ucla.edu}
+}
+
+\title{NAWMS: Nonintrusive Autonomous Water Monitoring System}
+
+\conferenceinfo{SenSys'07,} {November 6--9, 2007, Sydney, Australia.}
+\CopyrightYear{2007}
+\crdata{1-59593-763-6/07/0011}
+
+\begin{document}
+
+\maketitle
+
+
+\begin{abstract}
+Water resource is one of the most important natural resources and immediate actions to conserve water resources are needed. To encourage people to save water resource, spatially finer grained water consumption profile is necessary as recent studies have shown. We introduce a nonintrusive and autonomous water monitoring system in individual pipe level of granularity for houses and buildings, which is widely deployable and can be used for improving everyday water usage pattern. The system is autonomous as its calibration procedure can be automated and is less-intrusive as it uses non-intrusive vibration sensors on pipes to estimate water flow rate in the pipes.
+
+The system leverages existing infrastructure and commercially available devices to save its cost. Its main idea behind its autonomous nature is to combine two types of information; a) the water flow rate from the main water meter , which is accurate, but lacks spacial granularity b) the vibration, a measure of water flow rate in a pipe, from vibration sensors, which is less accurate and needed to be calibrated but spatially distributed.
+
+We formulated its calibration procedure as two different types of optimization problems that guarantee minimum error of total amount of water usage. We showed its feasibility by providing some experimental results.
+
+\end{abstract}
+
+% A category with the (minimum) three required fields
+\category{H.4}{Information Systems Applications}{Miscellaneous}
+%A category including the fourth, optional field follows...
+\category{D.2.8}{Software Engineering}{Metrics}[complexity measures, performance measures]
+
+\terms{Delphi theory}
+
+\keywords{ACM proceedings, \LaTeX, text tagging}
+
+
+\input{Intro.tex}
+
+\input{relatedwork.tex}
+
+\input{ProblemFormulation.tex}
+
+\input{Architecture.tex}
+
+\input{Evaluation.tex}
+
+\input{Conclusion.tex}
+% end the environment with {table*}, NOTE not {table}!
+
+
+\end{document}
