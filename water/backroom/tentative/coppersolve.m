@@ -14,6 +14,13 @@ A = [V -eye(63);
 b = [copper3(:,1);-copper3(:,1)];
 X=linprog(f,A,b);
 
+cvx_begin
+    variables x(4);
+    minimize(norm(((copper3(:,1)))-((V*x)),1))
+    %x >= 0
+cvx_end
+
+%X=x;
 scale = 0:0.1:9;
 
 for i=1:91

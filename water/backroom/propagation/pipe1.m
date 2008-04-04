@@ -2,6 +2,7 @@ clear
 close all
 load data_pipe1.txt
 data_pipe1=data_pipe1(60:size(data_pipe1,1),:);
+data_pipe1(:,1) = data_pipe1(:,1)*0.004;
 length = size(data_pipe1,1);
 V = zeros(4,length);
 
@@ -27,8 +28,12 @@ end
 
 figure
 plot(data_pipe1(:,2),data_pipe1(:,1),'r*')
+title('Vibration to Water Flow Rate')
+xlabel('Vibration')
+ylabel('Water Flow Rate (L/s)')
 hold on
 plot(scale,Y)
+axis([0 3 0 0.35])
 
 
 for i = 1:length
@@ -48,14 +53,14 @@ hold on
 grid on
 plot(0:(length-1),F,'r-')
 title('Water Flow Rate Estimate and Actual Flow Rate in a Single Pipe')
-xlabel('time')
-ylabel('flow rate')
+xlabel('time (s)')
+ylabel('flow rate (L/s)')
 subplot(2,1,2)
 plot(0:(length-1),data_pipe1(:,1)-F','r')
 grid on
 title('Estimation Error')
-xlabel('time')
-ylabel('flow rate')
+xlabel('time (s)')
+ylabel('flow rate (L/s)')
 
 figure
 subplot(2,1,1)
@@ -64,14 +69,14 @@ hold on
 grid on
 plot(0:(length-1),Fsum,'r')
 title('Accumulated Water Usage Estimate and True Water Usage in a Single Pipe')
-xlabel('time')
-ylabel('water volumn')
+xlabel('time (s)')
+ylabel('water volumn (L)')
 subplot(2,1,2)
 plot(0:(length-1),Tsum-Fsum,'r')
 grid on
 title('Accumulated Water Usage Estimate Error')
-xlabel('time')
-ylabel('water volumn')
+xlabel('time (s)')
+ylabel('water volumn (L)')
 
 
 

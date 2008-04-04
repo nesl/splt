@@ -1,5 +1,6 @@
 clear
 load pvc.txt
+pvc(:,1)=pvc(:,1)*0.004;
 V = zeros(4,72);
 
 for i=1:72
@@ -22,5 +23,18 @@ end
 
 figure
 plot(pvc(:,2),pvc(:,1),'r*')
+title('Vibration to Water Flow Rate')
+xlabel('Vibration')
+ylabel('Water Flow Rate (L/s)')
 hold on
 plot(scale,Y)
+
+
+for i = 1:72
+    F(i) = X(1)*pvc(i,2)^(1/3)+X(2)*pvc(i,2)^(1/2)+X(3)*pvc(i,2)+X(4);
+end
+
+figure
+plot(0:71,pvc(:,1))
+hold on
+plot(0:71,F,'r')

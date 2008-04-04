@@ -2,32 +2,56 @@ clear all
 close all
 load data_copper_on.txt
 load data_pvc_on.txt
+load data_pipe1.txt
 
+subplot(2,1,1)
 plot(data_copper_on(:,2),data_copper_on(:,3),'*')
 title('Vibration Propagation Parameter, pipe 1 to pipe 2')
-xlabel('Variance of Vibration of Pipe 1')
-ylabel('Variance of Vibration of Pipe 2')
-figure
+xlabel('Vibration of Pipe 1')
+ylabel('Vibration of Pipe 2')
+hold on
+t=0:0.01:4;
+plot(t,t*0.52,'r')
+legend('measured', 'fit')
+%figure
+subplot(2,1,2)
 plot(data_copper_on(:,2),data_copper_on(:,4),'*')
 title('Vibration Propagation Parameter, pipe 1 to pipe 3')
-xlabel('Variance of Vibration of Pipe 1')
-ylabel('Variance of Vibration of Pipe 3')
-figure
-plot(data_pvc_on(:,3),data_pvc_on(:,2),'*')
-title('Vibration Propagation Parameter, pipe 2 to pipe 1')
-xlabel('Variance of Vibration of Pipe 2')
-ylabel('Variance of Vibration of Pipe 1')
+xlabel('Vibration of Pipe 1')
+ylabel('Vibration of Pipe 3')
+hold on
+t=0:0.01:4;
+plot(t,t*0.34,'r')
+legend('measured', 'fit')
 
 figure
+subplot(2,1,1)
+plot(data_pvc_on(:,3),data_pvc_on(:,2),'*')
+title('Vibration Propagation Parameter, pipe 2 to pipe 1')
+xlabel('Vibration of Pipe 2')
+ylabel('Vibration of Pipe 1')
+hold on
+t=0:0.01:6;
+plot(t,t*0.15,'r')
+legend('measured', 'fit')
+
+%figure
+subplot(2,1,2)
 plot(data_pvc_on(:,3),data_pvc_on(:,4),'*')
 title('Vibration Propagation Parameter, pipe 2 to pipe 3')
-xlabel('Variance of Vibration of Pipe 2')
-ylabel('Variance of Vibration of Pipe 3')
+xlabel('Vibration of Pipe 2')
+ylabel('Vibration of Pipe 3')
+hold on
+t=0:0.01:6;
+plot(t,t*0.17,'r')
+legend('measured', 'fit')
 
 load data_gp.txt
 load data_lp4.txt
 
-data_gp = data_lp4;%(500:3887,:);
+data_gp = data_lp4;
+data_gp(:,1) = data_gp(:,1)*0.004;
+
 P12 = 0.52;
 %P12 = 0.15;
 P21 = 0.15;
@@ -156,13 +180,13 @@ plot((1:length)*0.5, F1normalized, 'r')
 plot((1:length)*0.5, F2normalized, 'm')
 title('Water Flow Rate Estimate of Pipe1 and Pipe2')
 legend('Sum', 'Pipe1', 'Pipe2')
-xlabel('time')
-ylabel('flow rate')
+xlabel('time (s)')
+ylabel('flow rate (L/s)')
 subplot(2,1,2)
 plot((1:length)*0.5, data_gp(:,1))
 title('True Water Flow Rate Estimate in the main pipe')
-xlabel('time')
-ylabel('flow rate')
+xlabel('time (s)')
+ylabel('flow rate (L/s)')
 
 for i=1:length
     F1normalizedsum(i) = sum(F1normalized(1:i));
@@ -174,8 +198,8 @@ figure
 subplot(2,1,2)
 plot((1:length)*0.5, data_gp_sum(:))
 title('Accumulated Water Usage in the main pipe')
-xlabel('time')
-ylabel('water volumn')
+xlabel('time (s)')
+ylabel('water volumn (L)')
 subplot(2,1,1)
 plot((1:length)*0.5, F2normalizedsum+F1normalizedsum)
 hold on
@@ -183,5 +207,5 @@ plot((1:length)*0.5, F1normalizedsum, 'r')
 plot((1:length)*0.5, F2normalizedsum, 'm')
 title('Accumulated Water Usage Estimate of Pipe1 and Pipe2')
 legend('Sum', 'Pipe1', 'Pipe2')
-xlabel('time')
-ylabel('water volumn')
+xlabel('time (s)')
+ylabel('water volumn (L)')
