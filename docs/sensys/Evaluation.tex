@@ -5,7 +5,6 @@ This section elaborates experimental results that support the models and formula
 As shown in Figure ??, the design of the NAWMS system consists of tiered sensor system and a custom pipe system. The pipe system is made of one main pipe and three branches; one branch is ?? copper pipe, one is ?? size PVC pipe and the other one is ?? size PVC pipe. The main pipe is equipped with an commercial water flow meter that generates pulse train whose pulse speed is proportional to the actual flow rate. Each branch is equipped with an acceleration sensor that is a part of MTS310 sensor board. MicaZ is used to collect and process sensor data and is running SOS operating system[]. The vibration mote samples acceleration perpendicular to the pipe surface. To get vibration measure, it sample 50 data points at 100Hz every one second, then calculate sample variance that is the measure of vibration. The main water meter mote counts the number of pulses per a second and sends it back to the laptop. The laptop aggregates vibration on each pipe and water flow rate in the main pipe. It also solves the optimization problem after it receives sufficient data set using CVX[]. After solving the optimization problems, it renders water flow rate in each of the branches.
 
 \subsection{ Evaluation of Water Flow Rate Estimate}
-\subsection{Simple Pipe Structure}
 
 \begin{figure}
 \centering

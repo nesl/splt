@@ -120,6 +120,14 @@ Section 4.? will describe this model gives less error thus is the best and simpl
 \vskip -6pt
 \end{figure}
 
+\begin{figure}
+\centering
+\includegraphics[width=80mm]{.//figures/pipes.png}
+\caption{Complex Pipe Topology}
+\vskip -6pt
+\end{figure}
+
+
 
 In this section, we formulate the large scale water flow rate monitoring system that consists of one main water meter, many vibration sensors on pipes, and an aggregation unit. Using the information from the main water meter that is more accurate but lacks spatially finer grained information, the system calibrates parameters (alpha, beta, gamma and delta) of every vibration sensors while solving an optimization problem. This problem can be generalized for more general pipe topologies shown in figure ?? and we will discuss this in the next section. Firstly, consider a simple  pipe topology where one main pipe is equipped with he main water meter and N pipe branches where we put vibration sensors. The main water meter gives us its real-time water flow in the main pipe and let define $M(t)$ as water flow rate of the main pipe. Let define the water flow rate of each branches as $f_{i}(t)$ where $i$ is pipe index number. Since all branches are connected to the main pipe, we can immediately get eq() because the total water flow rate is the sum of all the flow rate in every pipe branches.
 
@@ -395,27 +403,56 @@ min &&\left|\left|\sum_{k=1}^{M}M(\Delta tk) - \sum_{k=1}^{M}\sum_{i=1}^{N} f_{i
 subject & to & \\\\
 &&
 0 \leq f_{i}(\Delta tk) \leq f_{i},max \\\\
-&&V(t) = P^{-1}V_{m}(t) \\\\
-where && \\\\
-&& P = [ p_{i,j} ] \\
-&& V(t) = [v_{i}(t)] \in R_{+}^{N} \\
-&& V_{m}(t) = [v_{m,i}(t)] \in R_{+}^{N}\\
-
-&&\Delta t : Sampling Time \\\\
-&&M : Number of Samples\\
-&&N : Number of Pipes 
-
+&&V(t) = P^{-1}V_{m}(t)
 \end{array} 
 \end{equation}
+where
+
+$P = [ p_{i,j} ] $
+
+$V(t) = [v_{i}(t)] \in R_{+}^{N} $
+
+$V_{m}(t) = [v_{m,i}(t)] \in R_{+}^{N}$
+
+$\Delta t$ : Sampling Time 
+
+$M$ : Number of Samples
+
+$N$ : Number of Pipes 
+\\
 
 So, this form is again a linear programming problem thus one can solve this problem and get parameters. 
 
-\subsection{ Correction Mechanism}
-After getting all the necessary parameters by solving the optimization problems given in section ??, the system can estimate the water flow rate of each pipe based on vibration. However, unpredicted turbulence in a pipe, external vibration, etc. can make the estimate less accurate. To compensate these, the system also takes advantage of the water flow rate from the main pipe. 
+\subsection{Correction Mechanism and Performance Index}
+By solving the optimization problems given in section, the system can get all the necessary parameters $\{\alpha_{i}, \beta_{i}, \gamma_{i}, \delta_{i}\}$, which map the vibration to the water flow rate as shown in equation (). However, the system characteristics can change over time due to slight topological changes, seasonal temperature changes, or aging effect. In addition, unpredicted turbulence in a pipe, external vibration, etc. can make the estimate less accurate. To compensate these, the system also takes advantage of the water flow rate from the main pipe; 1) it normalizes the overall flow rate based on the total water flow rate in the main pipe, 2) it also updates parameters based on a performance index. 
 Considering the water flow rate is the same as the sum of the water flow rate of every branch of the main pipe. We normalize the water flow rate estimate as follows
 
 \begin{equation}
 f_{i}(t) = \frac{\hat{f_{i}}(t)M(t)}{\sum_{i=1}^{N}\hat{f_{i}}(t)}
 \end{equation}
 
-This normalization may add small error to the water flow rate estimate. It guarantees, however, that the sum of the water flow rate estimate as well as the sum of the accumulated water usage estimate is the same as the true water flow rate and accumulated water usage.
+where
+
+$\hat{f_{i}}(t)$ : Water Flow Rate Estimate
+
+$f_{i}(t)$ : Normalized Water Flow Rate
+
+This normalization can guarantees that the sum of the water flow rate estimate as well as the sum of the accumulated water usage estimate is the same as the true water flow rate and accumulated water usage. But it normalization may add small error to the water flow rate estimate.
+
+Although the normalization gives the bound for the sum of water flow rate estimate, performance of the system can be degraded over time. Since we tried to minimize the sum of estimation error, performance index of the system can be as follows
+
+\begin{equation}
+\left| \frac{\sum_{i=1}^{N}\hat{f_{i}}(t)-M(t)}{M(t)} \right|
+\end{equation}
+
+It is obvious that if the performance index is around zero it is performing well, otherwise it needs to be recalibrated. 
+
+\subsection{Algorithm Description}
+As we formulated some optimization problems, this section describes how the system works from the beginning. Users need to attach sensors on pipes of interest and they also need to specify the topology of the pipes where they put the sensors based on their desire. Figure ?? shows the procedure the system follows. At its initial deployment stage, it gathers vibration and water flow rate data until it get enough data. Then, it solves two optimization problems shown in section ?? and ??. Given the parameters, it starts to estimate water flow rate based on vibration and compare these with the performance. If the performance index is good, it just continues. Otherwise, it recalibrate the sensors. 
+\begin{figure}
+\centering
+\includegraphics[width=80mm]{.//figures/FlowChart.png}
+\caption{Software Flowchart}
+\vskip -6pt
+\end{figure}
+
