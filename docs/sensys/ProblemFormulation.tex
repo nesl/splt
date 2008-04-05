@@ -16,7 +16,7 @@ To formulate the model of NAWMS, we start with the microscopic view of water flo
 \subsubsection{Theory of Operation}
   \label{subsubsec:theoryofoperation}
 
-This section describes how vibration on a pipe can be related to water flow rate in a pipe. Looking at water flow in a pipe in a microscopic way, there are many molecules flow toward the flow direction in average. Each molecule has its own velocity as shown in the figure 2. While water is flowing toward its flow direction, many molecules hit the pipe. According to the first law of thermodynamics, some of the kinetic energy is converted to heat as the turbulent eddies dissipate, but most is converted into potential energy in the form of pressure [Pittard 2003]. Evans et. al.p[  showed that the variance of vibration is proportional to the average flow rate in a pipe. The following is a brief excerpt from [Evans] that illustrate the mathematical model of this concept. 
+This section describes how vibration on a pipe can be related to water flow rate in a pipe. Looking at water flow in a pipe in a microscopic way, there are many molecules flow toward the flow direction in average. Each molecule has its own velocity as shown in the figure 2. While water is flowing toward its flow direction, many molecules hit the pipe. According to the first law of thermodynamics, some of the kinetic energy is converted to heat as the turbulent eddies dissipate, but most is converted into potential energy in the form of pressure \cite{Pittard2003}. Evans et. al. \cite{EvansFlowMeasurement} showed that the variance of vibration is proportional to the average flow rate in a pipe. The following is a brief excerpt from \cite{EvansFlowMeasurement} that illustrate the mathematical model of this concept. 
 
 The local velocity at a point can be regarded as superposition of an average velocity and instantaneous fluctuating velocity. The fluid velocities can be decomposed in time averaged velocities and fluctuation velocities. Let define  $u$ be the velocity parallel to the pipe axis and $v$ be the velocity perpendicular to the pipe axis. The instantaneous velocities $u,v$, can be written as a sum of the average velocities $\bar{u},\bar{v}$ and the fluctuation velocities $u',v'$. 
 \begin{equation}
@@ -26,18 +26,18 @@ v=\bar{v}+v'=v'
 \end{array}
 \end{equation}
 Since there is no net flow in the perpendicular direction to the pipe axis, the time averaged velocity $\bar{v}$is zero. 
-Prashun[] showed that the time average of the product of the velocity fluctuation is less than zero. 
+Prashun\cite{Prashun1980} showed that the time average of the product of the velocity fluctuation is less than zero. 
 \begin{equation}
 \overline{u'v'} < 0
 \end{equation}
-Prashun[] also demonstrated that for a circular conduit of radius $r$, the shear stress $\tau$ at the wall can be related to the pressure $p$ as follows.  
+Prashun\cite{Prashun1980} also demonstrated that for a circular conduit of radius $r$, the shear stress $\tau$ at the wall can be related to the pressure $p$ as follows.  
 \begin{equation}
 \begin{array}{l}
 \tau=-\frac{r}{2}\frac{dp}{dx}\\\\
 \frac{dp}{dx}=p'=-\frac{2\tau}{r}
 \end{array}
 \end{equation}
-From the Navier-Stokes equations, Prashun[] also demonstrated that for turbulent flow, the turbulent shear stress can be expressed as
+From the Navier-Stokes equations, Prashun\cite{Prashun1980} demonstrated that for turbulent flow, the turbulent shear stress can be expressed as
 \begin{equation}
 \tau=-\rho\overline{u'v'}
 \end{equation}
@@ -59,7 +59,7 @@ M=EI\frac{d^{2}y}{dx^{2}} \\\\
 \end{array}
 \end{equation}
 
-To relate the pressure fluctuations to the pipe acceleration, consider the differential equation of motion for transverse vibration of a beam as given by Seto[]
+To relate the pressure fluctuations to the pipe acceleration, consider the differential equation of motion for transverse vibration of a beam as given by Seto\cite{Seto1964}
 \begin{equation}
 \frac{\partial ^{2}y}{\partial t^{2}}=-\frac{EIg}{A\gamma}\frac{\partial ^{4}y}{\partial x^{4}}
 \end{equation}
@@ -81,7 +81,7 @@ Since $A$, $g$, and $\gamma$ are constant, equation () can be rewritten for conv
 
 where $C=\frac{g}{A\gamma}$
 
-This indicates that the acceleration of the pipe is proportional to the pressure fluctuations in the fluid. The basic theory of operation will be based on the relationship between the standard deviation of the pipe vibrations and the mean flow rate of the fluid in the pipe. Blake[] stated that the generation of vibrations by fluid motion involves the reactions of fluids and solids to stresses imposed by time-varying flow. For dynamically similar flows, the radio of the flow fluctuations to the average flow is constant. Bird et. al.[] showed that this relationship by noting that the oscillatory term is the time average of the absolute magnitude of the oscillation, given by  where  . They defined this as Òintensity of turbulence,Ó which is a measure of the magnitude of the turbulent disturbance, and is given by $\frac{\sqrt{\bar{m}}}{\bar{u}}=$ intensity of turbulence
+This indicates that the acceleration of the pipe is proportional to the pressure fluctuations in the fluid. The basic theory of operation will be based on the relationship between the standard deviation of the pipe vibrations and the mean flow rate of the fluid in the pipe. Blake\cite{Blake} stated that the generation of vibrations by fluid motion involves the reactions of fluids and solids to stresses imposed by time-varying flow. For dynamically similar flows, the radio of the flow fluctuations to the average flow is constant. Bird et. al. \cite{Bird1960} showed that this relationship by noting that the oscillatory term is the time average of the absolute magnitude of the oscillation, given by  where  . They defined this as Òintensity of turbulence,Ó which is a measure of the magnitude of the turbulent disturbance, and is given by $\frac{\sqrt{\bar{m}}}{\bar{u}}=$ intensity of turbulence
 
 From the definition of turbulent flow, the intensity of turbulence expression can be rearranged as
 \begin{equation}
@@ -137,7 +137,7 @@ Section 4.? will describe this model gives less error thus is the best and simpl
 
 
 
-In this section, we formulate the large scale water flow rate monitoring system that consists of one main water meter, many vibration sensors on pipes, and an aggregation unit. Using the information from the main water meter that is more accurate but lacks spatially finer grained information, the system calibrates parameters (alpha, beta, gamma and delta) of every vibration sensors while solving an optimization problem. This problem can be generalized for more general pipe topologies shown in figure ?? and we will discuss this in the next section. Firstly, consider a simple  pipe topology where one main pipe is equipped with he main water meter and N pipe branches where we put vibration sensors. The main water meter gives us its real-time water flow in the main pipe and let define $M(t)$ as water flow rate of the main pipe. Let define the water flow rate of each branches as $f_{i}(t)$ where $i$ is pipe index number. Since all branches are connected to the main pipe, we can immediately get eq() because the total water flow rate is the sum of all the flow rate in every pipe branches.
+In this section, we formulate the large scale water flow rate monitoring system that consists of one main water meter, many vibration sensors on pipes, and an aggregation unit. Using the information from the main water meter that is more accurate but lacks spatially finer grained information, the system calibrates parameters ($\alpha_{i}, \beta_{i}, \gamma_{i}$ and $\delta_{i}$) of every vibration sensors while solving an optimization problem. This problem can be generalized for more general pipe topologies shown in figure ?? and we will discuss this in the next section. Firstly, consider a simple  pipe topology where one main pipe is equipped with he main water meter and N pipe branches where we put vibration sensors. The main water meter gives us its real-time water flow in the main pipe and let define $M(t)$ as water flow rate of the main pipe. Let define the water flow rate of each branches as $f_{i}(t)$ where $i$ is pipe index number. Since all branches are connected to the main pipe, we can immediately get eq() because the total water flow rate is the sum of all the flow rate in every pipe branches.
 
 \begin{equation}
 M(t) = \sum _{i=1} ^{N} f_{i}{(t)}
@@ -181,7 +181,7 @@ $N$ : Number of Pipes
 \\
 
 
-Solving this optimization problem yields all the necessary parameters if it gives the global optimum and is only one point. This equation also implies that for the calibration no human intervention is needed as the optimization and sampling can be automated. Note that, this optimization problem consists only of linear constraints and its objective function can be also formulated as a linear objective function[]. Therefore, any available LP solver can solve this problem very efficiently and guarantees global optimum.
+Solving this optimization problem yields all the necessary parameters if it gives the global optimum and is only one point. This equation also implies that for the calibration no human intervention is needed as the optimization and sampling can be automated. Note that, this optimization problem consists only of linear constraints and its objective function can be also formulated as a linear objective function\cite{BoydLectureNote}. Therefore, any available LP solver can solve this problem very efficiently and guarantees global optimum.
 
 \subsection{General Pipe Structure}
   \label{subsec:generalpipe}
@@ -313,12 +313,12 @@ Depending on the system performance and its characteristics, the system can sele
 \subsection{ Geometric Programming Modeling}
   \label{subsec:gpmodeling}
 
-The posynomial equality constraint prevents us to solve the optimization problem as a geometric programming. In addition, the objective function is not a standard geometric programming form. 
+The posynomial\cite{BoydConvexOptimization2004}, \cite{BoydTutorial2005} equality constraint prevents us to solve the optimization problem as a geometric programming. In addition, the objective function is not a standard geometric programming form. 
 \begin{equation}
 v_{m,i}(t) = \sum_{j=1}^{N}p_{i,j}v_{j}(t)
 \end{equation}
 
-Therefore, we need to reformulate this optimization problem because this problem is in general NP-hard. In this section we describe a derivation of this non-convex optimization to a convex optimization problem with careful modification while maintaining physical meaning of the optimization problem. 
+Therefore, we need to reformulate this optimization problem because this problem is in general NP-hard\cite{Chiang2005}. In this section we describe a derivation of this non-convex optimization to a convex optimization problem with careful modification while maintaining physical meaning of the optimization problem. 
 First, we introduce a slack variable s and the problem can be equivalently reformulated as follows,
 
 \begin{equation}
@@ -349,7 +349,7 @@ subject & to & \\\\
 \end{array} 
 \end{equation}
 
-Now, according to [GP COMM], by relaxing the posynomial equality constraint as an inequality with reasonable tightness, one can reformulate the constraint as a standard geometric programming form. The following relaxation is reasonable as the measured variance of vibration on a pipe is not only the superposition of all the propagated vibration but also from the external vibration source. 
+Now, according to \cite{Chiang2005}, by relaxing the posynomial equality constraint as an inequality with reasonable tightness, one can reformulate the constraint as a standard geometric programming form. The following relaxation is reasonable as the measured variance of vibration on a pipe is not only the superposition of all the propagated vibration but also from the external vibration source. 
 
 \begin{equation}
 \sum_{j=1}^{N}p_{i,j}v_{j}(t) \leq v_{m,i}(t)
@@ -372,11 +372,11 @@ where
 $f_{i}(\Delta tk)=\alpha_{i}\sqrt[3]{v_{i}(\Delta tk)}+\beta_{i}\sqrt{v_{i}(\Delta tk)}+\gamma_{i}v_{i}(\Delta tk)+\delta_{i} $
 \\
 
-According to [GP TUTORIAL] in section 7.3, it is a mixed linear geometric programing, as equation() is a posynomial because eq() is posynomial.
+According to \cite{BoydTutorial2005} in section 7.3, it is a mixed linear geometric programing, as equation() is a posynomial because eq() is posynomial.
 
 equation () is posynomial as all the alphas, betas, gammas and deltas are positive, and vibration is always positive.
 and the sum of posynomials is also a posynomial and because variance is positive by its nature. 
-Therefore, one can solve this problem very efficiently (polynomial time) and guarantees the global optimum as it turns out to be a convex programming problem[]. However, this might render a poor solution as we relaxed the constraint although it is reasonable relaxation. Therefore, we also want to introduce two phase Linear Programming program in case it render a poor solution so that the system can select one
+Therefore, one can solve this problem very efficiently (polynomial time) and guarantees the global optimum as it turns out to be a convex programming problem. However, this might render a poor solution as we relaxed the constraint although it is reasonable relaxation\cite{BoydTutorial2005}, \cite{Chiang2005}. Therefore, we also want to introduce two phase Linear Programming program in case it render a poor solution so that the system can select one
 
 \subsection{ Two phase Linear Programming Modeling}
   \label{subsec:lpmodeling}
@@ -397,7 +397,7 @@ $p_{i,j}=1$ if $i=j$
 
 $p_{i,j} = \frac{v_{m,i}}{v_{m,j}}$ otherwise
 
-If the system is ideal, the measurement is perfect, and the system model is flawless, then the propagation parameter estimation is trivial as shown above. However, as most of parameter estimation problem relies on some estimation procedure such as least square estimation, 1-norm minimization approach, or infinity-norm minimization approach due to measurement noise, we also need to formulate this as an parameter estimation problem because the system model, sensors and environment are not ideal thus have measurement noise and unmodeled uncertainties. We want to set the problem as a 1-norm minimization problem with some linear inequality constraints as it is less sensitive to the significant outlier than least square problems and this is mainly because cheap sensors and many wireless sensor nodes often suffer from significant outliers and faulty sensor reading[][][]. We can solve this problem using standard LP solvers and also can easily handle linear inequality constraints.
+If the system is ideal, the measurement is perfect, and the system model is flawless, then the propagation parameter estimation is trivial as shown above. However, as most of parameter estimation problem relies on some estimation procedure such as least square estimation, 1-norm minimization approach, or infinity-norm minimization approach due to measurement noise, we also need to formulate this as an parameter estimation problem because the system model, sensors and environment are not ideal thus have measurement noise and unmodeled uncertainties. We want to set the problem as a 1-norm minimization problem with some linear inequality constraints as it is less sensitive to the significant outlier than least square problems and this is mainly because cheap sensors and many wireless sensor nodes often suffer from significant outliers and faulty sensor reading\cite{RSSI_yale}, \cite{RSSI_local2}. We can solve this problem using standard LP solvers and also can easily handle linear inequality constraints.
 
 Let define $l$ be a index of sample and $L$ be the total number of samples.
 \begin{equation}
